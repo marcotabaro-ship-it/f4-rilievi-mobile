@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Accesso — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Roboto', -apple-system, sans-serif; background: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+    .card { background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.3); width: 100%; max-width: 400px; overflow: hidden; }
+    .card-header { background: #1a1a2e; padding: 28px 28px 24px; text-align: center; }
+    .logo-box { display: inline-flex; align-items: center; justify-content: center; border: 3px solid #e53e3e; padding: 5px 14px; margin-bottom: 10px; }
+    .logo-box span { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: -1px; }
+    .logo-sub { font-size: 10px; color: #a5b4fc; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
+    .app-name { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .app-badge { display: inline-block; background: rgba(255,255,255,.15); color: #a5b4fc; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 12px; }
+    .card-body { padding: 28px; }
+    .step-indicator { display: flex; align-items: center; margin-bottom: 24px; }
+    .step-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; transition: all .2s; }
+    .step-dot.active  { background: #4f46e5; color: #fff; }
+    .step-dot.done    { background: #16a34a; color: #fff; }
+    .step-dot.pending { background: #f3f4f6; color: #9ca3af; }
+    .step-line { flex: 1; height: 2px; transition: background .2s; }
+    .step-line.done    { background: #16a34a; }
+    .step-line.pending { background: #e5e7eb; }
+    .step-lbl { font-size: 11px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .step-title { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 20px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+    .field select, .field input { width: 100%; border: 2px solid #e5e7eb; border-radius: 12px; padding: 13px 16px; font-size: 15px; font-family: inherit; color: #1a1a2e; background: #fff; outline: none; transition: border-color .15s; -webkit-appearance: none; }
+    .field select:focus, .field input:focus { border-color: #4f46e5; }
+    .utenti-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+    .utente-btn { border: 2px solid #e5e7eb; border-radius: 14px; padding: 14px 10px; background: #fff; cursor: pointer; text-align: center; transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 6px; -webkit-tap-highlight-color: transparent; }
+    .utente-btn:active, .utente-btn.selected { border-color: #4f46e5; background: #eef2ff; }
+    .utente-btn .u-avatar { width: 40px; height: 40px; border-radius: 50%; background: #4f46e5; color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .utente-btn .u-nome { font-size: 12px; font-weight: 600; color: #1a1a2e; line-height: 1.3; }
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 48px; }
+    .pw-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #9ca3af; font-size: 20px; padding: 4px; }
+    .btn-main { width: 100%; background: #4f46e5; color: #fff; border: none; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .15s; margin-top: 4px; -webkit-tap-highlight-color: transparent; }
+    .btn-main:active { background: #4338ca; }
+    .btn-main:disabled { background: #a5b4fc; cursor: not-allowed; }
+    .btn-back { background: none; border: none; color: #6b7280; font-size: 13px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; margin-bottom: 16px; padding: 0; }
+    .err-msg { background: #fee2e2; border: 1px solid #fca5a5; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #dc2626; margin-bottom: 16px; display: none; }
+    .loading { text-align: center; padding: 20px; color: #9ca3af; font-size: 13px; }
+    .loading-spin { display: inline-block; width: 20px; height: 20px; border: 2px solid #e5e7eb; border-top-color: #4f46e5; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .selected-info { background: #f5f3ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 12px 14px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+    .selected-info .si-av { width: 38px; height: 38px; border-radius: 50%; background: #4f46e5; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .selected-info .si-nome { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+    .selected-info .si-rep { font-size: 12px; color: #6b7280; }
+    .card-footer { padding: 14px 28px; background: #f9fafb; border-top: 1px solid #f0f0f6; text-align: center; font-size: 11px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div class="logo-box"><span>[F4]</span></div>
+    <div class="logo-sub">Gruppo F4</div>
+    <div class="app-name">F4 Rilievi Mobile</div>
+    <div><span class="app-badge">Accesso Riservato</span></div>
+  </div>
+  <div class="card-body">
+    <div class="step-indicator">
+      <div class="step-dot active"  id="sd1">1</div>
+      <div class="step-line pending" id="sl1"></div>
+      <div class="step-dot pending" id="sd2">2</div>
+      <div class="step-line pending" id="sl2"></div>
+      <div class="step-dot pending" id="sd3">3</div>
+    </div>
+    <div class="err-msg" id="err-msg"></div>
+
+    <!-- STEP 1 -->
+    <div id="step1">
+      <div class="step-lbl">Step 1 di 3</div>
+      <div class="step-title">Scegli il reparto</div>
+      <div id="rep-loading" class="loading"><span class="loading-spin"></span>Caricamento&hellip;</div>
+      <div id="rep-content" style="display:none;">
+        <div class="field">
+          <label>Reparto operativo</label>
+          <select id="sel-reparto" onchange="onRepartoChange()">
+            <option value="">Scegli reparto&hellip;</option>
+          </select>
+        </div>
+        <button class="btn-main" id="btn-step1" onclick="goStep2()" disabled>Continua &rarr;</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step2" style="display:none;">
+      <button class="btn-back" onclick="goStep1()">&#8592; Cambia reparto</button>
+      <div class="step-lbl">Step 2 di 3</div>
+      <div class="step-title">Scegli il tuo nome</div>
+      <div id="utenti-loading" class="loading" style="display:none;"><span class="loading-spin"></span>Caricamento&hellip;</div>
+      <div id="utenti-grid" class="utenti-grid"></div>
+      <div id="utenti-empty" style="display:none;font-size:13px;color:#9ca3af;text-align:center;padding:20px 0;">Nessun utente attivo in questo reparto.</div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="step3" style="display:none;">
+      <button class="btn-back" onclick="goStep2back()">&#8592; Cambia utente</button>
+      <div class="step-lbl">Step 3 di 3</div>
+      <div class="step-title">Inserisci la password</div>
+      <div class="selected-info" id="sel-info">
+        <div class="si-av" id="si-av">TM</div>
+        <div><div class="si-nome" id="si-nome">Nome</div><div class="si-rep" id="si-rep">Reparto</div></div>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="inp-pw" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <button class="pw-toggle" onclick="togglePw()">&#128065;</button>
+        </div>
+      </div>
+      <button class="btn-main" id="btn-login" onclick="doLogin()">Accedi</button>
+    </div>
+  </div>
+  <div class="card-footer">F4 Rilievi Mobile &mdash; Gruppo F4 &copy; 2026</div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  var _reparto = '', _utente = null;
+
+  if (Auth.getUser()) window.location.href = 'home.html';
+
+  Auth.getReparti(function(reparti){
+    document.getElementById('rep-loading').style.display = 'none';
+    document.getElementById('rep-content').style.display = '';
+    var sel = document.getElementById('sel-reparto');
+    reparti.forEach(function(r){
+      var o = document.createElement('option');
+      o.value = r; o.textContent = r;
+      sel.appendChild(o);
+    });
+  });
+
+  function setSteps(step){
+    var dots = ['sd1','sd2','sd3'], lines = ['sl1','sl2'];
+    dots.forEach(function(id,i){
+      var el = document.getElementById(id);
+      el.className = 'step-dot ' + (i+1<step?'done':i+1===step?'active':'pending');
+    });
+    lines.forEach(function(id,i){
+      document.getElementById(id).className = 'step-line ' + (i+1<step?'done':'pending');
+    });
+  }
+
+  function showErr(msg){ var el=document.getElementById('err-msg'); el.textContent=msg; el.style.display=''; }
+  function hideErr(){ document.getElementById('err-msg').style.display='none'; }
+
+  function onRepartoChange(){
+    document.getElementById('btn-step1').disabled = !document.getElementById('sel-reparto').value;
+  }
+
+  function goStep1(){
+    hideErr(); _reparto=''; _utente=null;
+    document.getElementById('step1').style.display='';
+    document.getElementById('step2').style.display='none';
+    document.getElementById('step3').style.display='none';
+    setSteps(1);
+  }
+
+  function goStep2(){
+    hideErr();
+    _reparto = document.getElementById('sel-reparto').value;
+    if(!_reparto)return;
+    document.getElementById('step1').style.display='none';
+    document.getElementById('step2').style.display='';
+    document.getElementById('step3').style.display='none';
+    setSteps(2);
+    loadUtenti();
+  }
+
+  function goStep2back(){
+    hideErr();
+    document.getElementById('step1').style.display='none';
+    document.getElementById('step2').style.display='';
+    document.getElementById('step3').style.display='none';
+    setSteps(2);
+  }
+
+  function loadUtenti(){
+    var grid=document.getElementById('utenti-grid');
+    var empty=document.getElementById('utenti-empty');
+    var loading=document.getElementById('utenti-loading');
+    grid.innerHTML=''; grid.style.display='none';
+    empty.style.display='none'; loading.style.display='';
+    Auth.getUtentiByReparto(_reparto, function(utenti){
+      loading.style.display='none';
+      if(!utenti.length){ empty.style.display=''; return; }
+      grid.style.display='grid';
+      utenti.forEach(function(u){
+        var sigla=u.sigla||(u.nome.split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase());
+        var btn=document.createElement('button');
+        btn.className='utente-btn';
+        btn.innerHTML='<div class="u-avatar">'+sigla+'</div><div class="u-nome">'+u.nome+'</div>';
+        btn.onclick=function(){
+          document.querySelectorAll('.utente-btn').forEach(function(b){b.classList.remove('selected');});
+          btn.classList.add('selected');
+          setTimeout(function(){ goStep3(u, sigla); }, 180);
+        };
+        grid.appendChild(btn);
+      });
+    });
+  }
+
+  function goStep3(utente, sigla){
+    hideErr(); _utente=utente;
+    document.getElementById('step2').style.display='none';
+    document.getElementById('step3').style.display='';
+    setSteps(3);
+    document.getElementById('si-av').textContent=sigla;
+    document.getElementById('si-nome').textContent=utente.nome;
+    document.getElementById('si-rep').textContent=_reparto;
+    document.getElementById('inp-pw').value='';
+    setTimeout(function(){ document.getElementById('inp-pw').focus(); }, 300);
+  }
+
+  function togglePw(){
+    var inp=document.getElementById('inp-pw');
+    inp.type=inp.type==='password'?'text':'password';
+  }
+
+  function doLogin(){
+    hideErr();
+    if(!_utente){ showErr('Nessun utente selezionato.'); return; }
+    var pw=document.getElementById('inp-pw').value;
+    if(!pw){ showErr('Inserisci la password.'); return; }
+    var btn=document.getElementById('btn-login');
+    btn.disabled=true; btn.textContent='Accesso in corso\u2026';
+    Auth.loginByNome(_utente.nome, _reparto, pw, function(ok, data){
+      btn.disabled=false; btn.textContent='Accedi';
+      if(ok){ window.location.href='home.html'; }
+      else{ showErr(data||'Credenziali non valide.'); }
+    });
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js').catch(function(){});
+  }
+</script>
+</body>
+</html>
