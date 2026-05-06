@@ -7,6 +7,13 @@ var API = (function(){
 
   function isOnline(){ return navigator.onLine; }
 
+  function tipoRilievo(r){
+    var c = (r.codice_completo||r.tipo_rilievo||'').toUpperCase();
+    if(c.indexOf('PORTE')>=0) return 'PORTE';
+    if(c.indexOf('SERR')>=0)  return 'SERR';
+    return r.tipo_rilievo || 'SERR';
+  }
+
   function sfetch(path, cb, eb){
     init();
     var x=new XMLHttpRequest();
@@ -37,15 +44,14 @@ var API = (function(){
     x.send(JSON.stringify(data));
   }
 
-  // ── SYNC COMPLETO ──
   function syncAll(onProgress, onDone){
-    var steps = [
-      { label:'Clienti',          fn: syncClienti },
-      { label:'Cantieri',         fn: syncCantieri },
-      { label:'Rilievi',          fn: syncRilievi },
-      { label:'Posizioni serr.',  fn: syncPosizioniSerr },
-      { label:'Posizioni porte',  fn: syncPosizioniPorte },
-      { label:'Capitoli',         fn: syncCapitoli }
+    var steps=[
+      {label:'Clienti',         fn:syncClienti},
+      {label:'Cantieri',        fn:syncCantieri},
+      {label:'Rilievi',         fn:syncRilievi},
+      {label:'Posizioni serr.', fn:syncPosizioniSerr},
+      {label:'Posizioni porte', fn:syncPosizioniPorte},
+      {label:'Capitoli',        fn:syncCapitoli}
     ];
     var i=0;
     function next(){
@@ -71,7 +77,12 @@ var API = (function(){
 
   function syncRilievi(cb){
     sfetch('rilievi?select=*&order=created_at.desc', function(r){
-      DBLocal.putMany('rilievi', r, function(){ cb(null); });
+      // normalizza tipo_rilievo da codice_completo
+      var norm = r.map(function(ril){
+        ril._tipo = tipoRilievo(ril);
+        return ril;
+      });
+      DBLocal.putMany('rilievi', norm, function(){ cb(null); });
     }, function(e){ cb(e); });
   }
 
@@ -93,11 +104,9 @@ var API = (function(){
     }, function(e){ cb(e); });
   }
 
-  // ── CODA SYNC ──
   function addToSyncQueue(op, table, data, cb){
     DBLocal.addToQueue('sync_queue', {
-      op: op, table: table, data: data,
-      ts: Date.now()
+      op:op, table:table, data:data, ts:Date.now()
     }, cb);
   }
 
@@ -108,8 +117,8 @@ var API = (function(){
       function next(){
         if(i>=items.length){ onDone(null); return; }
         var item=items[i++];
-        var method = item.op==='insert'?'POST':(item.op==='update'?'PATCH':'DELETE');
-        var path = item.table + (item.op!=='insert'?'?id=eq.'+item.data.id:'');
+        var method=item.op==='insert'?'POST':(item.op==='update'?'PATCH':'DELETE');
+        var path=item.table+(item.op!=='insert'?'?id=eq.'+item.data.id:'');
         spost(path, item.data, method, function(){
           DBLocal.removeFromQueue('sync_queue', item._qid, next);
         }, function(err){
@@ -121,15 +130,14 @@ var API = (function(){
     });
   }
 
-  // ── WRITE CON FALLBACK OFFLINE ──
   function writeRecord(op, table, data, cb){
     if(isOnline()){
-      var method = op==='insert'?'POST':(op==='update'?'PATCH':'DELETE');
-      var path = table + (op!=='insert'?'?id=eq.'+data.id:'');
+      var method=op==='insert'?'POST':(op==='update'?'PATCH':'DELETE');
+      var path=table+(op!=='insert'?'?id=eq.'+data.id:'');
       spost(path, data, method, function(res){
-        var saved = Array.isArray(res)?res[0]:res;
+        var saved=Array.isArray(res)?res[0]:res;
         DBLocal.putOne(table, saved||data, function(){ cb(null, saved||data); });
-      }, function(err){
+      }, function(){
         addToSyncQueue(op, table, data, function(){
           DBLocal.putOne(table, data, function(){ cb(null, data); });
         });
@@ -141,22 +149,22 @@ var API = (function(){
     }
   }
 
-  // ── STATS DASHBOARD ──
   function getStats(cb){
     DBLocal.getAll('clienti', function(cl){
       DBLocal.getAll('rilievi', function(ri){
-        var nSerr=ri.filter(function(r){ return r.tipo_rilievo==='SERR'; }).length;
-        var nPorte=ri.filter(function(r){ return r.tipo_rilievo==='PORTE'; }).length;
+        var nSerr  = ri.filter(function(r){ return tipoRilievo(r)==='SERR'; }).length;
+        var nPorte = ri.filter(function(r){ return tipoRilievo(r)==='PORTE'; }).length;
         cb({ clienti:cl.length, rilievi_serr:nSerr, rilievi_porte:nPorte, rilievi_tot:ri.length });
       });
     });
   }
 
   return {
-    isOnline:          isOnline,
-    syncAll:           syncAll,
-    processSyncQueue:  processSyncQueue,
-    writeRecord:       writeRecord,
-    getStats:          getStats
+    isOnline:         isOnline,
+    tipoRilievo:      tipoRilievo,
+    syncAll:          syncAll,
+    processSyncQueue: processSyncQueue,
+    writeRecord:      writeRecord,
+    getStats:         getStats
   };
 })();
