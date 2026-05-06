@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Home — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+</head>
+<body>
+
+<div class="offline-banner" id="offlineBanner">&#9889; Modalita offline — i dati verranno sincronizzati alla connessione</div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-bar-logo">[F4]</div>
+  <div class="top-bar-title">F4 Rilievi</div>
+  <div class="top-bar-actions">
+    <div class="top-bar-online" id="onlineIndicator" title="Online"></div>
+    <button class="top-bar-btn" onclick="openSyncSheet()" title="Sincronizza">&#8635;</button>
+    <div class="top-bar-avatar" id="userAvatar">TM</div>
+  </div>
+</div>
+
+<!-- SIDEBAR TABLET -->
+<div class="sidebar-tablet" id="sidebarTablet">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--c-border);">
+    <div style="font-size:12px;color:var(--c-text-ter);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Connesso come</div>
+    <div style="font-size:14px;font-weight:700;" id="sidebarUserName">—</div>
+    <div style="font-size:12px;color:var(--c-text-sec);" id="sidebarUserRep">—</div>
+  </div>
+  <div class="sidebar-nav-sep">Navigazione</div>
+  <div class="sidebar-nav-item active" onclick="showPage('home',this)"><span class="nav-ico">&#127968;</span> Home</div>
+  <div class="sidebar-nav-item" onclick="showPage('clienti',this)"><span class="nav-ico">&#128100;</span> Clienti</div>
+  <div class="sidebar-nav-item" onclick="showPage('rilievi',this)"><span class="nav-ico">&#128196;</span> Rilievi</div>
+  <div class="sidebar-nav-sep">Azioni</div>
+  <div class="sidebar-nav-item" onclick="openNuovoSheet()"><span class="nav-ico">&#10133;</span> Nuovo</div>
+  <div class="sidebar-nav-item" onclick="showPage('profilo',this)"><span class="nav-ico">&#128100;</span> Profilo</div>
+  <div class="sidebar-nav-item" onclick="Auth.logout()"><span class="nav-ico">&#128682;</span> Esci</div>
+</div>
+
+<!-- SYNC BAR -->
+<div class="sync-bar hidden" id="syncBar">
+  <div class="sync-spinner" id="syncSpinner"></div>
+  <span id="syncMsg">Sincronizzazione in corso&hellip;</span>
+</div>
+
+<!-- PAGE: HOME -->
+<div class="page active" id="page-home">
+  <div class="section-hdr" style="margin-bottom:14px;">
+    <div>
+      <div style="font-size:18px;font-weight:700;" id="welcomeMsg">Ciao!</div>
+      <div style="font-size:13px;color:var(--c-text-sec);" id="welcomeDate">—</div>
+    </div>
+    <button class="btn btn-sm btn-ghost" onclick="openSyncSheet()">&#8635; Sync</button>
+  </div>
+
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card"><div class="kpi-val" id="kpi-clienti">—</div><div class="kpi-lbl">Clienti</div></div>
+    <div class="kpi-card orange"><div class="kpi-val" id="kpi-serr">—</div><div class="kpi-lbl">Rilievi Serr.</div></div>
+    <div class="kpi-card green"><div class="kpi-val" id="kpi-porte">—</div><div class="kpi-lbl">Rilievi Porte</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="kpi-queue">—</div><div class="kpi-lbl">Da sincronizzare</div></div>
+  </div>
+
+  <div class="section-hdr">
+    <div class="section-hdr-title">Azioni rapide</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+    <button class="btn btn-primary btn-full" onclick="openNuovoSheet()">&#10133; Nuovo</button>
+    <button class="btn btn-orange btn-full" onclick="showPage('rilievi',null)">&#128196; Rilievi</button>
+    <button class="btn btn-ghost btn-full" onclick="showPage('clienti',null)">&#128100; Clienti</button>
+    <button class="btn btn-ghost btn-full" onclick="openSyncSheet()">&#8635; Sincronizza</button>
+  </div>
+
+  <div class="section-hdr">
+    <div class="section-hdr-title">Ultimi rilievi</div>
+    <button class="btn btn-sm btn-ghost" onclick="showPage('rilievi',null)">Tutti &rarr;</button>
+  </div>
+  <div id="ultimiRilievi"><div class="loading-state"><div class="spinner"></div></div></div>
+</div>
+
+<!-- PAGE: CLIENTI -->
+<div class="page" id="page-clienti">
+  <div class="search-bar">
+    <span class="search-ico">&#128269;</span>
+    <input type="search" id="searchClienti" placeholder="Cerca cliente..." oninput="filterClienti()"/>
+  </div>
+  <div class="filter-row">
+    <button class="filter-chip active" onclick="setFiltroClienti('tutti',this)">Tutti</button>
+    <button class="filter-chip" onclick="setFiltroClienti('SERR',this)">&#129695; Serramenti</button>
+    <button class="filter-chip orange" onclick="setFiltroClienti('PORTE',this)">&#128682; Porte</button>
+  </div>
+  <div id="listaClienti"><div class="loading-state"><div class="spinner"></div></div></div>
+</div>
+
+<!-- PAGE: RILIEVI -->
+<div class="page" id="page-rilievi">
+  <div class="search-bar">
+    <span class="search-ico">&#128269;</span>
+    <input type="search" id="searchRilievi" placeholder="Cerca rilievo o cliente..." oninput="filterRilievi()"/>
+  </div>
+  <div class="filter-row">
+    <button class="filter-chip active" onclick="setFiltroRilievi('tutti',this)">Tutti</button>
+    <button class="filter-chip" onclick="setFiltroRilievi('SERR',this)">&#129695; Serramenti</button>
+    <button class="filter-chip orange" onclick="setFiltroRilievi('PORTE',this)">&#128682; Porte</button>
+  </div>
+  <div id="listaRilievi"><div class="loading-state"><div class="spinner"></div></div></div>
+</div>
+
+<!-- PAGE: PROFILO -->
+<div class="page" id="page-profilo">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-body" style="text-align:center;padding:28px;">
+      <div style="width:72px;height:72px;border-radius:50%;background:var(--c-accent);color:#fff;font-size:26px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;" id="profiloAvatar">TM</div>
+      <div style="font-size:18px;font-weight:700;" id="profiloNome">—</div>
+      <div style="font-size:13px;color:var(--c-text-sec);margin-top:4px;" id="profiloRep">—</div>
+      <div style="font-size:12px;color:var(--c-text-ter);margin-top:2px;" id="profiloRuolo">—</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><div class="card-title">&#8635; Sincronizzazione</div></div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">Modalita sync</label>
+        <select class="form-control" id="syncModeSelect" onchange="saveSyncMode()">
+          <option value="wifi">Solo WiFi</option>
+          <option value="always">WiFi + Rete mobile</option>
+        </select>
+      </div>
+      <div style="font-size:12px;color:var(--c-text-sec);margin-top:-8px;margin-bottom:14px;" id="syncModeDesc">La sincronizzazione avviene solo sotto WiFi.</div>
+      <button class="btn btn-primary btn-full" onclick="eseguiSync()">&#8635; Sincronizza ora</button>
+      <div style="font-size:12px;color:var(--c-text-ter);text-align:center;margin-top:10px;" id="lastSyncLbl">Ultima sync: mai</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><div class="card-title">&#128202; Dati locali</div></div>
+    <div class="card-body" id="localDataStats">
+      <div style="font-size:13px;color:var(--c-text-sec);">Caricamento...</div>
+    </div>
+  </div>
+
+  <button class="btn btn-danger btn-full" onclick="Auth.logout()" style="margin-bottom:16px;">&#128682; Esci dall applicazione</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-home" onclick="showPage('home',null)">
+    <span class="nav-ico">&#127968;</span><span class="nav-lbl">Home</span>
+  </button>
+  <button class="nav-item" id="nav-clienti" onclick="showPage('clienti',null)">
+    <span class="nav-ico">&#128100;</span><span class="nav-lbl">Clienti</span>
+  </button>
+  <button class="nav-item nav-add" onclick="openNuovoSheet()">
+    <div class="nav-ico-wrap">&#10133;</div>
+  </button>
+  <button class="nav-item" id="nav-rilievi" onclick="showPage('rilievi',null)">
+    <span class="nav-ico">&#128196;</span><span class="nav-lbl">Rilievi</span>
+  </button>
+  <button class="nav-item" id="nav-profilo" onclick="showPage('profilo',null)">
+    <span class="nav-ico">&#128100;</span><span class="nav-lbl">Profilo</span>
+  </button>
+</nav>
+
+<!-- SHEET OVERLAY -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeAllSheets()"></div>
+
+<!-- SHEET: NUOVO -->
+<div class="bottom-sheet" id="sheetNuovo">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">&#10133; Crea nuovo</div>
+    <button class="sheet-close" onclick="closeAllSheets()">&#10005;</button>
+  </div>
+  <div class="sheet-body">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn btn-primary btn-full btn-lg" onclick="window.location.href='cliente-nuovo.html'">&#128100; Nuovo cliente</button>
+      <button class="btn btn-primary btn-full btn-lg" onclick="window.location.href='cantiere-nuovo.html'">&#127959; Nuovo cantiere</button>
+      <button class="btn btn-full btn-lg" style="background:#ede9fe;color:#5b21b6;font-weight:700;" onclick="window.location.href='rilievo-serr-nuovo.html'">&#129695; Nuovo rilievo serramenti</button>
+      <button class="btn btn-full btn-lg" style="background:#fff3e0;color:#E65100;font-weight:700;" onclick="window.location.href='rilievo-porte-nuovo.html'">&#128682; Nuovo rilievo porte</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: SYNC -->
+<div class="bottom-sheet" id="sheetSync">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">&#8635; Sincronizzazione</div>
+    <button class="sheet-close" onclick="closeAllSheets()">&#10005;</button>
+  </div>
+  <div class="sheet-body">
+    <div id="syncSheetContent">
+      <div style="font-size:14px;color:var(--c-text-sec);margin-bottom:20px;">Sincronizza i dati tra il dispositivo e il server.</div>
+      <div style="background:var(--c-bg);border-radius:12px;padding:14px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+          <span style="color:var(--c-text-sec);">Stato connessione</span>
+          <span id="syncSheetOnline" style="font-weight:700;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+          <span style="color:var(--c-text-sec);">Operazioni in coda</span>
+          <span id="syncSheetQueue" style="font-weight:700;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;">
+          <span style="color:var(--c-text-sec);">Ultima sincronizzazione</span>
+          <span id="syncSheetLast" style="font-weight:700;">—</span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" id="btnSyncNow" onclick="eseguiSync()">&#8635; Sincronizza ora</button>
+    </div>
+    <div id="syncSheetProgress" style="display:none;text-align:center;padding:20px 0;">
+      <div class="spinner" style="margin:0 auto 16px;"></div>
+      <div style="font-size:15px;font-weight:600;" id="syncProgressMsg">Sincronizzazione...</div>
+      <div style="font-size:13px;color:var(--c-text-sec);margin-top:6px;" id="syncProgressStep"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-local.js"></script>
+<script src="js/api-mobile.js"></script>
+<script>
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+
+var LAST_SYNC_KEY = 'f4m_last_sync';
+var _clientiAll = [], _rilieviAll = [], _cantAll = [];
+var _filtroClienti = 'tutti', _filtroRilievi = 'tutti';
+
+// ── INIT ──
+(function init(){
+  document.getElementById('userAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+  document.getElementById('sidebarUserName').textContent = currentUser.nome || '—';
+  document.getElementById('sidebarUserRep').textContent = currentUser.reparto || '—';
+  document.getElementById('profiloAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+  document.getElementById('profiloNome').textContent = currentUser.nome || '—';
+  document.getElementById('profiloRep').textContent = currentUser.reparto || '—';
+  document.getElementById('profiloRuolo').textContent = currentUser.ruolo || '—';
+  document.getElementById('welcomeMsg').textContent = 'Ciao, ' + (currentUser.nome||'').split(' ')[0] + '!';
+  var d = new Date();
+  document.getElementById('welcomeDate').textContent = d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+
+  var syncMode = localStorage.getItem(APP_CONFIG.SYNC_MODE_KEY) || 'wifi';
+  document.getElementById('syncModeSelect').value = syncMode;
+  updateSyncModeDesc();
+  updateLastSyncLbl();
+  updateOnlineStatus();
+
+  window.addEventListener('online',  function(){ updateOnlineStatus(); checkAutoSync(); });
+  window.addEventListener('offline', function(){ updateOnlineStatus(); });
+
+  loadLocalData();
+  if (API.isOnline()) checkAutoSync();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js').catch(function(){});
+  }
+})();
+
+function updateOnlineStatus(){
+  var online = API.isOnline();
+  document.getElementById('onlineIndicator').className = 'top-bar-online' + (online?'':' offline');
+  document.getElementById('offlineBanner').className = 'offline-banner' + (online?'':' visible');
+  document.getElementById('syncSheetOnline').textContent = online ? '🟢 Online' : '🔴 Offline';
+  document.getElementById('syncSheetOnline').style.color = online ? 'var(--c-green)' : 'var(--c-red)';
+}
+
+function checkAutoSync(){
+  var mode = localStorage.getItem(APP_CONFIG.SYNC_MODE_KEY) || 'wifi';
+  if (mode === 'always') { eseguiSync(); return; }
+  // wifi only — non possiamo rilevare il tipo di connessione con certezza
+  // usiamo navigator.connection se disponibile
+  var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (!conn || conn.type === 'wifi') eseguiSync();
+}
+
+// ── PAGES ──
+function showPage(name, sidebarEl){
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.sidebar-nav-item').forEach(function(b){ b.classList.remove('active'); });
+
+  var page = document.getElementById('page-'+name);
+  if (page) page.classList.add('active');
+
+  var navBtn = document.getElementById('nav-'+name);
+  if (navBtn) navBtn.classList.add('active');
+  if (sidebarEl) sidebarEl.classList.add('active');
+
+  if (name === 'home')    loadHome();
+  if (name === 'clienti') renderClienti();
+  if (name === 'rilievi') renderRilievi();
+  if (name === 'profilo') loadProfilo();
+}
+
+// ── LOAD LOCAL DATA ──
+function loadLocalData(){
+  DBLocal.getAll('clienti', function(cl){
+    _clientiAll = cl;
+    DBLocal.getAll('rilievi', function(ri){
+      _rilieviAll = ri;
+      DBLocal.getAll('cantieri', function(ca){
+        _cantAll = ca;
+        loadHome();
+        updateKPI();
+      });
+    });
+  });
+}
+
+function updateKPI(){
+  var nSerr  = _rilieviAll.filter(function(r){ return r.tipo_rilievo==='SERR'; }).length;
+  var nPorte = _rilieviAll.filter(function(r){ return r.tipo_rilievo==='PORTE'; }).length;
+  document.getElementById('kpi-clienti').textContent = _clientiAll.length;
+  document.getElementById('kpi-serr').textContent    = nSerr;
+  document.getElementById('kpi-porte').textContent   = nPorte;
+  DBLocal.getAll('sync_queue', function(q){
+    document.getElementById('kpi-queue').textContent = q.length || '0';
+    document.getElementById('syncSheetQueue').textContent = q.length + ' operazioni';
+  });
+}
+
+// ── HOME ──
+function loadHome(){
+  updateKPI();
+  var ultimi = _rilieviAll.slice().sort(function(a,b){
+    return (b.created_at||'').localeCompare(a.created_at||'');
+  }).slice(0,5);
+  var c = document.getElementById('ultimiRilievi');
+  if (!ultimi.length){ c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Nessun rilievo</div><div class="empty-sub">Crea il primo rilievo con il bottone +</div></div>'; return; }
+  c.innerHTML = ultimi.map(function(r){
+    var tipo = r.tipo_rilievo==='PORTE'?'porte':'serr';
+    var ico  = tipo==='porte'?'&#128682;':'&#129695;';
+    var cant = _cantAll.find(function(ca){ return ca.id===r.id_cantiere; });
+    var cli  = cant ? _clientiAll.find(function(cl){ return cl.id===cant.id_cliente; }) : null;
+    return '<div class="rilievo-card" onclick="apriRilievo(\''+r.id+'\')">'+
+      '<div class="rilievo-card-top">'+
+        '<div class="rilievo-card-ico '+tipo+'">'+ico+'</div>'+
+        '<div class="rilievo-card-info">'+
+          '<div class="rilievo-card-code">'+(r.codice_completo||r.id.substring(0,8))+'</div>'+
+          '<div class="rilievo-card-client">'+(cli?cli.nome:'—') + (cant?' &mdash; '+cant.nome_cantiere:'')+'</div>'+
+        '</div>'+
+        '<div class="list-item-right">&#8250;</div>'+
+      '</div>'+
+      '<div class="rilievo-card-bot">'+
+        '<span class="badge badge-'+(tipo==='serr'?'serr':'porte')+'">'+(tipo==='serr'?'SERR':'PORTE')+'</span>'+
+        '<span style="font-size:11px;color:var(--c-text-sec);">'+(r.data_rilievo||'—')+'</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── CLIENTI ──
+function setFiltroClienti(f, btn){
+  _filtroClienti = f;
+  document.querySelectorAll('#page-clienti .filter-chip').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderClienti();
+}
+
+function filterClienti(){ renderClienti(); }
+
+function renderClienti(){
+  var q = (document.getElementById('searchClienti').value||'').toLowerCase().trim();
+  var rilieviPerCliente = {};
+  _cantAll.forEach(function(ca){
+    _rilieviAll.forEach(function(r){
+      if(r.id_cantiere===ca.id){
+        if(!rilieviPerCliente[ca.id_cliente])rilieviPerCliente[ca.id_cliente]={SERR:0,PORTE:0};
+        if(r.tipo_rilievo==='SERR')rilieviPerCliente[ca.id_cliente].SERR++;
+        else rilieviPerCliente[ca.id_cliente].PORTE++;
+      }
+    });
+  });
+  var rows = _clientiAll.filter(function(cl){
+    if(q && (cl.nome||'').toLowerCase().indexOf(q)<0) return false;
+    if(_filtroClienti==='SERR' && !(rilieviPerCliente[cl.id]&&rilieviPerCliente[cl.id].SERR>0)) return false;
+    if(_filtroClienti==='PORTE'&& !(rilieviPerCliente[cl.id]&&rilieviPerCliente[cl.id].PORTE>0)) return false;
+    return true;
+  }).sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||'','it'); });
+
+  var c = document.getElementById('listaClienti');
+  if (!rows.length){ c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128100;</div><div class="empty-title">Nessun cliente</div><div class="empty-sub">Premi + per aggiungere un cliente</div></div>'; return; }
+  c.innerHTML = rows.map(function(cl){
+    var ini = (cl.nome||'?').split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase();
+    var rpc = rilieviPerCliente[cl.id]||{SERR:0,PORTE:0};
+    var badges = '';
+    if(rpc.SERR>0)  badges+='<span class="badge badge-serr">SERR '+rpc.SERR+'</span> ';
+    if(rpc.PORTE>0) badges+='<span class="badge badge-porte">PORTE '+rpc.PORTE+'</span>';
+    return '<div class="list-item" onclick="apriCliente(\''+cl.id+'\')">'+
+      '<div class="list-item-avatar">'+ini+'</div>'+
+      '<div class="list-item-body">'+
+        '<div class="list-item-title">'+cl.nome+'</div>'+
+        '<div class="list-item-sub">'+badges+'</div>'+
+      '</div>'+
+      '<div class="list-item-right">&#8250;</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── RILIEVI ──
+function setFiltroRilievi(f, btn){
+  _filtroRilievi = f;
+  document.querySelectorAll('#page-rilievi .filter-chip').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderRilievi();
+}
+
+function filterRilievi(){ renderRilievi(); }
+
+function renderRilievi(){
+  var q = (document.getElementById('searchRilievi').value||'').toLowerCase().trim();
+  var rows = _rilieviAll.filter(function(r){
+    if(_filtroRilievi!=='tutti' && r.tipo_rilievo!==_filtroRilievi) return false;
+    if(q){
+      var code=(r.codice_completo||'').toLowerCase();
+      var cant=_cantAll.find(function(ca){return ca.id===r.id_cantiere;});
+      var cli=cant?_clientiAll.find(function(cl){return cl.id===cant.id_cliente;}):null;
+      var cliNome=(cli?cli.nome:'').toLowerCase();
+      var cantNome=(cant?cant.nome_cantiere:'').toLowerCase();
+      if(code.indexOf(q)<0&&cliNome.indexOf(q)<0&&cantNome.indexOf(q)<0)return false;
+    }
+    return true;
+  }).sort(function(a,b){return(b.created_at||'').localeCompare(a.created_at||'');});
+
+  var c = document.getElementById('listaRilievi');
+  if (!rows.length){ c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Nessun rilievo</div><div class="empty-sub">Premi + per creare un rilievo</div></div>'; return; }
+  c.innerHTML = rows.map(function(r){
+    var tipo = r.tipo_rilievo==='PORTE'?'porte':'serr';
+    var ico  = tipo==='porte'?'&#128682;':'&#129695;';
+    var cant = _cantAll.find(function(ca){return ca.id===r.id_cantiere;});
+    var cli  = cant?_clientiAll.find(function(cl){return cl.id===cant.id_cliente;}):null;
+    return '<div class="rilievo-card" onclick="apriRilievo(\''+r.id+'\')">'+
+      '<div class="rilievo-card-top">'+
+        '<div class="rilievo-card-ico '+tipo+'">'+ico+'</div>'+
+        '<div class="rilievo-card-info">'+
+          '<div class="rilievo-card-code">'+(r.codice_completo||r.id.substring(0,8))+'</div>'+
+          '<div class="rilievo-card-client">'+(cli?cli.nome:'—')+(cant?' &mdash; '+cant.nome_cantiere:'')+'</div>'+
+        '</div>'+
+        '<div class="list-item-right">&#8250;</div>'+
+      '</div>'+
+      '<div class="rilievo-card-bot">'+
+        '<span class="badge badge-'+(tipo==='serr'?'serr':'porte')+'">'+(tipo==='serr'?'SERR':'PORTE')+'</span>'+
+        '<span style="font-size:11px;color:var(--c-text-sec);">'+(r.data_rilievo||'—')+'</span>'+
+        '<span style="font-size:11px;color:var(--c-text-sec);">'+(r.referente||'')+'</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── PROFILO ──
+function loadProfilo(){
+  updateKPI();
+  updateLastSyncLbl();
+  DBLocal.getAll('clienti', function(cl){
+    DBLocal.getAll('rilievi', function(ri){
+      DBLocal.getAll('cantieri', function(ca){
+        DBLocal.getAll('sync_queue', function(q){
+          document.getElementById('localDataStats').innerHTML =
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+            '<div style="background:var(--c-bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--c-accent);">'+cl.length+'</div><div style="font-size:11px;color:var(--c-text-sec);">Clienti</div></div>'+
+            '<div style="background:var(--c-bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--c-accent);">'+ca.length+'</div><div style="font-size:11px;color:var(--c-text-sec);">Cantieri</div></div>'+
+            '<div style="background:var(--c-bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--c-accent);">'+ri.length+'</div><div style="font-size:11px;color:var(--c-text-sec);">Rilievi</div></div>'+
+            '<div style="background:var(--c-bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:'+(q.length>0?'var(--c-orange)':'var(--c-green)')+';">'+q.length+'</div><div style="font-size:11px;color:var(--c-text-sec);">In coda sync</div></div>'+
+            '</div>';
+        });
+      });
+    });
+  });
+}
+
+function saveSyncMode(){
+  var mode = document.getElementById('syncModeSelect').value;
+  localStorage.setItem(APP_CONFIG.SYNC_MODE_KEY, mode);
+  updateSyncModeDesc();
+}
+
+function updateSyncModeDesc(){
+  var mode = document.getElementById('syncModeSelect').value;
+  document.getElementById('syncModeDesc').textContent = mode==='wifi'
+    ? 'La sincronizzazione avviene solo sotto WiFi.'
+    : 'La sincronizzazione avviene con WiFi e rete mobile.';
+}
+
+function updateLastSyncLbl(){
+  var ts = localStorage.getItem(LAST_SYNC_KEY);
+  var lbl = ts ? new Date(parseInt(ts)).toLocaleString('it-IT') : 'Mai';
+  document.getElementById('lastSyncLbl').textContent = 'Ultima sync: ' + lbl;
+  document.getElementById('syncSheetLast').textContent = lbl;
+}
+
+// ── SYNC ──
+function eseguiSync(){
+  if(!API.isOnline()){ alert('Dispositivo offline. Impossibile sincronizzare.'); return; }
+  closeAllSheets();
+  var bar = document.getElementById('syncBar');
+  bar.className = 'sync-bar';
+  document.getElementById('syncMsg').textContent = 'Sincronizzazione in corso...';
+  document.getElementById('syncSheetProgress').style.display = '';
+  document.getElementById('syncSheetContent').style.display = 'none';
+  document.getElementById('btnSyncNow').disabled = true;
+
+  API.processSyncQueue(function(){
+    API.syncAll(function(label, curr, tot){
+      document.getElementById('syncProgressMsg').textContent = 'Sincronizzazione... (' + curr + '/' + tot + ')';
+      document.getElementById('syncProgressStep').textContent = label;
+      document.getElementById('syncMsg').textContent = label + '...';
+    }, function(err){
+      localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+      bar.className = 'sync-bar success';
+      document.getElementById('syncMsg').textContent = err ? 'Errore sync: ' + err : 'Sincronizzazione completata!';
+      document.getElementById('btnSyncNow').disabled = false;
+      document.getElementById('syncSheetProgress').style.display = 'none';
+      document.getElementById('syncSheetContent').style.display = '';
+      setTimeout(function(){ bar.className = 'sync-bar hidden'; }, 3000);
+      loadLocalData();
+      updateLastSyncLbl();
+    });
+  });
+}
+
+// ── SHEETS ──
+function openNuovoSheet(){ openSheet('sheetNuovo'); }
+function openSyncSheet(){
+  updateOnlineStatus();
+  updateLastSyncLbl();
+  DBLocal.getAll('sync_queue', function(q){
+    document.getElementById('syncSheetQueue').textContent = q.length + ' operazioni';
+    document.getElementById('syncSheetProgress').style.display = 'none';
+    document.getElementById('syncSheetContent').style.display = '';
+    document.getElementById('btnSyncNow').disabled = false;
+  });
+  openSheet('sheetSync');
+}
+function openSheet(id){
+  document.getElementById('sheetOverlay').className = 'sheet-overlay visible';
+  document.getElementById(id).className = 'bottom-sheet open';
+}
+function closeAllSheets(){
+  document.getElementById('sheetOverlay').className = 'sheet-overlay';
+  document.querySelectorAll('.bottom-sheet').forEach(function(s){ s.className = 'bottom-sheet'; });
+}
+
+// ── NAVIGATE ──
+function apriCliente(id){ window.location.href = 'cliente.html?id='+id; }
+function apriRilievo(id){
+  var r = _rilieviAll.find(function(x){ return x.id===id; });
+  if(!r) return;
+  window.location.href = (r.tipo_rilievo==='PORTE'?'rilievo-porte.html':'rilievo-serr.html') + '?id='+id;
+}
+</script>
+</body>
+</html>
