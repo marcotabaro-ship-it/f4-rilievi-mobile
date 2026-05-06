@@ -129,7 +129,7 @@
         </select>
       </div>
       <div style="font-size:12px;color:var(--c-text-sec);margin-top:-8px;margin-bottom:14px;" id="syncModeDesc">La sincronizzazione avviene solo sotto WiFi.</div>
-      <button class="btn btn-primary btn-full" onclick="eseguiSync()">&#8635; Sincronizza ora</button>
+      <button class="btn btn-primary btn-full" id="btnSyncProfilo" onclick="eseguiSyncProfilo()">&#8635; Sincronizza ora</button>
       <div style="font-size:12px;color:var(--c-text-ter);text-align:center;margin-top:10px;" id="lastSyncLbl">Ultima sync: mai</div>
     </div>
   </div>
@@ -503,6 +503,25 @@ function eseguiSync(){
       setTimeout(function(){ bar.className = 'sync-bar hidden'; }, 3000);
       loadLocalData();
       updateLastSyncLbl();
+    });
+  });
+}
+
+function eseguiSyncProfilo(){
+  if(!API.isOnline()){ alert('Dispositivo offline. Impossibile sincronizzare.'); return; }
+  var btn = document.getElementById('btnSyncProfilo');
+  btn.disabled = true; btn.textContent = 'Sincronizzazione...';
+  API.processSyncQueue(function(){
+    API.syncAll(function(label){
+      btn.textContent = label + '...';
+    }, function(err){
+      localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+      btn.disabled = false;
+      btn.innerHTML = '&#8635; Sincronizza ora';
+      updateLastSyncLbl();
+      loadLocalData();
+      if(err){ alert('Errore sync: '+err); }
+      else { btn.style.background='var(--c-green)'; setTimeout(function(){ btn.style.background=''; },2000); }
     });
   });
 }
