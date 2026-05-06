@@ -1,0 +1,15 @@
+{
+  "name": "F4 Rilievi Mobile",
+  "short_name": "F4 Rilievi",
+  "description": "Gestione rilievi serramenti e porte interne — Gruppo F4",
+  "start_url": "/f4-rilievi-mobile/home.html",
+  "scope": "/f4-rilievi-mobile/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
