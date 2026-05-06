@@ -15,7 +15,6 @@
 
 <div class="offline-banner" id="offlineBanner">&#9889; Modalita offline — i dati verranno sincronizzati alla connessione</div>
 
-<!-- TOP BAR -->
 <div class="top-bar">
   <div class="top-bar-logo">[F4]</div>
   <div class="top-bar-title">F4 Rilievi</div>
@@ -26,7 +25,6 @@
   </div>
 </div>
 
-<!-- SIDEBAR TABLET -->
 <div class="sidebar-tablet" id="sidebarTablet">
   <div style="padding:16px 20px;border-bottom:1px solid var(--c-border);">
     <div style="font-size:12px;color:var(--c-text-ter);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Connesso come</div>
@@ -43,7 +41,6 @@
   <div class="sidebar-nav-item" onclick="Auth.logout()"><span class="nav-ico">&#128682;</span> Esci</div>
 </div>
 
-<!-- SYNC BAR -->
 <div class="sync-bar hidden" id="syncBar">
   <div class="sync-spinner" id="syncSpinner"></div>
   <span id="syncMsg">Sincronizzazione in corso&hellip;</span>
@@ -121,7 +118,6 @@
       <div style="font-size:12px;color:var(--c-text-ter);margin-top:2px;" id="profiloRuolo">—</div>
     </div>
   </div>
-
   <div class="card" style="margin-bottom:16px;">
     <div class="card-header"><div class="card-title">&#8635; Sincronizzazione</div></div>
     <div class="card-body">
@@ -137,14 +133,12 @@
       <div style="font-size:12px;color:var(--c-text-ter);text-align:center;margin-top:10px;" id="lastSyncLbl">Ultima sync: mai</div>
     </div>
   </div>
-
   <div class="card" style="margin-bottom:16px;">
     <div class="card-header"><div class="card-title">&#128202; Dati locali</div></div>
     <div class="card-body" id="localDataStats">
       <div style="font-size:13px;color:var(--c-text-sec);">Caricamento...</div>
     </div>
   </div>
-
   <button class="btn btn-danger btn-full" onclick="Auth.logout()" style="margin-bottom:16px;">&#128682; Esci dall applicazione</button>
 </div>
 
@@ -167,7 +161,6 @@
   </button>
 </nav>
 
-<!-- SHEET OVERLAY -->
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeAllSheets()"></div>
 
 <!-- SHEET: NUOVO -->
@@ -233,73 +226,59 @@ var LAST_SYNC_KEY = 'f4m_last_sync';
 var _clientiAll = [], _rilieviAll = [], _cantAll = [];
 var _filtroClienti = 'tutti', _filtroRilievi = 'tutti';
 
-// ── INIT ──
 (function init(){
-  document.getElementById('userAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+  document.getElementById('userAvatar').textContent    = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
   document.getElementById('sidebarUserName').textContent = currentUser.nome || '—';
-  document.getElementById('sidebarUserRep').textContent = currentUser.reparto || '—';
-  document.getElementById('profiloAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
-  document.getElementById('profiloNome').textContent = currentUser.nome || '—';
-  document.getElementById('profiloRep').textContent = currentUser.reparto || '—';
-  document.getElementById('profiloRuolo').textContent = currentUser.ruolo || '—';
+  document.getElementById('sidebarUserRep').textContent  = currentUser.reparto || '—';
+  document.getElementById('profiloAvatar').textContent   = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+  document.getElementById('profiloNome').textContent     = currentUser.nome || '—';
+  document.getElementById('profiloRep').textContent      = currentUser.reparto || '—';
+  document.getElementById('profiloRuolo').textContent    = currentUser.ruolo || '—';
   document.getElementById('welcomeMsg').textContent = 'Ciao, ' + (currentUser.nome||'').split(' ')[0] + '!';
   var d = new Date();
   document.getElementById('welcomeDate').textContent = d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
-
   var syncMode = localStorage.getItem(APP_CONFIG.SYNC_MODE_KEY) || 'wifi';
   document.getElementById('syncModeSelect').value = syncMode;
   updateSyncModeDesc();
   updateLastSyncLbl();
   updateOnlineStatus();
-
   window.addEventListener('online',  function(){ updateOnlineStatus(); checkAutoSync(); });
   window.addEventListener('offline', function(){ updateOnlineStatus(); });
-
   loadLocalData();
   if (API.isOnline()) checkAutoSync();
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js').catch(function(){});
-  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(function(){});
 })();
 
 function updateOnlineStatus(){
   var online = API.isOnline();
   document.getElementById('onlineIndicator').className = 'top-bar-online' + (online?'':' offline');
-  document.getElementById('offlineBanner').className = 'offline-banner' + (online?'':' visible');
+  document.getElementById('offlineBanner').className   = 'offline-banner' + (online?'':' visible');
   document.getElementById('syncSheetOnline').textContent = online ? '🟢 Online' : '🔴 Offline';
-  document.getElementById('syncSheetOnline').style.color = online ? 'var(--c-green)' : 'var(--c-red)';
+  document.getElementById('syncSheetOnline').style.color  = online ? 'var(--c-green)' : 'var(--c-red)';
 }
 
 function checkAutoSync(){
   var mode = localStorage.getItem(APP_CONFIG.SYNC_MODE_KEY) || 'wifi';
   if (mode === 'always') { eseguiSync(); return; }
-  // wifi only — non possiamo rilevare il tipo di connessione con certezza
-  // usiamo navigator.connection se disponibile
   var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  if (!conn || conn.type === 'wifi') eseguiSync();
+  if (!conn || conn.type === 'wifi' || conn.effectiveType) eseguiSync();
 }
 
-// ── PAGES ──
 function showPage(name, sidebarEl){
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
   document.querySelectorAll('.sidebar-nav-item').forEach(function(b){ b.classList.remove('active'); });
-
   var page = document.getElementById('page-'+name);
   if (page) page.classList.add('active');
-
   var navBtn = document.getElementById('nav-'+name);
   if (navBtn) navBtn.classList.add('active');
   if (sidebarEl) sidebarEl.classList.add('active');
-
   if (name === 'home')    loadHome();
   if (name === 'clienti') renderClienti();
   if (name === 'rilievi') renderRilievi();
   if (name === 'profilo') loadProfilo();
 }
 
-// ── LOAD LOCAL DATA ──
 function loadLocalData(){
   DBLocal.getAll('clienti', function(cl){
     _clientiAll = cl;
@@ -315,55 +294,56 @@ function loadLocalData(){
 }
 
 function updateKPI(){
-  var nSerr  = _rilieviAll.filter(function(r){ return r.tipo_rilievo==='SERR'; }).length;
-  var nPorte = _rilieviAll.filter(function(r){ return r.tipo_rilievo==='PORTE'; }).length;
+  var nSerr  = _rilieviAll.filter(function(r){ return API.tipoRilievo(r)==='SERR';  }).length;
+  var nPorte = _rilieviAll.filter(function(r){ return API.tipoRilievo(r)==='PORTE'; }).length;
   document.getElementById('kpi-clienti').textContent = _clientiAll.length;
   document.getElementById('kpi-serr').textContent    = nSerr;
   document.getElementById('kpi-porte').textContent   = nPorte;
   DBLocal.getAll('sync_queue', function(q){
-    document.getElementById('kpi-queue').textContent = q.length || '0';
+    document.getElementById('kpi-queue').textContent    = q.length || '0';
     document.getElementById('syncSheetQueue').textContent = q.length + ' operazioni';
   });
 }
 
-// ── HOME ──
 function loadHome(){
   updateKPI();
   var ultimi = _rilieviAll.slice().sort(function(a,b){
     return (b.created_at||'').localeCompare(a.created_at||'');
   }).slice(0,5);
   var c = document.getElementById('ultimiRilievi');
-  if (!ultimi.length){ c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Nessun rilievo</div><div class="empty-sub">Crea il primo rilievo con il bottone +</div></div>'; return; }
+  if (!ultimi.length){
+    c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Nessun rilievo</div><div class="empty-sub">Crea il primo rilievo con il bottone +</div></div>';
+    return;
+  }
   c.innerHTML = ultimi.map(function(r){
-    var tipo = r.tipo_rilievo==='PORTE'?'porte':'serr';
-    var ico  = tipo==='porte'?'&#128682;':'&#129695;';
+    var tipo = API.tipoRilievo(r);
+    var cls  = tipo==='PORTE'?'porte':'serr';
+    var ico  = tipo==='PORTE'?'&#128682;':'&#129695;';
     var cant = _cantAll.find(function(ca){ return ca.id===r.id_cantiere; });
     var cli  = cant ? _clientiAll.find(function(cl){ return cl.id===cant.id_cliente; }) : null;
     return '<div class="rilievo-card" onclick="apriRilievo(\''+r.id+'\')">'+
       '<div class="rilievo-card-top">'+
-        '<div class="rilievo-card-ico '+tipo+'">'+ico+'</div>'+
+        '<div class="rilievo-card-ico '+cls+'">'+ico+'</div>'+
         '<div class="rilievo-card-info">'+
           '<div class="rilievo-card-code">'+(r.codice_completo||r.id.substring(0,8))+'</div>'+
-          '<div class="rilievo-card-client">'+(cli?cli.nome:'—') + (cant?' &mdash; '+cant.nome_cantiere:'')+'</div>'+
+          '<div class="rilievo-card-client">'+(cli?cli.nome:'—')+(cant?' &mdash; '+cant.nome_cantiere:'')+'</div>'+
         '</div>'+
         '<div class="list-item-right">&#8250;</div>'+
       '</div>'+
       '<div class="rilievo-card-bot">'+
-        '<span class="badge badge-'+(tipo==='serr'?'serr':'porte')+'">'+(tipo==='serr'?'SERR':'PORTE')+'</span>'+
+        '<span class="badge badge-'+(cls==='serr'?'serr':'porte')+'">'+(tipo==='PORTE'?'PORTE':'SERR')+'</span>'+
         '<span style="font-size:11px;color:var(--c-text-sec);">'+(r.data_rilievo||'—')+'</span>'+
       '</div>'+
     '</div>';
   }).join('');
 }
 
-// ── CLIENTI ──
 function setFiltroClienti(f, btn){
   _filtroClienti = f;
   document.querySelectorAll('#page-clienti .filter-chip').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   renderClienti();
 }
-
 function filterClienti(){ renderClienti(); }
 
 function renderClienti(){
@@ -372,21 +352,25 @@ function renderClienti(){
   _cantAll.forEach(function(ca){
     _rilieviAll.forEach(function(r){
       if(r.id_cantiere===ca.id){
-        if(!rilieviPerCliente[ca.id_cliente])rilieviPerCliente[ca.id_cliente]={SERR:0,PORTE:0};
-        if(r.tipo_rilievo==='SERR')rilieviPerCliente[ca.id_cliente].SERR++;
-        else rilieviPerCliente[ca.id_cliente].PORTE++;
+        if(!rilieviPerCliente[ca.id_cliente]) rilieviPerCliente[ca.id_cliente]={SERR:0,PORTE:0};
+        var tipo = API.tipoRilievo(r);
+        if(tipo==='PORTE') rilieviPerCliente[ca.id_cliente].PORTE++;
+        else               rilieviPerCliente[ca.id_cliente].SERR++;
       }
     });
   });
   var rows = _clientiAll.filter(function(cl){
     if(q && (cl.nome||'').toLowerCase().indexOf(q)<0) return false;
-    if(_filtroClienti==='SERR' && !(rilieviPerCliente[cl.id]&&rilieviPerCliente[cl.id].SERR>0)) return false;
-    if(_filtroClienti==='PORTE'&& !(rilieviPerCliente[cl.id]&&rilieviPerCliente[cl.id].PORTE>0)) return false;
+    if(_filtroClienti==='SERR'  && !(rilieviPerCliente[cl.id]&&rilieviPerCliente[cl.id].SERR>0))  return false;
+    if(_filtroClienti==='PORTE' && !(rilieviPerCliente[cl.id]&&rilieviPerCliente[cl.id].PORTE>0)) return false;
     return true;
   }).sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||'','it'); });
 
   var c = document.getElementById('listaClienti');
-  if (!rows.length){ c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128100;</div><div class="empty-title">Nessun cliente</div><div class="empty-sub">Premi + per aggiungere un cliente</div></div>'; return; }
+  if (!rows.length){
+    c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128100;</div><div class="empty-title">Nessun cliente</div><div class="empty-sub">Premi + per aggiungere un cliente</div></div>';
+    return;
+  }
   c.innerHTML = rows.map(function(cl){
     var ini = (cl.nome||'?').split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase();
     var rpc = rilieviPerCliente[cl.id]||{SERR:0,PORTE:0};
@@ -404,41 +388,44 @@ function renderClienti(){
   }).join('');
 }
 
-// ── RILIEVI ──
 function setFiltroRilievi(f, btn){
   _filtroRilievi = f;
   document.querySelectorAll('#page-rilievi .filter-chip').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   renderRilievi();
 }
-
 function filterRilievi(){ renderRilievi(); }
 
 function renderRilievi(){
   var q = (document.getElementById('searchRilievi').value||'').toLowerCase().trim();
   var rows = _rilieviAll.filter(function(r){
-    if(_filtroRilievi!=='tutti' && r.tipo_rilievo!==_filtroRilievi) return false;
+    var tipo = API.tipoRilievo(r);
+    if(_filtroRilievi!=='tutti' && tipo!==_filtroRilievi) return false;
     if(q){
       var code=(r.codice_completo||'').toLowerCase();
       var cant=_cantAll.find(function(ca){return ca.id===r.id_cantiere;});
       var cli=cant?_clientiAll.find(function(cl){return cl.id===cant.id_cliente;}):null;
       var cliNome=(cli?cli.nome:'').toLowerCase();
       var cantNome=(cant?cant.nome_cantiere:'').toLowerCase();
-      if(code.indexOf(q)<0&&cliNome.indexOf(q)<0&&cantNome.indexOf(q)<0)return false;
+      if(code.indexOf(q)<0&&cliNome.indexOf(q)<0&&cantNome.indexOf(q)<0) return false;
     }
     return true;
   }).sort(function(a,b){return(b.created_at||'').localeCompare(a.created_at||'');});
 
   var c = document.getElementById('listaRilievi');
-  if (!rows.length){ c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Nessun rilievo</div><div class="empty-sub">Premi + per creare un rilievo</div></div>'; return; }
+  if (!rows.length){
+    c.innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Nessun rilievo</div><div class="empty-sub">Premi + per creare un rilievo</div></div>';
+    return;
+  }
   c.innerHTML = rows.map(function(r){
-    var tipo = r.tipo_rilievo==='PORTE'?'porte':'serr';
-    var ico  = tipo==='porte'?'&#128682;':'&#129695;';
+    var tipo = API.tipoRilievo(r);
+    var cls  = tipo==='PORTE'?'porte':'serr';
+    var ico  = tipo==='PORTE'?'&#128682;':'&#129695;';
     var cant = _cantAll.find(function(ca){return ca.id===r.id_cantiere;});
     var cli  = cant?_clientiAll.find(function(cl){return cl.id===cant.id_cliente;}):null;
     return '<div class="rilievo-card" onclick="apriRilievo(\''+r.id+'\')">'+
       '<div class="rilievo-card-top">'+
-        '<div class="rilievo-card-ico '+tipo+'">'+ico+'</div>'+
+        '<div class="rilievo-card-ico '+cls+'">'+ico+'</div>'+
         '<div class="rilievo-card-info">'+
           '<div class="rilievo-card-code">'+(r.codice_completo||r.id.substring(0,8))+'</div>'+
           '<div class="rilievo-card-client">'+(cli?cli.nome:'—')+(cant?' &mdash; '+cant.nome_cantiere:'')+'</div>'+
@@ -446,7 +433,7 @@ function renderRilievi(){
         '<div class="list-item-right">&#8250;</div>'+
       '</div>'+
       '<div class="rilievo-card-bot">'+
-        '<span class="badge badge-'+(tipo==='serr'?'serr':'porte')+'">'+(tipo==='serr'?'SERR':'PORTE')+'</span>'+
+        '<span class="badge badge-'+(cls==='serr'?'serr':'porte')+'">'+(tipo==='PORTE'?'PORTE':'SERR')+'</span>'+
         '<span style="font-size:11px;color:var(--c-text-sec);">'+(r.data_rilievo||'—')+'</span>'+
         '<span style="font-size:11px;color:var(--c-text-sec);">'+(r.referente||'')+'</span>'+
       '</div>'+
@@ -454,7 +441,6 @@ function renderRilievi(){
   }).join('');
 }
 
-// ── PROFILO ──
 function loadProfilo(){
   updateKPI();
   updateLastSyncLbl();
@@ -480,44 +466,40 @@ function saveSyncMode(){
   localStorage.setItem(APP_CONFIG.SYNC_MODE_KEY, mode);
   updateSyncModeDesc();
 }
-
 function updateSyncModeDesc(){
   var mode = document.getElementById('syncModeSelect').value;
   document.getElementById('syncModeDesc').textContent = mode==='wifi'
     ? 'La sincronizzazione avviene solo sotto WiFi.'
     : 'La sincronizzazione avviene con WiFi e rete mobile.';
 }
-
 function updateLastSyncLbl(){
   var ts = localStorage.getItem(LAST_SYNC_KEY);
   var lbl = ts ? new Date(parseInt(ts)).toLocaleString('it-IT') : 'Mai';
-  document.getElementById('lastSyncLbl').textContent = 'Ultima sync: ' + lbl;
+  document.getElementById('lastSyncLbl').textContent  = 'Ultima sync: ' + lbl;
   document.getElementById('syncSheetLast').textContent = lbl;
 }
 
-// ── SYNC ──
 function eseguiSync(){
   if(!API.isOnline()){ alert('Dispositivo offline. Impossibile sincronizzare.'); return; }
   closeAllSheets();
   var bar = document.getElementById('syncBar');
   bar.className = 'sync-bar';
   document.getElementById('syncMsg').textContent = 'Sincronizzazione in corso...';
-  document.getElementById('syncSheetProgress').style.display = '';
-  document.getElementById('syncSheetContent').style.display = 'none';
+  document.getElementById('syncSheetProgress').style.display  = '';
+  document.getElementById('syncSheetContent').style.display   = 'none';
   document.getElementById('btnSyncNow').disabled = true;
-
   API.processSyncQueue(function(){
     API.syncAll(function(label, curr, tot){
-      document.getElementById('syncProgressMsg').textContent = 'Sincronizzazione... (' + curr + '/' + tot + ')';
+      document.getElementById('syncProgressMsg').textContent  = 'Sincronizzazione... (' + curr + '/' + tot + ')';
       document.getElementById('syncProgressStep').textContent = label;
       document.getElementById('syncMsg').textContent = label + '...';
     }, function(err){
       localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
       bar.className = 'sync-bar success';
-      document.getElementById('syncMsg').textContent = err ? 'Errore sync: ' + err : 'Sincronizzazione completata!';
+      document.getElementById('syncMsg').textContent = err ? 'Errore sync: '+err : 'Sincronizzazione completata!';
       document.getElementById('btnSyncNow').disabled = false;
       document.getElementById('syncSheetProgress').style.display = 'none';
-      document.getElementById('syncSheetContent').style.display = '';
+      document.getElementById('syncSheetContent').style.display  = '';
       setTimeout(function(){ bar.className = 'sync-bar hidden'; }, 3000);
       loadLocalData();
       updateLastSyncLbl();
@@ -525,15 +507,14 @@ function eseguiSync(){
   });
 }
 
-// ── SHEETS ──
 function openNuovoSheet(){ openSheet('sheetNuovo'); }
 function openSyncSheet(){
   updateOnlineStatus();
   updateLastSyncLbl();
   DBLocal.getAll('sync_queue', function(q){
-    document.getElementById('syncSheetQueue').textContent = q.length + ' operazioni';
+    document.getElementById('syncSheetQueue').textContent    = q.length + ' operazioni';
     document.getElementById('syncSheetProgress').style.display = 'none';
-    document.getElementById('syncSheetContent').style.display = '';
+    document.getElementById('syncSheetContent').style.display  = '';
     document.getElementById('btnSyncNow').disabled = false;
   });
   openSheet('sheetSync');
@@ -547,12 +528,12 @@ function closeAllSheets(){
   document.querySelectorAll('.bottom-sheet').forEach(function(s){ s.className = 'bottom-sheet'; });
 }
 
-// ── NAVIGATE ──
 function apriCliente(id){ window.location.href = 'cliente.html?id='+id; }
 function apriRilievo(id){
   var r = _rilieviAll.find(function(x){ return x.id===id; });
   if(!r) return;
-  window.location.href = (r.tipo_rilievo==='PORTE'?'rilievo-porte.html':'rilievo-serr.html') + '?id='+id;
+  var tipo = API.tipoRilievo(r);
+  window.location.href = (tipo==='PORTE'?'rilievo-porte.html':'rilievo-serr.html') + '?id='+id;
 }
 </script>
 </body>
