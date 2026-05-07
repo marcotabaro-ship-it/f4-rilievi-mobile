@@ -225,7 +225,7 @@ function renderPortaRow(p) {
   var dimCalc=dim?Math.round(dim.Lt)+' &times; '+Math.round(dim.Ht):'';
   var tipoLabel=p.tipo_porta||'?';
   var pianoStr=p.piano!=null?('P'+(p.piano>=0?'+':'')+p.piano):'—';
-  var sisStr=[p.sistema, p.variante_telaio].filter(Boolean).join(' / ');
+  var sisStr=[p.fornitore, p.sistema, p.variante_telaio].filter(Boolean).join(' / ');
 
   var chips='';
   if(p.controtelaio) chips+='<span class="badge" style="background:#fff3e0;color:#E65100;font-size:10px;">'+(p.controtelaio==='T'?'TC':'CTL-L')+'</span>';
@@ -281,6 +281,7 @@ function apriDettaglio(id) {
 
   // PORTA
   html+='<div class="det-sec"><div class="det-sec-title">&#128682; Porta</div>';
+  if(p.fornitore) html+='<div class="det-row"><span class="det-lbl">Fornitore</span><span class="det-val">'+esc(p.fornitore)+'</span></div>';
   if(p.materiale) html+='<div class="det-row"><span class="det-lbl">Materiale</span><span class="det-val">'+esc(p.materiale)+'</span></div>';
   if(p.sistema)   html+='<div class="det-row"><span class="det-lbl">Sistema</span><span class="det-val">'+esc(p.sistema)+'</span></div>';
   if(p.stile_design) html+='<div class="det-row"><span class="det-lbl">Stile design</span><span class="det-val">'+esc(p.stile_design)+'</span></div>';
