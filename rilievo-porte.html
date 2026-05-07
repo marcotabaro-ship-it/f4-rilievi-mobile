@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Rilievo Porte — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <style>
+    .pos-row { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--c-border); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .pos-row:active { background:var(--c-bg); }
+    .pos-num { width:34px; height:34px; border-radius:8px; background:var(--c-orange); color:#fff; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .pos-body { flex:1; min-width:0; }
+    .pos-tipo { font-size:11px; font-weight:700; color:var(--c-orange); }
+    .pos-dim  { font-size:13px; font-weight:600; color:var(--c-text); }
+    .pos-dim-calc { font-size:11px; color:var(--c-orange); font-style:italic; }
+    .pos-sis  { font-size:11px; color:var(--c-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+    .pos-acc  { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
+    .cap-hdr  { background:var(--c-primary); color:#fcd34d; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:7px 14px; display:flex; align-items:center; justify-content:space-between; }
+    .cap-sub  { background:#fff7ed; border-bottom:2px solid #fed7aa; padding:5px 14px; font-size:11px; color:#c2410c; font-weight:600; }
+    .det-sec  { margin-bottom:16px; }
+    .det-sec-title { font-size:10px; font-weight:700; color:var(--c-orange); text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid var(--c-border); padding-bottom:4px; margin-bottom:10px; }
+    .det-row  { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #f5f5ff; font-size:13px; }
+    .det-row:last-child { border-bottom:none; }
+    .det-lbl  { color:var(--c-text-sec); font-size:12px; }
+    .det-val  { font-weight:600; color:var(--c-text); text-align:right; max-width:60%; }
+    .det-val.calc { color:var(--c-orange); font-style:italic; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar" style="background:#7c2d12;">
+  <button class="top-bar-btn" onclick="history.back()">&#8592;</button>
+  <div style="flex:1;min-width:0;">
+    <div class="top-bar-title" id="tbCodice">Rilievo Porte</div>
+    <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
+  </div>
+  <div class="top-bar-actions">
+    <div class="top-bar-online" id="onlineIndicator"></div>
+    <div class="top-bar-avatar" id="userAvatar">TM</div>
+  </div>
+</div>
+
+<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="mainWrap">
+
+  <div id="cardRilievo" style="background:#7c2d12;color:#fff;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+    <div style="flex:1;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;" id="rilBadges"></div>
+      <div style="font-size:12px;opacity:.7;" id="rilInfo">—</div>
+    </div>
+    <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:6px 10px;text-align:center;flex-shrink:0;">
+      <div style="font-size:18px;font-weight:700;" id="rilNPosN">—</div>
+      <div style="font-size:10px;opacity:.7;">pos.</div>
+    </div>
+  </div>
+
+  <div class="filter-row" style="padding:10px 14px 6px;margin-bottom:0;">
+    <button class="filter-chip active" onclick="setFiltro('tutti',this)">Tutti</button>
+    <button class="filter-chip orange" onclick="setFiltro('BATTENTE',this)">Battente</button>
+    <button class="filter-chip orange" onclick="setFiltro('SCORREVOLE',this)">Scorrevole</button>
+    <button class="filter-chip orange" onclick="setFiltro('ROTOTRASLANTE',this)">Rotot.</button>
+  </div>
+
+  <div id="listaPosizioni" style="padding-bottom:24px;"><div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div></div>
+</div>
+
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="bottom-sheet" id="sheetPos">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="shTitle">Posizione —</div>
+    <button class="sheet-close" onclick="closeSheet()">&#10005;</button>
+  </div>
+  <div class="sheet-body" id="shBody"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-local.js"></script>
+<script src="js/api-mobile.js"></script>
+<script>
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+document.getElementById('userAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+document.getElementById('onlineIndicator').className = 'top-bar-online' + (API.isOnline()?'':' offline');
+
+var idRilievo = new URLSearchParams(window.location.search).get('id');
+if (!idRilievo) { history.back(); }
+
+var _rilievo=null, _posizioni=[], _capitoli=[], _dbPorte=[], _filtro='tutti';
+
+// ── CALCOLO DIM PORTE ──
+function calcDimPorta(p, dbPorte) {
+  var H=parseFloat(p.H_mm||p.h_mm)||0, L=parseFloat(p.L_mm||p.l_mm)||0;
+  var tf=(p.tipo_foro||'').toUpperCase();
+  if (!H||!L) return null;
+  // Foro N (netta passaggio) = dim gia' definitive, nessuna aggiunta
+  if (tf==='N') return {Lt:Math.round(L), Ht:Math.round(H)};
+  // Foro P (posa in luce) = cerca record in db_porte e aggiunge offset
+  if (tf==='P') {
+    var rec=null;
+    for(var i=0;i<dbPorte.length;i++){
+      var d=dbPorte[i];
+      if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design){rec=d;break;}
+    }
+    var offL=rec?(parseFloat(rec.offset_larghezza_mm)||0):0;
+    var offH=rec?(parseFloat(rec.offset_altezza_mm)||0):0;
+    return {Lt:Math.round(L+offL), Ht:Math.round(H+offH)};
+  }
+  return {Lt:Math.round(L), Ht:Math.round(H)};
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function v(x){ return (x===null||x===undefined)?'':String(x); }
+
+function load() {
+  DBLocal.getById('rilievi', idRilievo, function(ril) {
+    if (!ril) { document.getElementById('listaPosizioni').innerHTML='<div class="empty-state"><div class="empty-ico">&#128682;</div><div class="empty-title">Rilievo non trovato</div><div class="empty-sub">Esegui una sincronizzazione</div></div>'; return; }
+    _rilievo = ril;
+    document.title = (ril.codice_completo||'Rilievo Porte') + ' — F4 Rilievi';
+    document.getElementById('tbCodice').textContent = ril.codice_completo || ril.id.substring(0,8);
+
+    DBLocal.getAll('cantieri', function(ca){
+      var cant=ca.find(function(c){return c.id===ril.id_cantiere;});
+      DBLocal.getAll('clienti', function(cl){
+        var cli=cant?cl.find(function(c){return c.id===cant.id_cliente;}):null;
+        var sub='';
+        if (cli) sub+=cli.nome;
+        if (cant) sub+=(sub?' — ':'')+cant.nome_cantiere;
+        document.getElementById('tbSub').textContent=sub||'—';
+
+        var badges='';
+        if(ril.allarme===true) badges+='<span style="background:rgba(220,38,38,.3);color:#fca5a5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">&#9888; ALLARME</span> ';
+        if(ril.intervento) badges+='<span style="background:rgba(255,255,255,.15);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">'+esc(ril.intervento)+'</span>';
+        document.getElementById('rilBadges').innerHTML=badges;
+
+        var info=[];
+        if(ril.referente) info.push('Ref: '+ril.referente);
+        if(ril.data_rilievo) info.push(ril.data_rilievo);
+        document.getElementById('rilInfo').textContent=info.join(' · ');
+
+        DBLocal.getAll('posizioni_porte', function(pos){
+          _posizioni=pos.filter(function(p){return p.id_rilievo===idRilievo&&p.stato==='attivo';});
+          document.getElementById('rilNPosN').textContent=_posizioni.length;
+          DBLocal.getAll('capitoli_rilievo', function(cap){
+            _capitoli=cap.filter(function(c){return c.id_rilievo===idRilievo&&c.stato==='attivo';});
+            DBLocal.getAll('db_porte', function(db){
+              _dbPorte=db;
+              renderPosizioni();
+            });
+          });
+        });
+      });
+    });
+  });
+}
+
+function setFiltro(f, btn) {
+  _filtro=f;
+  document.querySelectorAll('.filter-chip').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderPosizioni();
+}
+
+function renderPosizioni() {
+  var container=document.getElementById('listaPosizioni');
+  var pos=_posizioni.filter(function(p){
+    if(_filtro==='tutti') return true;
+    return (p.tipo_porta||'').toUpperCase()===_filtro.toUpperCase();
+  });
+
+  if (!pos.length) {
+    container.innerHTML='<div class="empty-state"><div class="empty-ico">&#128682;</div><div class="empty-title">Nessuna posizione</div></div>';
+    return;
+  }
+
+  var righe=[];
+  pos.forEach(function(p){ righe.push({tipo:'pos',ordine:p.ordine!=null?p.ordine:p.numero_pos,data:p}); });
+  _capitoli.forEach(function(cap){ righe.push({tipo:'cap_ini',ordine:cap.ordine_inizio,data:cap}); righe.push({tipo:'cap_fin',ordine:cap.ordine_fine,data:cap}); });
+  righe.sort(function(a,b){return a.ordine-b.ordine;});
+
+  var html='';
+  var capCorr=null, posCapCorr=[], posiFuori=[];
+
+  righe.forEach(function(r){
+    if(r.tipo==='cap_ini'){
+      if(posiFuori.length){
+        html+='<div class="card" style="border-radius:var(--radius);margin:0;">';
+        posiFuori.forEach(function(p){html+=renderPortaRow(p);});
+        html+='</div>'; posiFuori=[];
+      }
+      capCorr=r.data; posCapCorr=[];
+      html+='<div class="cap-hdr"><span>'+esc(r.data.titolo)+'</span></div>';
+      html+='<div class="card" style="margin:0;border-radius:0;">';
+      return;
+    }
+    if(r.tipo==='cap_fin'){
+      if(capCorr){
+        html+='<div class="cap-sub">Subtotale '+esc(capCorr.titolo)+' &mdash; <b>'+posCapCorr.length+'</b> pos.</div>';
+        html+='</div>';
+      }
+      capCorr=null; posCapCorr=[]; return;
+    }
+    var p=r.data;
+    if(capCorr){posCapCorr.push(p); html+=renderPortaRow(p);}
+    else posiFuori.push(p);
+  });
+
+  if(posiFuori.length){
+    html+='<div class="card" style="border-radius:var(--radius);margin:0;">';
+    posiFuori.forEach(function(p){html+=renderPortaRow(p);});
+    html+='</div>';
+  }
+
+  container.innerHTML=html;
+}
+
+function renderPortaRow(p) {
+  var dim=calcDimPorta(p, _dbPorte);
+  var L=v(p.L_mm||p.l_mm), H=v(p.H_mm||p.h_mm);
+  var dimIns=L&&H?L+' &times; '+H:'—';
+  var dimCalc=dim?Math.round(dim.Lt)+' &times; '+Math.round(dim.Ht):'';
+  var tipoLabel=p.tipo_porta||'?';
+  var pianoStr=p.piano!=null?('P'+(p.piano>=0?'+':'')+p.piano):'—';
+  var sisStr=[p.sistema, p.variante_telaio].filter(Boolean).join(' / ');
+
+  var chips='';
+  if(p.controtelaio) chips+='<span class="badge" style="background:#fff3e0;color:#E65100;font-size:10px;">'+(p.controtelaio==='T'?'TC':'CTL-L')+'</span>';
+  if(p.rivestimento_stipiti) chips+='<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">Riv</span>';
+  if(p.rimozione==='SI'||p.rimozione===true) chips+='<span class="badge badge-disattivo" style="font-size:10px;">Rim</span>';
+  if(p.taglio_marmo===true) chips+='<span class="badge" style="background:#fef9c3;color:#713f12;font-size:10px;">Mrm</span>';
+
+  var numDisp=p.numero_pos_alfa||p.numero_pos;
+
+  return '<div class="pos-row" onclick="apriDettaglio(\''+p.id+'\')">'+
+    '<div class="pos-num">'+esc(String(numDisp))+'</div>'+
+    '<div class="pos-body">'+
+      '<div style="display:flex;align-items:baseline;gap:8px;">'+
+        '<span class="pos-tipo">'+esc(tipoLabel)+'</span>'+
+        '<span style="font-size:10px;color:var(--c-text-ter);">'+pianoStr+'</span>'+
+        (p.ambiente?'<span style="font-size:10px;color:var(--c-text-sec);">'+esc(p.ambiente)+'</span>':'')+
+        (p.n_foglie?'<span style="font-size:10px;color:var(--c-text-ter);">'+p.n_foglie+' fog.</span>':'')+
+      '</div>'+
+      '<div style="display:flex;align-items:baseline;gap:8px;">'+
+        '<span class="pos-dim">'+dimIns+'</span>'+
+        (dimCalc&&dimCalc!==dimIns?'<span class="pos-dim-calc">('+dimCalc+')</span>':'')+
+      '</div>'+
+      (sisStr?'<div class="pos-sis">'+esc(sisStr)+'</div>':'')+
+      (chips?'<div class="pos-acc">'+chips+'</div>':'')+
+    '</div>'+
+    '<div style="color:var(--c-text-ter);font-size:18px;">&#8250;</div>'+
+  '</div>';
+}
+
+function apriDettaglio(id) {
+  var p=_posizioni.find(function(x){return x.id===id;});
+  if(!p) return;
+  var dim=calcDimPorta(p,_dbPorte);
+  var numDisp=p.numero_pos_alfa||p.numero_pos;
+  var pianoStr=p.piano!=null?('P'+(p.piano>=0?'+':'')+p.piano):'—';
+  document.getElementById('shTitle').textContent='Posizione '+numDisp+' \u2014 '+(p.tipo_porta||'?');
+
+  var html='';
+
+  // GEOMETRIA
+  html+='<div class="det-sec"><div class="det-sec-title">&#128207; Geometria</div>';
+  html+='<div class="det-row"><span class="det-lbl">Piano</span><span class="det-val">'+pianoStr+'</span></div>';
+  if(p.ambiente) html+='<div class="det-row"><span class="det-lbl">Ambiente</span><span class="det-val">'+esc(p.ambiente)+'</span></div>';
+  if(p.n_foglie) html+='<div class="det-row"><span class="det-lbl">N foglie</span><span class="det-val">'+esc(v(p.n_foglie))+'</span></div>';
+  html+='<div class="det-row"><span class="det-lbl">Tipo foro</span><span class="det-val">'+esc(p.tipo_foro==='N'?'N — Netta passaggio':p.tipo_foro==='P'?'P — Posa in luce':p.tipo_foro||'—')+'</span></div>';
+  html+='<div class="det-row"><span class="det-lbl">L inserita</span><span class="det-val">'+esc(v(p.L_mm||p.l_mm)||'—')+' mm</span></div>';
+  html+='<div class="det-row"><span class="det-lbl">H inserita</span><span class="det-val">'+esc(v(p.H_mm||p.h_mm)||'—')+' mm</span></div>';
+  if(dim){
+    html+='<div class="det-row"><span class="det-lbl">L ordine</span><span class="det-val calc">'+dim.Lt+' mm</span></div>';
+    html+='<div class="det-row"><span class="det-lbl">H ordine</span><span class="det-val calc">'+dim.Ht+' mm</span></div>';
+  }
+  html+='</div>';
+
+  // PORTA
+  html+='<div class="det-sec"><div class="det-sec-title">&#128682; Porta</div>';
+  if(p.materiale) html+='<div class="det-row"><span class="det-lbl">Materiale</span><span class="det-val">'+esc(p.materiale)+'</span></div>';
+  if(p.sistema)   html+='<div class="det-row"><span class="det-lbl">Sistema</span><span class="det-val">'+esc(p.sistema)+'</span></div>';
+  if(p.stile_design) html+='<div class="det-row"><span class="det-lbl">Stile design</span><span class="det-val">'+esc(p.stile_design)+'</span></div>';
+  if(p.variante_telaio) html+='<div class="det-row"><span class="det-lbl">Variante telaio</span><span class="det-val">'+esc(p.variante_telaio)+'</span></div>';
+  if(p.senso_apertura) html+='<div class="det-row"><span class="det-lbl">Senso apertura</span><span class="det-val">'+esc(p.senso_apertura)+'</span></div>';
+  if(p.colore_int) html+='<div class="det-row"><span class="det-lbl">Colore int.</span><span class="det-val">'+esc(p.colore_int)+'</span></div>';
+  if(p.colore_est) html+='<div class="det-row"><span class="det-lbl">Colore est.</span><span class="det-val">'+esc(p.colore_est)+'</span></div>';
+  html+='</div>';
+
+  // CONTROTELAIO/RIVESTIMENTO
+  if(p.controtelaio||p.rivestimento_stipiti) {
+    html+='<div class="det-sec"><div class="det-sec-title">&#9881; Installazione</div>';
+    if(p.controtelaio) html+='<div class="det-row"><span class="det-lbl">Controtelaio</span><span class="det-val">'+(p.controtelaio==='T'?'Termocassa':'CTL Legno')+'</span></div>';
+    if(p.rivestimento_stipiti) html+='<div class="det-row"><span class="det-lbl">Rivestimento stipiti</span><span class="det-val">&#9989;</span></div>';
+    html+='</div>';
+  }
+
+  // FLAG
+  var hasFlag=p.rimozione==='SI'||p.rimozione===true||p.taglio_marmo||p.angolari_pvc;
+  if(hasFlag){
+    html+='<div class="det-sec"><div class="det-sec-title">&#9873; Rimozione e flag</div>';
+    if(p.rimozione==='SI'||p.rimozione===true) html+='<div class="det-row"><span class="det-lbl">Rimozione porta</span><span class="det-val">&#9989;</span></div>';
+    if(p.taglio_marmo===true) html+='<div class="det-row"><span class="det-lbl">Taglio piani marmo</span><span class="det-val">&#9989;</span></div>';
+    if(p.angolari_pvc===true) html+='<div class="det-row"><span class="det-lbl">Angolari PVC</span><span class="det-val">&#9989;</span></div>';
+    html+='</div>';
+  }
+
+  // NOTE
+  if(p.note){
+    html+='<div class="det-sec"><div class="det-sec-title">&#128221; Note</div>';
+    html+='<div style="font-size:13px;color:var(--c-text);line-height:1.5;background:var(--c-bg);border-radius:8px;padding:10px 12px;">'+esc(p.note)+'</div>';
+    html+='</div>';
+  }
+
+  document.getElementById('shBody').innerHTML=html;
+  document.getElementById('sheetOverlay').className='sheet-overlay visible';
+  document.getElementById('sheetPos').className='bottom-sheet open';
+}
+
+function closeSheet(){
+  document.getElementById('sheetOverlay').className='sheet-overlay';
+  document.getElementById('sheetPos').className='bottom-sheet';
+}
+
+load();
+</script>
+</body>
+</html>
