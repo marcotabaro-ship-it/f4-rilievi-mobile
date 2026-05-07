@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Rilievo — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <style>
+    .pos-row { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--c-border); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .pos-row:active { background:var(--c-bg); }
+    .pos-num { width:34px; height:34px; border-radius:8px; background:var(--c-primary); color:#fff; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; flex-direction:column; gap:1px; }
+    .pos-num .acc-lbl { font-size:7px; background:#fef3c7; color:#92400e; border-radius:3px; padding:0 2px; font-weight:700; }
+    .pos-body { flex:1; min-width:0; }
+    .pos-tipo { font-size:11px; font-weight:700; color:var(--c-accent); }
+    .pos-dim  { font-size:13px; font-weight:600; color:var(--c-text); }
+    .pos-dim-calc { font-size:11px; color:var(--c-accent); font-style:italic; }
+    .pos-sis  { font-size:11px; color:var(--c-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+    .pos-acc  { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
+    .cap-hdr  { background:var(--c-primary); color:#a5b4fc; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:7px 14px; display:flex; align-items:center; justify-content:space-between; }
+    .cap-sub  { background:#eef2ff; border-bottom:2px solid #c7d2fe; padding:5px 14px; font-size:11px; color:#3730a3; font-weight:600; }
+    .det-sec  { margin-bottom:16px; }
+    .det-sec-title { font-size:10px; font-weight:700; color:var(--c-accent); text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid var(--c-border); padding-bottom:4px; margin-bottom:10px; }
+    .det-row  { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #f5f5ff; font-size:13px; }
+    .det-row:last-child { border-bottom:none; }
+    .det-lbl  { color:var(--c-text-sec); font-size:12px; }
+    .det-val  { font-weight:600; color:var(--c-text); text-align:right; max-width:60%; }
+    .det-val.calc { color:var(--c-accent); font-style:italic; }
+    .chk-ico  { font-size:14px; }
+    .info-chip { display:inline-flex; align-items:center; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; margin:2px; }
+    .chip-serr  { background:#ede9fe; color:#5b21b6; }
+    .chip-acc   { background:#fef3c7; color:#92400e; }
+    .chip-geo   { background:#e0f2fe; color:#0369a1; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="top-bar-btn" onclick="history.back()">&#8592;</button>
+  <div style="flex:1;min-width:0;">
+    <div class="top-bar-title" id="tbCodice">Rilievo</div>
+    <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
+  </div>
+  <div class="top-bar-actions">
+    <div class="top-bar-online" id="onlineIndicator" title=""></div>
+    <div class="top-bar-avatar" id="userAvatar">TM</div>
+  </div>
+</div>
+
+<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="mainWrap">
+
+  <!-- INFO RILIEVO -->
+  <div id="cardRilievo" style="background:var(--c-primary);color:#fff;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+    <div style="flex:1;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;" id="rilBadges"></div>
+      <div style="font-size:12px;opacity:.7;" id="rilInfo">—</div>
+    </div>
+    <div id="rilNPos" style="background:rgba(255,255,255,.15);border-radius:8px;padding:6px 10px;text-align:center;flex-shrink:0;">
+      <div style="font-size:18px;font-weight:700;" id="rilNPosN">—</div>
+      <div style="font-size:10px;opacity:.7;">pos.</div>
+    </div>
+  </div>
+
+  <!-- FILTER TIPO -->
+  <div class="filter-row" style="padding:10px 14px 6px;margin-bottom:0;">
+    <button class="filter-chip active" onclick="setFiltro('tutti',this)">Tutti</button>
+    <button class="filter-chip" onclick="setFiltro('I',this)">I</button>
+    <button class="filter-chip" onclick="setFiltro('F',this)">F</button>
+    <button class="filter-chip" onclick="setFiltro('PF',this)">PF</button>
+    <button class="filter-chip" onclick="setFiltro('FF',this)">FF</button>
+    <button class="filter-chip" onclick="setFiltro('VF',this)">VF</button>
+    <button class="filter-chip" onclick="setFiltro('S',this)">S</button>
+    <button class="filter-chip" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;" onclick="setFiltro('ACC',this)">ACC</button>
+  </div>
+
+  <div id="listaPosizioni" style="padding-bottom:24px;"><div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div></div>
+</div>
+
+<!-- SHEET OVERLAY -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+
+<!-- BOTTOM SHEET: DETTAGLIO POSIZIONE -->
+<div class="bottom-sheet" id="sheetPos">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="shTitle">Posizione —</div>
+    <button class="sheet-close" onclick="closeSheet()">&#10005;</button>
+  </div>
+  <div class="sheet-body" id="shBody"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-local.js"></script>
+<script src="js/api-mobile.js"></script>
+<script>
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+document.getElementById('userAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+document.getElementById('onlineIndicator').className = 'top-bar-online' + (API.isOnline()?'':' offline');
+
+var idRilievo = new URLSearchParams(window.location.search).get('id');
+if (!idRilievo) { history.back(); }
+
+var _rilievo=null, _posizioni=[], _capitoli=[], _dbSerr=[], _cantiere=null, _clienti=[];
+var _filtro='tutti';
+
+// ── CALCOLO TUBOLARITA ──
+function calcTub(p, dbSerr) {
+  var H=parseFloat(p.H_mm||p.h_mm)||0, L=parseFloat(p.L_mm||p.l_mm)||0;
+  var tf=(p.tipo_foro||'').toUpperCase(), ts=(p.tipo_serramento||'').toUpperCase();
+  if (p.solo_accessori) return {Lt:Math.round(L),Ht:Math.round(H)};
+  if (!H||!L||!tf) return null;
+  var nAlH=(ts==='F'||ts==='FF')?2:1;
+  var inclBasso=(ts==='F'||ts==='FF');
+  var Lt=0, Ht=0;
+  if (p.telaio_misto===true||p.telaio_misto==='true') {
+    function getR(sigla){ if(!sigla)return null; for(var i=0;i<dbSerr.length;i++){var d=dbSerr[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design&&d.variante_telaio===sigla)return d;} return null; }
+    var rA=getR(p.variante_alto),rB=getR(p.variante_basso),rS=getR(p.variante_sx),rD=getR(p.variante_dx);
+    var nA=rA?(parseFloat(rA.telaio_nascosto_mm)||0):0;
+    var nS=rS?(parseFloat(rS.telaio_nascosto_mm)||0):0, nD=rD?(parseFloat(rD.telaio_nascosto_mm)||0):0;
+    var aA=rA?(parseFloat(rA.aletta_mm)||0):0, aB=rB?(parseFloat(rB.aletta_mm)||0):0;
+    var aS=rS?(parseFloat(rS.aletta_mm)||0):0, aD=rD?(parseFloat(rD.aletta_mm)||0):0;
+    var tvA=rA?(parseFloat(rA.telaio_vista_mm)||0):0;
+    var tvS=rS?(parseFloat(rS.telaio_vista_mm)||0):0, tvD=rD?(parseFloat(rD.telaio_vista_mm)||0):0;
+    if(tf==='A'){Lt=L+nS+nD+aS+aD; Ht=H+nA+aA+(inclBasso?aB:0);}
+    else if(tf==='D'){Lt=L+aS+aD; Ht=H+aA+(inclBasso?aB:0);}
+    else if(tf==='P'){Lt=L-tvS-tvD+aS+aD; Ht=H-tvA+aA+(inclBasso?aB:0);}
+    return {Lt:Math.round(Lt),Ht:Math.round(Ht)};
+  }
+  var rec=null;
+  for(var i=0;i<dbSerr.length;i++){var d=dbSerr[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design&&d.variante_telaio===p.variante_telaio){rec=d;break;}}
+  if(!rec){for(var i=0;i<dbSerr.length;i++){var d=dbSerr[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design){rec=d;break;}}}
+  var na=rec?(parseFloat(rec.telaio_nascosto_mm)||0):0;
+  var al=rec?(parseFloat(rec.aletta_mm)||0):0;
+  var tv=rec?(parseFloat(rec.telaio_vista_mm)||0):0;
+  if(tf==='A'){Lt=L+2*na+2*al; Ht=H+na+nAlH*al;}
+  else if(tf==='D'){Lt=L+2*al; Ht=H+nAlH*al;}
+  else if(tf==='P'){Lt=L-2*tv+2*al; Ht=H-tv+nAlH*al;}
+  return {Lt:Math.round(Lt),Ht:Math.round(Ht)};
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function v(x){ return (x===null||x===undefined)?'':String(x); }
+
+function load() {
+  DBLocal.getById('rilievi', idRilievo, function(ril) {
+    if (!ril) { document.getElementById('listaPosizioni').innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Rilievo non trovato</div><div class="empty-sub">Esegui una sincronizzazione</div></div>'; return; }
+    _rilievo = ril;
+    document.title = (ril.codice_completo||'Rilievo') + ' — F4 Rilievi';
+    document.getElementById('tbCodice').textContent = ril.codice_completo || ril.id.substring(0,8);
+
+    DBLocal.getAll('cantieri', function(ca){
+      var cant = ca.find(function(c){ return c.id===ril.id_cantiere; });
+      _cantiere = cant;
+      DBLocal.getAll('clienti', function(cl){
+        _clienti = cl;
+        var cli = cant ? cl.find(function(c){ return c.id===cant.id_cliente; }) : null;
+        var sub = '';
+        if (cli) sub += cli.nome;
+        if (cant) sub += (sub?' — ':'')+cant.nome_cantiere;
+        document.getElementById('tbSub').textContent = sub || '—';
+
+        // badges rilievo
+        var badges = '';
+        if (ril.gru==='SI') badges += '<span style="background:rgba(79,70,229,.3);color:#a5b4fc;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">&#127959; GRU</span> ';
+        if (ril.allarme===true) badges += '<span style="background:rgba(220,38,38,.3);color:#fca5a5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">&#9888; ALLARME</span> ';
+        if (ril.intervento) badges += '<span style="background:rgba(255,255,255,.15);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">'+esc(ril.intervento)+'</span>';
+        document.getElementById('rilBadges').innerHTML = badges;
+
+        var info = [];
+        if (ril.referente) info.push('Ref: '+ril.referente);
+        if (ril.data_rilievo) info.push(ril.data_rilievo);
+        if (ril.data_posa) info.push('Posa: '+ril.data_posa);
+        document.getElementById('rilInfo').textContent = info.join(' · ');
+
+        // Carica posizioni, capitoli, db_serramento
+        DBLocal.getAll('posizioni_serr', function(pos){
+          _posizioni = pos.filter(function(p){ return p.id_rilievo===idRilievo && p.stato==='attivo'; });
+          document.getElementById('rilNPosN').textContent = _posizioni.length;
+          DBLocal.getAll('capitoli_rilievo', function(cap){
+            _capitoli = cap.filter(function(c){ return c.id_rilievo===idRilievo && c.stato==='attivo'; });
+            DBLocal.getAll('db_serramento', function(db){
+              _dbSerr = db;
+              renderPosizioni();
+            });
+          });
+        });
+      });
+    });
+  });
+}
+
+function setFiltro(f, btn) {
+  _filtro = f;
+  document.querySelectorAll('.filter-chip').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderPosizioni();
+}
+
+function renderPosizioni() {
+  var container = document.getElementById('listaPosizioni');
+
+  // Filtra
+  var pos = _posizioni.filter(function(p){
+    if (_filtro==='tutti') return true;
+    if (_filtro==='ACC') return p.solo_accessori===true;
+    return (p.tipo_serramento||'').toUpperCase()===_filtro && !p.solo_accessori;
+  });
+
+  if (!pos.length) {
+    container.innerHTML='<div class="empty-state"><div class="empty-ico">&#128295;</div><div class="empty-title">Nessuna posizione</div></div>';
+    return;
+  }
+
+  // Costruiamo righe ordinate con capitoli
+  var righe = [];
+  pos.forEach(function(p){ righe.push({tipo:'pos',ordine:p.ordine!=null?p.ordine:p.numero_pos,data:p}); });
+  _capitoli.forEach(function(cap){
+    righe.push({tipo:'cap_ini',ordine:cap.ordine_inizio,data:cap});
+    righe.push({tipo:'cap_fin',ordine:cap.ordine_fine,data:cap});
+  });
+  righe.sort(function(a,b){ return a.ordine-b.ordine; });
+
+  var html = '';
+  var capCorr=null, posCapCorr=[], posiFuori=[];
+
+  function flushCap() {
+    if (!capCorr||!posCapCorr.length) return;
+    html += '<div class="cap-sub">Subtotale '+esc(capCorr.titolo)+' &mdash; <b>'+posCapCorr.length+'</b> pos.</div>';
+  }
+
+  righe.forEach(function(r){
+    if (r.tipo==='cap_ini') {
+      if (posiFuori.length) {
+        posiFuori.forEach(function(p){ html += renderPosizioneRow(p); });
+        posiFuori=[];
+      }
+      capCorr=r.data; posCapCorr=[];
+      html += '<div class="cap-hdr"><span>'+esc(r.data.titolo)+'</span></div>';
+      html += '<div class="card" style="margin:0 0 0 0;border-radius:0;">';
+      return;
+    }
+    if (r.tipo==='cap_fin') {
+      if (capCorr) {
+        flushCap();
+        html += '</div>';
+      }
+      capCorr=null; posCapCorr=[];
+      return;
+    }
+    // posizione
+    var p=r.data;
+    if (capCorr) { posCapCorr.push(p); html += renderPosizioneRow(p); }
+    else posiFuori.push(p);
+  });
+  if (posiFuori.length) {
+    html += '<div class="card" style="border-radius:var(--radius);margin:0 0 0 0;">';
+    posiFuori.forEach(function(p){ html += renderPosizioneRow(p); });
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function renderPosizioneRow(p) {
+  var tub = calcTub(p, _dbSerr);
+  var L=v(p.L_mm||p.l_mm), H=v(p.H_mm||p.h_mm);
+  var dimIns = L&&H ? L+' &times; '+H : '—';
+  var dimCalc = tub ? Math.round(tub.Lt)+' &times; '+Math.round(tub.Ht) : '';
+
+  var tipoLabel = p.solo_accessori ? 'ACC' : (p.tipo_serramento||'?');
+  var pianoStr = p.piano!=null ? ('P'+(p.piano>=0?'+':'')+p.piano) : '—';
+
+  var varStr = '';
+  if (p.telaio_misto) {
+    varStr = 'Su('+v(p.variante_alto)+') Giu('+v(p.variante_basso)+') Sx('+v(p.variante_sx)+') Dx('+v(p.variante_dx)+')';
+  } else if (p.variante_telaio) {
+    varStr = p.variante_telaio;
+  }
+  var sisStr = p.solo_accessori ? '—' : ([p.sistema, varStr].filter(Boolean).join(' / '));
+
+  var chips = '';
+  if (p.controtelaio) chips += '<span class="badge badge-serr" style="font-size:10px;">'+(p.controtelaio==='T'?'TC':'CTL-L')+'</span>';
+  if (p.schermatura)  chips += '<span class="badge badge-attivo" style="font-size:10px;">'+esc(p.schermatura)+'</span>';
+  if (p.cassonetto)   chips += '<span class="badge" style="background:#fff3e0;color:#E65100;font-size:10px;">Cass</span>';
+  if (p.zanzariera)   chips += '<span class="badge" style="background:#d1fae5;color:#065f46;font-size:10px;">Zanz-'+esc(p.zanzariera)+'</span>';
+  if (p.coprifilo_int_mat) chips += '<span class="badge" style="background:#f3f4f6;color:#374151;font-size:10px;">CopI-'+esc(p.coprifilo_int_dim||p.coprifilo_int_mat)+'</span>';
+  if (p.coprifilo_est_mat) chips += '<span class="badge" style="background:#f3f4f6;color:#374151;font-size:10px;">CopE-'+esc(p.coprifilo_est_dim||p.coprifilo_est_mat)+'</span>';
+  if (p.rimozione==='SI'||p.rimozione===true) chips += '<span class="badge badge-disattivo" style="font-size:10px;">RimS</span>';
+  if (p.taglio_marmo===true) chips += '<span class="badge" style="background:#fef9c3;color:#713f12;font-size:10px;">Mrm</span>';
+  if (p.dinoxill)     chips += '<span class="badge" style="background:#ede9fe;color:#5b21b6;font-size:10px;">'+esc(p.dinoxill)+'</span>';
+
+  var numDisp = p.numero_pos_alfa || p.numero_pos;
+
+  return '<div class="pos-row" onclick="apriDettaglio(\''+p.id+'\')" data-id="'+p.id+'">'+
+    '<div class="pos-num">'+esc(String(numDisp))+(p.solo_accessori?'<span class="acc-lbl">ACC</span>':'')+'</div>'+
+    '<div class="pos-body">'+
+      '<div style="display:flex;align-items:baseline;gap:8px;">'+
+        '<span class="pos-tipo">'+esc(tipoLabel)+'</span>'+
+        '<span style="font-size:10px;color:var(--c-text-ter);">'+pianoStr+'</span>'+
+        (p.ambiente?'<span style="font-size:10px;color:var(--c-text-sec);">'+esc(p.ambiente)+'</span>':'')+'</div>'+
+      '<div style="display:flex;align-items:baseline;gap:8px;">'+
+        '<span class="pos-dim">'+dimIns+'</span>'+
+        (dimCalc?'<span class="pos-dim-calc">('+dimCalc+')</span>':'')+'</div>'+
+      '<div class="pos-sis">'+esc(sisStr)+'</div>'+
+      (chips?'<div class="pos-acc">'+chips+'</div>':'')+
+    '</div>'+
+    '<div style="color:var(--c-text-ter);font-size:18px;">&#8250;</div>'+
+  '</div>';
+}
+
+function apriDettaglio(id) {
+  var p = _posizioni.find(function(x){ return x.id===id; });
+  if (!p) return;
+  var tub = calcTub(p, _dbSerr);
+  var numDisp = p.numero_pos_alfa || p.numero_pos;
+  var tipoLabel = p.solo_accessori ? 'Solo accessori' : (p.tipo_serramento||'?');
+  var pianoStr = p.piano!=null ? ('P'+(p.piano>=0?'+':'')+p.piano) : '—';
+  document.getElementById('shTitle').textContent = 'Posizione ' + numDisp + ' \u2014 ' + tipoLabel;
+
+  var html = '';
+
+  // GEOMETRIA
+  html += '<div class="det-sec"><div class="det-sec-title">&#128207; Geometria</div>';
+  html += '<div class="det-row"><span class="det-lbl">Piano</span><span class="det-val">'+pianoStr+'</span></div>';
+  if (p.ambiente) html += '<div class="det-row"><span class="det-lbl">Ambiente</span><span class="det-val">'+esc(p.ambiente)+'</span></div>';
+  if (!p.solo_accessori) html += '<div class="det-row"><span class="det-lbl">N campi</span><span class="det-val">'+(p.n_campi||'—')+'</span></div>';
+  html += '<div class="det-row"><span class="det-lbl">Tipo foro</span><span class="det-val">'+esc(p.tipo_foro||'—')+'</span></div>';
+  html += '<div class="det-row"><span class="det-lbl">L inserita</span><span class="det-val">'+esc(v(p.L_mm||p.l_mm)||'—')+' mm</span></div>';
+  html += '<div class="det-row"><span class="det-lbl">H inserita</span><span class="det-val">'+esc(v(p.H_mm||p.h_mm)||'—')+' mm</span></div>';
+  if (tub) {
+    html += '<div class="det-row"><span class="det-lbl">L ordine</span><span class="det-val calc">'+tub.Lt+' mm</span></div>';
+    html += '<div class="det-row"><span class="det-lbl">H ordine</span><span class="det-val calc">'+tub.Ht+' mm</span></div>';
+  }
+  html += '</div>';
+
+  // SERRAMENTO
+  if (!p.solo_accessori) {
+    html += '<div class="det-sec"><div class="det-sec-title">&#128295; Serramento</div>';
+    html += '<div class="det-row"><span class="det-lbl">Materiale</span><span class="det-val">'+esc(p.materiale||'—')+'</span></div>';
+    html += '<div class="det-row"><span class="det-lbl">Sistema</span><span class="det-val">'+esc(p.sistema||'—')+'</span></div>';
+    if (p.telaio_misto) {
+      html += '<div class="det-row"><span class="det-lbl">Stile / Variante</span><span class="det-val" style="font-size:11px;">Misto: Su('+esc(v(p.variante_alto))+') Giu('+esc(v(p.variante_basso))+') Sx('+esc(v(p.variante_sx))+') Dx('+esc(v(p.variante_dx))+')</span></div>';
+    } else {
+      if (p.stile_design) html += '<div class="det-row"><span class="det-lbl">Stile design</span><span class="det-val">'+esc(p.stile_design)+'</span></div>';
+      if (p.variante_telaio) html += '<div class="det-row"><span class="det-lbl">Variante telaio</span><span class="det-val">'+esc(p.variante_telaio)+'</span></div>';
+    }
+    if (p.n_vetri) html += '<div class="det-row"><span class="det-lbl">N vetri</span><span class="det-val">'+(p.n_vetri==='T'?'Triplo':'Doppio')+'</span></div>';
+    if (p.senso_apertura) html += '<div class="det-row"><span class="det-lbl">Senso apertura</span><span class="det-val">'+esc(p.senso_apertura)+'</span></div>';
+    if (p.colore_int) html += '<div class="det-row"><span class="det-lbl">Colore int.</span><span class="det-val">'+esc(p.colore_int)+'</span></div>';
+    if (p.colore_est) html += '<div class="det-row"><span class="det-lbl">Colore est.</span><span class="det-val">'+esc(p.colore_est)+'</span></div>';
+    html += '</div>';
+  } else {
+    html += '<div style="background:#fef3c7;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:#92400e;font-weight:600;">&#128230; Solo accessori &mdash; nessun serramento installato</div>';
+  }
+
+  // ACCESSORI
+  var hasAcc = p.controtelaio||p.schermatura||p.cassonetto||p.zanzariera||p.dinoxill||p.coprifilo_int_mat||p.coprifilo_est_mat||p.oscurante_tipo;
+  if (hasAcc) {
+    html += '<div class="det-sec"><div class="det-sec-title">&#127754; Accessori</div>';
+    if (p.controtelaio) html += '<div class="det-row"><span class="det-lbl">Controtelaio</span><span class="det-val">'+(p.controtelaio==='T'?'Termocassa':'CTL Legno')+'</span></div>';
+    if (p.schermatura)  html += '<div class="det-row"><span class="det-lbl">Schermatura</span><span class="det-val">'+esc(p.schermatura)+'</span></div>';
+    if (p.cassonetto)   html += '<div class="det-row"><span class="det-lbl">Cassonetto</span><span class="det-val">'+(p.cassonetto==='P'?'PVC':'Legno')+'</span></div>';
+    if (p.zanzariera)   html += '<div class="det-row"><span class="det-lbl">Zanzariera</span><span class="det-val">'+(p.zanzariera==='V'?'Verticale':'Orizzontale')+'</span></div>';
+    if (p.oscurante_tipo) html += '<div class="det-row"><span class="det-lbl">Oscurante</span><span class="det-val">'+esc(p.oscurante_tipo)+'</span></div>';
+    if (p.coprifilo_int_mat) html += '<div class="det-row"><span class="det-lbl">Coprifilo int.</span><span class="det-val">'+esc(p.coprifilo_int_mat)+' '+esc(v(p.coprifilo_int_dim))+' mm</span></div>';
+    if (p.coprifilo_est_mat) html += '<div class="det-row"><span class="det-lbl">Coprifilo est.</span><span class="det-val">'+esc(p.coprifilo_est_mat)+' '+esc(v(p.coprifilo_est_dim))+' mm</span></div>';
+    if (p.dinoxill)     html += '<div class="det-row"><span class="det-lbl">Dinoxill</span><span class="det-val">'+esc(p.dinoxill)+'</span></div>';
+    html += '</div>';
+  }
+
+  // FLAG
+  var hasFlag = p.rimozione==='SI'||p.rimozione===true||p.rimozione_accessori||p.taglio_marmo||p.angolari_pvc;
+  if (hasFlag) {
+    html += '<div class="det-sec"><div class="det-sec-title">&#9873; Rimozione e flag</div>';
+    if (p.rimozione==='SI'||p.rimozione===true) html += '<div class="det-row"><span class="det-lbl">Rimozione serramento</span><span class="det-val">&#9989;</span></div>';
+    if (p.rimozione_accessori===true) html += '<div class="det-row"><span class="det-lbl">Rimozione accessori</span><span class="det-val">&#9989;</span></div>';
+    if (p.taglio_marmo===true) html += '<div class="det-row"><span class="det-lbl">Taglio piani marmo</span><span class="det-val">&#9989;</span></div>';
+    if (p.angolari_pvc===true) html += '<div class="det-row"><span class="det-lbl">Angolari PVC</span><span class="det-val">&#9989;</span></div>';
+    html += '</div>';
+  }
+
+  // NOTE
+  if (p.note) {
+    html += '<div class="det-sec"><div class="det-sec-title">&#128221; Note</div>';
+    html += '<div style="font-size:13px;color:var(--c-text);line-height:1.5;background:var(--c-bg);border-radius:8px;padding:10px 12px;">'+esc(p.note)+'</div>';
+    html += '</div>';
+  }
+
+  document.getElementById('shBody').innerHTML = html;
+  document.getElementById('sheetOverlay').className = 'sheet-overlay visible';
+  document.getElementById('sheetPos').className = 'bottom-sheet open';
+}
+
+function closeSheet() {
+  document.getElementById('sheetOverlay').className = 'sheet-overlay';
+  document.getElementById('sheetPos').className = 'bottom-sheet';
+}
+
+load();
+</script>
+</body>
+</html>
