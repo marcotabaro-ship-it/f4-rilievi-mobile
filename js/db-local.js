@@ -1,6 +1,6 @@
 var DBLocal = (function(){
   var DB_NAME = 'f4_mobile_db';
-  var DB_VER  = 2;
+  var DB_VER  = 3;
   var db = null;
 
   function open(cb){
@@ -8,7 +8,7 @@ var DBLocal = (function(){
     var req = indexedDB.open(DB_NAME, DB_VER);
     req.onupgradeneeded = function(e){
       var d = e.target.result;
-      var DATA_STORES = ['clienti','cantieri','rilievi','posizioni_serr','posizioni_porte','capitoli_rilievo','stratigrafie'];
+      var DATA_STORES = ['clienti','cantieri','rilievi','posizioni_serr','posizioni_porte','capitoli_rilievo','stratigrafie','db_serramento','db_porte'];
       DATA_STORES.forEach(function(s){
         if(!d.objectStoreNames.contains(s)){
           d.createObjectStore(s, {keyPath:'id'});
