@@ -51,7 +51,10 @@ var API = (function(){
       {label:'Rilievi',         fn:syncRilievi},
       {label:'Posizioni serr.', fn:syncPosizioniSerr},
       {label:'Posizioni porte', fn:syncPosizioniPorte},
-      {label:'Capitoli',        fn:syncCapitoli}
+      {label:'Capitoli',        fn:syncCapitoli},
+      {label:'Stratigrafie',    fn:syncStratigrafie},
+      {label:'DB Serramenti',   fn:syncDbSerramento},
+      {label:'DB Porte',        fn:syncDbPorte}
     ];
     var i=0;
     function next(){
@@ -101,6 +104,24 @@ var API = (function(){
   function syncCapitoli(cb){
     sfetch('capitoli_rilievo?stato=eq.attivo&select=*', function(r){
       DBLocal.putMany('capitoli_rilievo', r, function(){ cb(null); });
+    }, function(e){ cb(e); });
+  }
+
+  function syncStratigrafie(cb){
+    sfetch('stratigrafie?stato=eq.attivo&select=*', function(r){
+      DBLocal.putMany('stratigrafie', r, function(){ cb(null); });
+    }, function(e){ cb(e); });
+  }
+
+  function syncDbSerramento(cb){
+    sfetch('db_serramento?stato=eq.attivo&select=*', function(r){
+      DBLocal.putMany('db_serramento', r, function(){ cb(null); });
+    }, function(e){ cb(e); });
+  }
+
+  function syncDbPorte(cb){
+    sfetch('db_porte?stato=eq.attivo&select=*', function(r){
+      DBLocal.putMany('db_porte', r, function(){ cb(null); });
     }, function(e){ cb(e); });
   }
 
