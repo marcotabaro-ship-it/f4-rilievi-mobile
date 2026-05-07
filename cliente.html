@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Cliente — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="top-bar-btn" onclick="history.back()">&#8592;</button>
+  <div class="top-bar-title" id="tbTitolo">Cliente</div>
+  <div class="top-bar-avatar" id="userAvatar">TM</div>
+</div>
+
+<!-- PAGE CONTENT -->
+<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 24px;" id="mainContent">
+
+  <!-- INFO CLIENTE -->
+  <div class="card" id="cardCliente" style="margin-bottom:14px;">
+    <div class="card-body" style="display:flex;align-items:center;gap:14px;">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--c-accent);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;" id="cliAvatar">?</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:16px;font-weight:700;" id="cliNome">—</div>
+        <div style="font-size:12px;color:var(--c-text-sec);margin-top:2px;" id="cliMeta">—</div>
+      </div>
+    </div>
+    <div id="cliContatti" style="border-top:1px solid var(--c-border);display:flex;gap:0;"></div>
+  </div>
+
+  <!-- FILTER CANTIERI -->
+  <div class="filter-row" id="filterRow" style="display:none;">
+    <button class="filter-chip active" id="chip-tutti" onclick="setFiltro('tutti',this)">Tutti</button>
+    <button class="filter-chip" onclick="setFiltro('SERR',this)">&#129695; Serr.</button>
+    <button class="filter-chip orange" onclick="setFiltro('PORTE',this)">&#128682; Porte</button>
+  </div>
+
+  <div class="section-hdr"><div class="section-hdr-title" id="sezTitolo">Cantieri e rilievi</div></div>
+  <div id="listaCantieri"><div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div></div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-local.js"></script>
+<script src="js/api-mobile.js"></script>
+<script>
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+document.getElementById('userAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+
+var idCliente = new URLSearchParams(window.location.search).get('id');
+if (!idCliente) { history.back(); }
+
+var _filtro = 'tutti';
+var _cantieri = [], _rilievi = [], _cliente = null;
+
+function setFiltro(f, btn) {
+  _filtro = f;
+  document.querySelectorAll('.filter-chip').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderCantieri();
+}
+
+function load() {
+  DBLocal.getById('clienti', idCliente, function(cl) {
+    if (!cl) { document.getElementById('cliNome').textContent = 'Cliente non trovato'; return; }
+    _cliente = cl;
+    document.title = cl.nome + ' — F4 Rilievi';
+    document.getElementById('tbTitolo').textContent = cl.nome;
+
+    var ini = (cl.nome||'?').split(' ').map(function(p){return p[0];}).join('').substring(0,2).toUpperCase();
+    document.getElementById('cliAvatar').textContent = ini;
+    document.getElementById('cliNome').textContent = cl.nome;
+
+    var meta = [];
+    if (cl.citta) meta.push(cl.citta);
+    if (cl.provincia) meta.push('(' + cl.provincia + ')');
+    document.getElementById('cliMeta').textContent = meta.join(' ') || 'Nessun indirizzo';
+
+    // Contatti click-to-action
+    var cont = '';
+    if (cl.telefono) cont += '<a href="tel:'+cl.telefono+'" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:12px 8px;color:var(--c-accent);text-decoration:none;border-right:1px solid var(--c-border);font-size:11px;font-weight:600;gap:4px;"><span style="font-size:20px;">&#128222;</span>Chiama</a>';
+    if (cl.email)    cont += '<a href="mailto:'+cl.email+'" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:12px 8px;color:var(--c-accent);text-decoration:none;font-size:11px;font-weight:600;gap:4px;"><span style="font-size:20px;">&#9993;</span>Email</a>';
+    if (cl.telefono && cl.telefono.match(/[0-9]/)) {
+      var waNr = cl.telefono.replace(/\D/g,'');
+      cont += '<a href="https://wa.me/39'+waNr+'" target="_blank" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:12px 8px;color:#16a34a;text-decoration:none;border-left:1px solid var(--c-border);font-size:11px;font-weight:600;gap:4px;"><span style="font-size:20px;">&#128172;</span>WhatsApp</a>';
+    }
+    if (cont) document.getElementById('cliContatti').innerHTML = cont;
+
+    // Carica cantieri e rilievi
+    DBLocal.getAll('cantieri', function(ca) {
+      _cantieri = ca.filter(function(c){ return c.id_cliente === idCliente; });
+      DBLocal.getAll('rilievi', function(ri) {
+        _rilievi = ri;
+        if (_cantieri.length > 0) document.getElementById('filterRow').style.display = 'flex';
+        renderCantieri();
+      });
+    });
+  });
+}
+
+function renderCantieri() {
+  var c = document.getElementById('listaCantieri');
+  var cantFiltrati = _cantieri.filter(function(ca) {
+    if (_filtro === 'tutti') return true;
+    return _rilievi.some(function(r){ return r.id_cantiere === ca.id && API.tipoRilievo(r) === _filtro; });
+  });
+
+  if (!cantFiltrati.length) {
+    c.innerHTML = '<div class="empty-state"><div class="empty-ico">&#127959;</div><div class="empty-title">Nessun cantiere</div><div class="empty-sub">Nessun cantiere per questo cliente</div></div>';
+    return;
+  }
+
+  var html = '';
+  cantFiltrati.forEach(function(ca) {
+    var rilCant = _rilievi.filter(function(r){ return r.id_cantiere === ca.id; });
+    var rilSerr  = rilCant.filter(function(r){ return API.tipoRilievo(r)==='SERR'; });
+    var rilPorte = rilCant.filter(function(r){ return API.tipoRilievo(r)==='PORTE'; });
+
+    var indir = [ca.tipo_via, ca.indirizzo, ca.comune].filter(Boolean).join(' ');
+    html += '<div class="card" style="margin-bottom:12px;">';
+    html += '<div class="card-header" style="cursor:default;">';
+    html += '<div style="width:36px;height:36px;border-radius:8px;background:#eef2ff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">&#127959;</div>';
+    html += '<div style="flex:1;min-width:0;"><div class="card-title">'+esc(ca.nome_cantiere)+'</div>';
+    if (indir) html += '<div style="font-size:11px;color:var(--c-text-sec);margin-top:1px;">'+esc(indir)+'</div>';
+    html += '</div></div>';
+
+    if (rilCant.length === 0) {
+      html += '<div style="padding:10px 16px;font-size:12px;color:var(--c-text-ter);">Nessun rilievo</div>';
+    } else {
+      rilCant.sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
+      rilCant.forEach(function(r) {
+        var tipo = API.tipoRilievo(r);
+        var cls  = tipo==='PORTE'?'porte':'serr';
+        var ico  = tipo==='PORTE'?'&#128682;':'&#129695;';
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--c-border);cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="apriRilievo(\''+r.id+'\',\''+tipo+'\')">'+
+          '<div class="rilievo-card-ico '+cls+'" style="width:32px;height:32px;font-size:16px;border-radius:8px;">'+ico+'</div>'+
+          '<div style="flex:1;">'+
+            '<div style="font-size:13px;font-weight:600;">'+(r.codice_completo||r.id.substring(0,8))+'</div>'+
+            '<div style="font-size:11px;color:var(--c-text-sec);">'+(r.referente||'')+(r.data_rilievo?' &mdash; '+r.data_rilievo:'')+'</div>'+
+          '</div>'+
+          '<div style="color:var(--c-text-ter);font-size:18px;">&#8250;</div>'+
+        '</div>';
+      });
+    }
+    html += '</div>';
+  });
+  c.innerHTML = html;
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function apriRilievo(id, tipo) {
+  window.location.href = (tipo==='PORTE'?'rilievo-porte.html':'rilievo-serr.html') + '?id=' + id;
+}
+
+load();
+</script>
+</body>
+</html>
