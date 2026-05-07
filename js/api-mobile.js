@@ -115,13 +115,19 @@ var API = (function(){
 
   function syncDbSerramento(cb){
     sfetch('db_serramento?stato=eq.attivo&select=*', function(r){
-      DBLocal.putMany('db_serramento', r, function(){ cb(null); });
+      var withId=r.map(function(row,i){if(!row.id)row.id='ds_'+i;return row;});
+      DBLocal.clearStore('db_serramento',function(){
+        DBLocal.putMany('db_serramento',withId,function(){ cb(null); });
+      });
     }, function(e){ cb(e); });
   }
 
   function syncDbPorte(cb){
     sfetch('db_porte?stato=eq.attivo&select=*', function(r){
-      DBLocal.putMany('db_porte', r, function(){ cb(null); });
+      var withId=r.map(function(row,i){if(!row.id)row.id='dp_'+i;return row;});
+      DBLocal.clearStore('db_porte',function(){
+        DBLocal.putMany('db_porte',withId,function(){ cb(null); });
+      });
     }, function(e){ cb(e); });
   }
 
