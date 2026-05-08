@@ -179,7 +179,7 @@ var API = (function(){
     }, function(e){ cb(e); });
   }
   function syncDbSerramento(cb){
-    sfetch('db_serramento?stato=eq.attivo&select=*', function(r){
+    sfetch('db_serramento?stato=eq.attivo&select=materiale,materiale_sigla,sistema,descrizione,stile_design,variante_telaio,telaio_nascosto_mm,aletta_mm,telaio_vista_mm', function(r){
       var withId=r.map(function(row,i){ if(!row.id) row.id='ds_'+i; return row; });
       DBLocal.clearStore('db_serramento',function(){
         DBLocal.putMany('db_serramento',withId,function(){ cb(null); });
