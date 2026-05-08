@@ -1,6 +1,6 @@
 var DBLocal = (function(){
   var DB_NAME = 'f4_mobile_db';
-  var DB_VER  = 3;
+  var DB_VER  = 4;
   var db = null;
 
   function open(cb){
@@ -8,18 +8,18 @@ var DBLocal = (function(){
     var req = indexedDB.open(DB_NAME, DB_VER);
     req.onupgradeneeded = function(e){
       var d = e.target.result;
-      var DATA_STORES = ['clienti','cantieri','rilievi','posizioni_serr','posizioni_porte','capitoli_rilievo','stratigrafie','db_serramento','db_porte'];
+      var DATA_STORES = ['clienti','cantieri','rilievi','posizioni_serr','posizioni_porte',
+        'capitoli_rilievo','stratigrafie','db_serramento','db_porte'];
       DATA_STORES.forEach(function(s){
-        if(!d.objectStoreNames.contains(s)){
-          d.createObjectStore(s, {keyPath:'id'});
-        }
+        if(!d.objectStoreNames.contains(s)) d.createObjectStore(s, {keyPath:'id'});
       });
-      if(!d.objectStoreNames.contains('sync_queue')){
+      if(!d.objectStoreNames.contains('sync_queue'))
         d.createObjectStore('sync_queue', {keyPath:'_qid', autoIncrement:true});
-      }
-      if(!d.objectStoreNames.contains('foto_queue')){
+      if(!d.objectStoreNames.contains('foto_queue'))
         d.createObjectStore('foto_queue', {keyPath:'_fqid', autoIncrement:true});
-      }
+      // v4: store unificato per tutti i lookup
+      if(!d.objectStoreNames.contains('lookups'))
+        d.createObjectStore('lookups', {keyPath:'name'});
     };
     req.onsuccess = function(e){ db=e.target.result; cb(db); };
     req.onerror   = function(e){ console.error('IndexedDB error',e); cb(null); };
@@ -34,7 +34,7 @@ var DBLocal = (function(){
         var req = tx.objectStore(storeName).getAll();
         req.onsuccess = function(){ cb(req.result||[]); };
         req.onerror   = function(){ cb([]); };
-      }catch(e){ console.error('getAll error',e); cb([]); }
+      }catch(e){ console.error('getAll error',e,storeName); cb([]); }
     });
   }
 
@@ -63,9 +63,7 @@ var DBLocal = (function(){
     });
   }
 
-  function putOne(storeName, item, cb){
-    putMany(storeName, [item], cb);
-  }
+  function putOne(storeName, item, cb){ putMany(storeName, [item], cb); }
 
   function deleteOne(storeName, id, cb){
     open(function(d){
@@ -115,6 +113,15 @@ var DBLocal = (function(){
     });
   }
 
+  // ── LOOKUP HELPERS ──
+  function putLookup(name, data, cb){
+    putOne('lookups', {name:name, data:data, ts:Date.now()}, cb);
+  }
+
+  function getLookup(name, cb){
+    getById('lookups', name, function(rec){ cb(rec ? rec.data : []); });
+  }
+
   function deleteDB(cb){
     db = null;
     var req = indexedDB.deleteDatabase(DB_NAME);
@@ -131,6 +138,8 @@ var DBLocal = (function(){
     clearStore:      clearStore,
     addToQueue:      addToQueue,
     removeFromQueue: removeFromQueue,
+    putLookup:       putLookup,
+    getLookup:       getLookup,
     deleteDB:        deleteDB
   };
 })();
