@@ -546,10 +546,13 @@ function setupNew(){
 
 var _pendingStratId='';
 function setOpt(id,val){
-  if(!val)return;var v=String(val);
+  if(val===null||val===undefined||val==='')return;
+  var v=String(val);
   var el=document.getElementById(id);if(!el)return;
-  if(!Array.from(el.options).some(function(o){return o.value===v;})){
-    var o=document.createElement('option');o.value=v;o.text=v;el.appendChild(o);
+  if(el.tagName==='SELECT'){
+    if(!Array.from(el.options).some(function(o){return o.value===v;})){
+      var o=document.createElement('option');o.value=v;o.text=v;el.appendChild(o);
+    }
   }
   el.value=v;
 }
