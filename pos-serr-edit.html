@@ -64,9 +64,9 @@
 
 <div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 0;" id="formWrap">
 
-  <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="calcStrip">
-    <div><div style="font-size:10px;color:#388e3c;margin-bottom:2px;">L x H inserita</div><div style="font-size:14px;font-weight:700;color:#1b5e20;" id="cLarch">—</div></div>
-    <div><div style="font-size:10px;color:#388e3c;margin-bottom:2px;">L x H ordine</div><div style="font-size:14px;font-weight:700;color:#1565C0;" id="cLtub">—</div></div>
+  <div class="calc-strip" id="calcStrip">
+    <div class="calc-item"><label>L x H inserita</label><span id="cLarch">—</span></div>
+    <div class="calc-item"><label>L x H ordine</label><span id="cLtub" style="color:#1565C0;">—</span></div>
   </div>
 
   <div class="conflict-banner" id="conflictBanner">
@@ -276,7 +276,7 @@
 </div>
 
 <div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #e5e7eb;padding:12px 16px;display:flex;gap:10px;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.1);">
-  <button onclick="confirmBack()" style="padding:14px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">&#8592; Annulla</button>
+  <button onclick="confirmBack()" style="padding:14px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">&#8592;</button>
   <button onclick="salva()" style="flex:1;padding:14px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">&#128190; Salva posizione</button>
 </div>
 
@@ -347,7 +347,7 @@ function ricalcola(){
   var soloAcc=document.getElementById('fSoloAcc').checked;
   if(soloAcc){document.getElementById('cLtub').textContent=fmt(L,H);return;}
   var p={
-    H_mm:H,L_mm:L,h_mm:H,l_mm:L,
+    H_mm:H,L_mm:L,
     tipo_foro:document.getElementById('fTipoForo').value,
     tipo_serramento:document.getElementById('fTipoSerr').value,
     materiale:document.getElementById('fMateriale').value,
@@ -425,24 +425,6 @@ function onVarianteChange(silent){
   var sti=document.getElementById('fStile').value,vr=document.getElementById('fVariante').value;
   var rec=_dbSerr.find(function(d){return d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti&&d.variante_telaio===vr;});
   document.getElementById('fCodice').value=rec?(rec.codice||rec.codice_serramento||''):'';
-  // Popola N Vetri
-  var nvEl=document.getElementById('fNVetri');
-  var prevNv=nvEl.value;
-  nvEl.innerHTML='<option value="">—</option>';
-  if(sis){
-    var lkV=[];DBLocal.getLookup('LK_VETRO',function(rows){lkV=rows||[];});
-    // Filtra per sistema o mostra D/T
-    var vetriPerSis=lkV.filter(function(v){return v&&v.sistema===sis;});
-    if(vetriPerSis.length===0)vetriPerSis=lkV;
-    if(vetriPerSis.length>0){
-      vetriPerSis.forEach(function(v){var o=new Option(v.n_vetri==='T'?'Triplo':'Doppio',v.n_vetri);nvEl.appendChild(o);});
-      if(vetriPerSis.length===1)nvEl.value=vetriPerSis[0].n_vetri;else if(prevNv)nvEl.value=prevNv;
-    } else {
-      ['D','T'].forEach(function(v){nvEl.appendChild(new Option(v==='T'?'Triplo':'Doppio',v));});
-      if(prevNv)nvEl.value=prevNv;
-    }
-    nvEl.disabled=false;
-  } else { nvEl.disabled=true; }
   ricalcola();
 }
 
@@ -562,74 +544,96 @@ function setupNew(){
   _loadedAt=Date.now();_rec={id_rilievo:idRilievo,stato:'attivo'};
 }
 
+var _pendingStratId='';
+function setOpt(id,val){
+  if(!val)return;var v=String(val);
+  var el=document.getElementById(id);if(!el)return;
+  if(!Array.from(el.options).some(function(o){return o.value===v;})){
+    var o=document.createElement('option');o.value=v;o.text=v;el.appendChild(o);
+  }
+  el.value=v;
+}
 function populateForm(p){
-  function sv(id,val){var el=document.getElementById(id);if(el)el.value=(val!==null&&val!==undefined)?String(val):'';}
-  function sc(id,val){var el=document.getElementById(id);if(el)el.checked=!!val;}
+  function sc(id,val){var el=document.getElementById(id);if(el)el.checked=!!(val===true||val==='true'||val==='SI');}
   document.getElementById('tbTitle').textContent='Posizione '+(p.numero_pos_alfa||p.numero_pos||'?');
   document.getElementById('tbSub').textContent='Modifica';
-  sv('fNumAlfa',p.numero_pos_alfa);
-  sv('fPiano',p.piano!=null?p.piano:'');
-  sv('fAmbiente',p.ambiente);
-  sv('fTipoForo',p.tipo_foro);
-  sv('fLmm',p.L_mm||p.l_mm);
-  sv('fHmm',p.H_mm||p.h_mm);
-  sv('fNote',p.note);
-  sc('fRimozione',p.rimozione==='SI'||p.rimozione===true);
-  sc('fRimozioneAcc',p.rimozione_accessori);
-  sc('fTaglioMarmo',p.taglio_marmo);
-  sc('fAngolariPvc',p.angolari_pvc);
-  sc('fSoloAcc',p.solo_accessori===true);
-  onSoloAccChange();
-  sv('fStratigrafia',p.id_stratigrafia||p.stratigrafia||'');
+  setOpt('fNumAlfa',p.numero_pos_alfa);
+  setOpt('fPiano',p.piano!=null?p.piano:'');
+  setOpt('fAmbiente',p.ambiente);
+  setOpt('fTipoForo',p.tipo_foro);
+  setOpt('fTipoSerr',p.tipo_serramento);
+  setOpt('fNCampi',p.n_campi||'');
+  setOpt('fSenso',p.senso_apertura);
+  var lmm=p.l_mm||p.L_mm||'',hmm=p.h_mm||p.H_mm||'';
+  var lEl=document.getElementById('fLmm');if(lEl)lEl.value=lmm;
+  var hEl=document.getElementById('fHmm');if(hEl)hEl.value=hmm;
+  var nEl=document.getElementById('fNote');if(nEl)nEl.value=p.note||'';
+  sc('fRimozione',p.rimozione);sc('fRimozioneAcc',p.rimozione_accessori);
+  sc('fTaglioMarmo',p.taglio_marmo);sc('fAngolariPvc',p.angolari_pvc);
+  sc('fSoloAcc',p.solo_accessori);onSoloAccChange();
+  // Accessori
+  setOpt('fSchermatura',p.schermatura);setOpt('fCassonetto',p.cassonetto);
+  setOpt('fControtelaio',p.controtelaio);setOpt('fZanzariera',p.zanzariera);setOpt('fDinoxill',p.dinoxill);
+  // Cascade serramento sincrono
   if(!p.solo_accessori){
-    sv('fTipoSerr',p.tipo_serramento);
-    sv('fNCampi',p.n_campi||'');
-    sv('fSenso',p.senso_apertura);
-    sv('fMateriale',p.materiale);
-    if(p.materiale){onMaterialeChange(true);setTimeout(function(){
-      sv('fSistema',p.sistema);
-      if(p.sistema){onSistemaChange(true);setTimeout(function(){
-        sv('fStile',p.stile_design);
-        if(p.stile_design){onStileChange(true);setTimeout(function(){
-          sc('fTelaioMisto',p.telaio_misto===true||p.telaio_misto==='true');
-          onTelaioMistoChange();
-          sv('fVariante',p.variante_telaio);
-          sv('fVarAlto',p.variante_alto);sv('fVarBasso',p.variante_basso);
-          sv('fVarSx',p.variante_sx);sv('fVarDx',p.variante_dx);
-          sv('fNVetri',p.n_vetri);sv('fCodice',p.codice||p.codice_serramento||'');
-          updateColoriDropdowns();setTimeout(function(){
-            sv('fColoreInt',p.colore_int);
-            onColoreIntChange(true);setTimeout(function(){sv('fColoreEst',p.colore_est);},100);
-          },100);
-        },100);}
-      },100);}
-    },100);}
+    setOpt('fMateriale',p.materiale);
+    var mat=p.materiale||'',sis=p.sistema||'',sti=p.stile_design||'',vr=p.variante_telaio||'';
+    // Sistema
+    var ssSel=document.getElementById('fSistema');ssSel.innerHTML='<option value="">—</option>';
+    if(mat){var ss={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat)ss[d.descrizione||d.sistema]=1;});Object.keys(ss).sort().forEach(function(x){ssSel.appendChild(new Option(x,x));});ssSel.disabled=false;}
+    setOpt('fSistema',sis);
+    // Stile
+    var stSel=document.getElementById('fStile');stSel.innerHTML='<option value="">—</option>';
+    if(mat&&sis){var st={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis))st[d.stile_design]=1;});Object.keys(st).sort().forEach(function(x){stSel.appendChild(new Option(x,x));});stSel.disabled=false;}
+    setOpt('fStile',sti);
+    // Variante
+    var vvSel=document.getElementById('fVariante');vvSel.innerHTML='<option value="">—</option>';
+    if(mat&&sis&&sti){var vv={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti)vv[d.variante_telaio]=1;});Object.keys(vv).sort().forEach(function(x){vvSel.appendChild(new Option(x,x));});vvSel.disabled=false;}
+    setOpt('fVariante',vr);
+    // Telaio misto
+    var misto=p.telaio_misto===true||p.telaio_misto==='true';
+    document.getElementById('fTelaioMisto').checked=misto;
+    document.getElementById('telaioMistoBox').style.display=misto?'':'none';
+    if(misto){
+      var vhtml=vvSel.innerHTML;
+      ['fVarAlto','fVarBasso','fVarSx','fVarDx'].forEach(function(id){var el=document.getElementById(id);el.innerHTML=vhtml;el.disabled=false;});
+      setOpt('fVarAlto',p.variante_alto);setOpt('fVarBasso',p.variante_basso);
+      setOpt('fVarSx',p.variante_sx);setOpt('fVarDx',p.variante_dx);
+    }
+    // Codice
+    var cdEl=document.getElementById('fCodice');if(cdEl)cdEl.value=p.codice_serramento||p.codice||'';
+    // N Vetri
+    var nvSel=document.getElementById('fNVetri');nvSel.innerHTML='<option value="">—</option>';
+    if(p.n_vetri){nvSel.appendChild(new Option(p.n_vetri==='T'?'Triplo':'Doppio',p.n_vetri));nvSel.value=p.n_vetri;nvSel.disabled=false;}
+    // Colori
+    updateColoriDropdowns();
+    setOpt('fColoreInt',p.colore_int);onColoreIntChange(true);setOpt('fColoreEst',p.colore_est);
   }
-  sv('fCopriIntMat',p.coprifilo_int_mat);onCopriMatChange('int',true);setTimeout(function(){sv('fCopriIntDim',p.coprifilo_int_dim);},100);
-  sv('fCopriEstMat',p.coprifilo_est_mat);onCopriMatChange('est',true);setTimeout(function(){sv('fCopriEstDim',p.coprifilo_est_dim);},100);
-  sv('fSchermatura',p.schermatura);sv('fCassonetto',p.cassonetto);
-  sv('fControtelaio',p.controtelaio);sv('fZanzariera',p.zanzariera);sv('fDinoxill',p.dinoxill);
+  // Coprifili
+  setOpt('fCopriIntMat',p.coprifilo_int_mat);onCopriMatChange('int',true);
+  setTimeout(function(){setOpt('fCopriIntDim',p.coprifilo_int_dim);},200);
+  setOpt('fCopriEstMat',p.coprifilo_est_mat);onCopriMatChange('est',true);
+  setTimeout(function(){setOpt('fCopriEstDim',p.coprifilo_est_dim);},200);
+  // Stratigrafia (attende loadStratigrafie)
+  _pendingStratId=p.id_stratigrafia_override||p.id_stratigrafia||'';
   ricalcola();_dirty=false;
 }
-
 function loadStratigrafie(){
   DBLocal.getAll('stratigrafie',function(strats){
     var sel=document.getElementById('fStratigrafia');
-    var cur=sel.value;
     while(sel.options.length>1)sel.remove(1);
     var rilievoStrats=strats.filter(function(s){return s&&s.id_rilievo===idRilievo&&s.stato==='attivo';});
     var seen={};
     rilievoStrats.forEach(function(s){
       if(!seen[s.nome]){seen[s.nome]=true;sel.appendChild(new Option(s.nome+(s.is_default==='SI'?' (default)':''),s.id));}
     });
-    if(cur)sel.value=cur;
+    if(_pendingStratId){sel.value=_pendingStratId;_pendingStratId='';}
   });
 }
 
 function load(){
   DBLocal.getAll('db_serramento',function(db){
     _dbSerr=db;
-    // Popola dropdown Materiale dalle opzioni di db_serramento
     var matSeen={};_dbSerr.forEach(function(d){if(d&&d.materiale)matSeen[d.materiale]=1;});
     var mSel=document.getElementById('fMateriale');
     while(mSel.options.length>1)mSel.remove(1);
