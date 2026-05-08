@@ -437,9 +437,26 @@ function onTelaioMistoChange(){
     var mat=document.getElementById('fMateriale').value;
     var sis=document.getElementById('fSistema').value;
     var sti=document.getElementById('fStile').value;
-    var vv={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti)vv[d.variante_telaio]=1;});
-    var opts='<option value="">—</option>'+Object.keys(vv).sort().map(function(v){return'<option value="'+v+'">'+v+'</option>';}).join('');
-    ['fVarAlto','fVarBasso','fVarSx','fVarDx'].forEach(function(id){var s=document.getElementById(id);s.innerHTML=opts;s.disabled=false;s.value=vr;});
+    var vv={};
+    _dbSerr.forEach(function(d){
+      if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti)
+        vv[d.variante_telaio]=1;
+    });
+    var keys=Object.keys(vv).sort();
+    if(keys.length===0){
+      // Fallback: usa le opzioni già presenti in fVariante
+      keys=Array.from(document.getElementById('fVariante').options)
+        .map(function(o){return o.value;}).filter(function(v){return v!=='';});
+    }
+    var opts='<option value="">—</option>'+keys.map(function(v){
+      return '<option value="'+v+'">'+v+'</option>';
+    }).join('');
+    ['fVarAlto','fVarBasso','fVarSx','fVarDx'].forEach(function(id){
+      var s=document.getElementById(id);
+      s.innerHTML=opts;
+      s.disabled=false;
+      s.value=vr;
+    });
   }
   ricalcola();
 }
