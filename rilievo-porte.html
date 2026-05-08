@@ -262,6 +262,7 @@ function renderPortaRow(p) {
 }
 
 function apriDettaglio(id) {
+  _currentPosId=id;
   var p=_posizioni.find(function(x){return x.id===id;});
   if(!p) return;
   var dim=calcDimPorta(p,_dbPorte);
@@ -336,8 +337,6 @@ function nuovaPosizione(){
   window.location.href='pos-porte-edit.html?id_rilievo='+idRilievo;
 }
 var _currentPosId=null;
-var _origApriDettaglio=apriDettaglio;
-function apriDettaglio(id){ _currentPosId=id; _origApriDettaglio(id); }
 function modificaPosizione(){
   if(!_currentPosId) return;
   closeSheet();
