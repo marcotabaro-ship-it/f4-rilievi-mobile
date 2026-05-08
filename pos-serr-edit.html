@@ -406,10 +406,14 @@ function buildLookupDropdowns(cb){
   // Coprifili materiali (sync)
   var matsC=[]; _lkCopri.forEach(function(r){if(r.materiale_sigla&&matsC.indexOf(r.materiale_sigla)<0)matsC.push(r.materiale_sigla);}); matsC.sort();
   ['fCopriIntMat','fCopriEstMat'].forEach(function(id){var sel=document.getElementById(id);while(sel.options.length>1)sel.remove(1);matsC.forEach(function(m){sel.appendChild(new Option(m,m));});});
-  // Stratigrafie (async — 10a operazione)
+  // Stratigrafie (async — 10a operazione) — deduplica per nome
   DBLocal.getAll('stratigrafie',function(st){
     var sel=document.getElementById('fStratigrafia'); while(sel.options.length>1)sel.remove(1);
-    st.forEach(function(s){sel.appendChild(new Option(s.nome||s.id,s.id));});
+    var visti={};
+    st.forEach(function(s){
+      var nome=s.nome||s.id;
+      if(!visti[nome]){ visti[nome]=true; sel.appendChild(new Option(nome,s.id)); }
+    });
     done(); // 10
   });
 }
@@ -561,6 +565,8 @@ function populateForm(p){
   sv('fPiano', p.piano!=null?String(p.piano):'');
   sv('fAmbiente', p.ambiente);
   sv('fTipoSerr', p.tipo_serramento);
+  sv('fNCampi', p.n_campi);
+  sv('fSenso', p.senso_apertura);
   sv('fTipoForo', p.tipo_foro);
   sv('fLmm', p.L_mm||p.l_mm);
   sv('fHmm', p.H_mm||p.h_mm);
