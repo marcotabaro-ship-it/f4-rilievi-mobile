@@ -45,7 +45,7 @@ var API = (function(){
     x.send(JSON.stringify(data));
   }
 
-  // ── SYNC con jitter anti-storm ──
+  // ������ SYNC con jitter anti-storm ������
   function jitteredAutoSync(onDone){
     var jitter=Math.floor(Math.random()*20000); // 0-20s
     setTimeout(function(){
@@ -64,7 +64,7 @@ var API = (function(){
     return ts ? (Date.now()-parseInt(ts))/3600000 : Infinity;
   }
 
-  // ── CONFLICT CHECK ──
+  // ������ CONFLICT CHECK ������
   function checkConflict(table, id, loadedAt, cb){
     // cb(true) = conflitto, cb(false) = OK
     if(!isOnline()){ cb(false); return; }
@@ -75,7 +75,7 @@ var API = (function(){
     }, function(){ cb(false); });
   }
 
-  // ── SAVE POSIZIONE (con conflict check) ──
+  // ������ SAVE POSIZIONE (con conflict check) ������
   function savePosizione(table, op, data, loadedAt, cb){
     // op = 'insert' | 'update'
     if(!isOnline()){
@@ -98,13 +98,13 @@ var API = (function(){
       spost(path, payload, method, function(res){
         var saved=Array.isArray(res)?res[0]:res;
         if(!saved || !saved.id){
-          // Supabase ha risposto 2xx ma senza record — di solito RLS o colonna mancante
+          // Supabase ha risposto 2xx ma senza record ��� di solito RLS o colonna mancante
           cb('Supabase ha restituito risposta vuota. Controlla i campi obbligatori o i permessi RLS.', null, false);
           return;
         }
         DBLocal.putOne(table, saved, function(){ cb(null, saved, false); });
       }, function(err){
-        // Errore HTTP reale — mostra all utente, NON accoda silenziosamente
+        // Errore HTTP reale ��� mostra all utente, NON accoda silenziosamente
         cb('Errore server: '+err, null, false);
       });
     }
@@ -118,7 +118,7 @@ var API = (function(){
     }
   }
 
-  // ── SYNC STEPS ──
+  // ������ SYNC STEPS ������
   function syncAll(onProgress, onDone){
     var steps=[
       {label:'Clienti',         fn:syncClienti},
@@ -179,7 +179,7 @@ var API = (function(){
     }, function(e){ cb(e); });
   }
   function syncDbSerramento(cb){
-    sfetch('db_serramento?stato=eq.attivo&select=materiale,materiale_sigla,sistema,descrizione,stile_design,variante_telaio,telaio_nascosto_mm,aletta_mm,telaio_vista_mm', function(r){
+    sfetch('db_serramento?stato=eq.attivo&select=*', function(r){
       var withId=r.map(function(row,i){ if(!row.id) row.id='ds_'+i; return row; });
       DBLocal.clearStore('db_serramento',function(){
         DBLocal.putMany('db_serramento',withId,function(){ cb(null); });
@@ -195,7 +195,7 @@ var API = (function(){
     }, function(e){ cb(e); });
   }
 
-  // ── SYNC LOOKUP TABLES (tutte in un solo step) ──
+  // ������ SYNC LOOKUP TABLES (tutte in un solo step) ������
   var LOOKUP_TABLES=[
     {name:'LK_PIANO',          path:'lk_piano?stato=eq.attivo&select=*&order=piano.asc'},
     {name:'LK_TIPO_SERR',      path:'lk_tipo_serr?stato=eq.attivo&select=*&order=id.asc'},
@@ -227,7 +227,7 @@ var API = (function(){
     next();
   }
 
-  // ── MINI-SYNC (solo tabella specifica, post-save) ──
+  // ������ MINI-SYNC (solo tabella specifica, post-save) ������
   function miniSync(table, cb){
     var map={
       'posizioni_serr': syncPosizioniSerr,
@@ -240,7 +240,7 @@ var API = (function(){
     else if(cb) cb(null);
   }
 
-  // ── SYNC QUEUE ──
+  // ������ SYNC QUEUE ������
   function addToSyncQueue(op, table, data, cb){
     DBLocal.addToQueue('sync_queue', {op:op, table:table, data:data, ts:Date.now()}, cb);
   }
