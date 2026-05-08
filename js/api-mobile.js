@@ -73,6 +73,16 @@ var API = (function(){
   }
 
   function sanitizePayload(payload, table){
+    // Elimina campi di posizioni_porte se stiamo salvando posizioni_serr
+    if(table==='posizioni_serr'){
+      ['sopraluce','vetri','mostrine','allargamento_telaio','allargamento_mm',
+       'fornitura_ctl_int','fornitura_ctl_bli','fornitura_ctl_rei',
+       'install_ctl_int','install_ctl_bli','install_ctl_rei',
+       'fornitore','tipo_porta','collezione','modello','versione_porta',
+       'essenza','verso_apertura','tipo_serratura','colore_serratura',
+       'colore_cerniere','maniglia_marca','maniglia_modello','maniglia_colore_mat',
+       'sp_muro_mm','telaio_decentrato_mm'].forEach(function(k){ delete payload[k]; });
+    }
     var bools=['telaio_misto','solo_accessori','rimozione','rimozione_accessori',
                'taglio_marmo','angolari_pvc'];
     if(table==='posizioni_porte'){
