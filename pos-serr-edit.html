@@ -434,8 +434,12 @@ function onTelaioMistoChange(){
   document.getElementById('telaioMistoBox').style.display=misto?'':'none';
   if(misto){
     var vr=document.getElementById('fVariante').value;
-    var html=document.getElementById('fVariante').innerHTML;
-    ['fVarAlto','fVarBasso','fVarSx','fVarDx'].forEach(function(id){var s=document.getElementById(id);s.innerHTML=html;s.disabled=false;s.value=vr;});
+    var mat=document.getElementById('fMateriale').value;
+    var sis=document.getElementById('fSistema').value;
+    var sti=document.getElementById('fStile').value;
+    var vv={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti)vv[d.variante_telaio]=1;});
+    var opts='<option value="">—</option>'+Object.keys(vv).sort().map(function(v){return'<option value="'+v+'">'+v+'</option>';}).join('');
+    ['fVarAlto','fVarBasso','fVarSx','fVarDx'].forEach(function(id){var s=document.getElementById(id);s.innerHTML=opts;s.disabled=false;s.value=vr;});
   }
   ricalcola();
 }
@@ -692,7 +696,7 @@ function raccogliDati(){
     sistema:soloAcc?null:document.getElementById('fSistema').value||null,
     stile_design:soloAcc?null:document.getElementById('fStile').value||null,
     variante_telaio:(soloAcc||misto)?null:document.getElementById('fVariante').value||null,
-    telaio_misto:(!soloAcc&&misto)||null,
+    telaio_misto:(!soloAcc&&misto)===true,
     variante_alto:misto?document.getElementById('fVarAlto').value||null:null,
     variante_basso:misto?document.getElementById('fVarBasso').value||null:null,
     variante_sx:misto?document.getElementById('fVarSx').value||null:null,
