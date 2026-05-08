@@ -367,11 +367,11 @@ function ricalcola(){
 function onSoloAccChange(){
   markDirty();
   var sa=document.getElementById('fSoloAcc').checked;
-  document.getElementById('grpSerramento').style.display=sa?'none':'';
-  document.getElementById('grpColori').style.display=sa?'none':'';
-  document.getElementById('fwNCampi').style.display=sa?'none':'';
-  document.getElementById('rowSensoForo').style.display=sa?'none':'';
-  document.getElementById('soloAccBanner').style.display=sa?'':'none';
+  document.getElementById('grpSerramento').style.display=sa?'none':'block';
+  document.getElementById('grpColori').style.display=sa?'none':'block';
+  document.getElementById('fwNCampi').style.display=sa?'none':'block';
+  document.getElementById('rowSensoForo').style.display=sa?'none':'grid';
+  document.getElementById('soloAccBanner').style.display=sa?'block':'none';
   ricalcola();
 }
 
@@ -431,7 +431,7 @@ function onVarianteChange(silent){
 function onTelaioMistoChange(){
   markDirty();
   var misto=document.getElementById('fTelaioMisto').checked;
-  document.getElementById('telaioMistoBox').style.display=misto?'':'none';
+  document.getElementById('telaioMistoBox').style.display=misto?'block':'none';
   if(misto){
     var vr=document.getElementById('fVariante').value;
     var mat=document.getElementById('fMateriale').value;
@@ -444,7 +444,6 @@ function onTelaioMistoChange(){
     });
     var keys=Object.keys(vv).sort();
     if(keys.length===0){
-      // Fallback: usa le opzioni già presenti in fVariante
       keys=Array.from(document.getElementById('fVariante').options)
         .map(function(o){return o.value;}).filter(function(v){return v!=='';});
     }
@@ -617,7 +616,7 @@ function populateForm(p){
     // Telaio misto
     var misto=p.telaio_misto===true||p.telaio_misto==='true';
     document.getElementById('fTelaioMisto').checked=misto;
-    document.getElementById('telaioMistoBox').style.display=misto?'':'none';
+    document.getElementById('telaioMistoBox').style.display=misto?'block':'none';
     if(misto){
       var vhtml=vvSel.innerHTML;
       ['fVarAlto','fVarBasso','fVarSx','fVarDx'].forEach(function(id){var el=document.getElementById(id);el.innerHTML=vhtml;el.disabled=false;});
@@ -756,7 +755,7 @@ function salva(){
   if(btn){btn.disabled=true;btn.textContent='Salvataggio...';}
   API.savePosizione('posizioni_serr',op,data,isNew?null:_loadedAt,function(err,saved,conflict){
     if(btn){btn.disabled=false;btn.innerHTML='&#128190; Salva posizione';}
-    if(conflict){document.getElementById('conflictBanner').style.display='';document.getElementById('formWrap').scrollTo(0,0);return;}
+    if(conflict){document.getElementById('conflictBanner').style.display='block';document.getElementById('formWrap').scrollTo(0,0);return;}
     if(err&&err!=='conflict'){alert('Errore: '+err);return;}
     _dirty=false;
     API.miniSync('posizioni_serr',function(){
