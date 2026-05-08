@@ -146,13 +146,14 @@
       <div class="form-row-2m">
         <div class="form-group-m">
           <label class="form-label-m">Colore interno</label>
-          <input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>
+          <select class="form-ctrl" id="fColoreInt" onchange="onColoreIntChange()"><option value="">—</option></select>
         </div>
         <div class="form-group-m">
           <label class="form-label-m">Colore esterno</label>
-          <input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio" onchange="markDirty()"/>
+          <select class="form-ctrl" id="fColoreEst" onchange="markDirty()" disabled><option value="">—</option></select>
         </div>
       </div>
+      <div id="coloriNote" style="display:none;font-size:11px;color:var(--c-text-sec);margin-top:6px;">Colori non disponibili offline — sincronizza per caricarli</div>
     </div>
   </div>
 
@@ -290,8 +291,25 @@ function onStileChange(){
   vari.forEach(function(v){selV.appendChild(new Option(v,v));});
   selV.disabled=false; ricalcola();
 }
-function updateColoriDropdowns(){} // colori sono text input
-function onColoreIntChange(){ markDirty(); } // colori sono text input
+function updateColoriDropdowns(){
+  var selI=document.getElementById('fColoreInt'); while(selI.options.length>1)selI.remove(1);
+  if(!_lkColori.length){
+    var note=document.getElementById('coloriNote'); if(note)note.style.display='';
+    selI.outerHTML='<input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>';
+    var selE=document.getElementById('fColoreEst');
+    if(selE&&selE.tagName==='SELECT') selE.outerHTML='<input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio" onchange="markDirty()"/>';
+    return;
+  }
+  var ints=[]; _lkColori.forEach(function(r){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}); ints.sort();
+  ints.forEach(function(c){selI.appendChild(new Option(c,c));}); selI.disabled=false;
+}
+function onColoreIntChange(){
+  markDirty();
+  var ci=document.getElementById('fColoreInt').value;
+  var selE=document.getElementById('fColoreEst'); while(selE.options.length>1)selE.remove(1); selE.disabled=!ci;
+  var ests=[]; _lkColori.forEach(function(r){if(r.colore_interno===ci&&r.colore_esterno&&ests.indexOf(r.colore_esterno)<0)ests.push(r.colore_esterno);}); ests.sort();
+  ests.forEach(function(c){selE.appendChild(new Option(c,c));}); if(ests.length===1)selE.value=ests[0];
+}
 
 function setupNew(){
   document.getElementById('tbTitle').textContent='Nuova posizione';
@@ -344,8 +362,8 @@ function raccogliDati(){
     n_foglie:document.getElementById('fNFoglie').value||null,
     tipo_foro:document.getElementById('fTipoForo').value||null,
     senso_apertura:document.getElementById('fSenso').value||null,
-    L_mm:parseInt(document.getElementById('fLmm').value)||null,
-    H_mm:parseInt(document.getElementById('fHmm').value)||null,
+    l_mm:parseInt(document.getElementById('fLmm').value)||null,
+    h_mm:parseInt(document.getElementById('fHmm').value)||null,
     fornitore:document.getElementById('fFornitore').value||null,
     sistema:document.getElementById('fSistema').value||null,
     stile_design:document.getElementById('fStile').value||null,
