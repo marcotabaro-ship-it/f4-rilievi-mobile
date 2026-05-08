@@ -1,7 +1,5 @@
-var CACHE_NAME = 'f4-mobile-v3';
+var CACHE_NAME = 'f4-mobile-v4';
 var APP_SHELL = [
-  '/f4-rilievi-mobile/',
-  '/f4-rilievi-mobile/index.html',
   '/f4-rilievi-mobile/login.html',
   '/f4-rilievi-mobile/home.html',
   '/f4-rilievi-mobile/cliente.html',
@@ -20,6 +18,8 @@ self.addEventListener('install', function(e){
   e.waitUntil(
     caches.open(CACHE_NAME).then(function(cache){
       return cache.addAll(APP_SHELL);
+    }).catch(function(err){
+      console.warn('SW cache prefill parziale:', err);
     })
   );
   self.skipWaiting();
