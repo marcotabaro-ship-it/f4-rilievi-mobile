@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Nuovo cliente — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <style>
+    .fsec { background:var(--c-surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:12px; overflow:hidden; }
+    .fsec-hdr { background:var(--c-primary); color:#a5b4fc; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; padding:8px 14px; display:flex; align-items:center; gap:8px; }
+    .fsec-body { padding:14px; }
+    .form-row-2m { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .form-group-m { margin-bottom:12px; }
+    .form-group-m:last-child { margin-bottom:0; }
+    .form-label-m { display:block; font-size:11px; font-weight:600; color:var(--c-text-sec); margin-bottom:5px; text-transform:uppercase; letter-spacing:.3px; }
+    .req { color:#e53e3e; }
+    .form-ctrl { width:100%; border:2px solid var(--c-border); border-radius:10px; padding:11px 13px; font-size:15px; font-family:inherit; color:var(--c-text); background:var(--c-surface); outline:none; -webkit-appearance:none; transition:border-color .15s; box-sizing:border-box; }
+    .form-ctrl:focus { border-color:var(--c-accent); }
+    /* Autocomplete comune */
+    .ac-wrap { position:relative; }
+    .ac-list { position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:2px solid var(--c-accent); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:200; max-height:220px; overflow-y:auto; display:none; }
+    .ac-list.open { display:block; }
+    .ac-item { padding:11px 14px; font-size:14px; cursor:pointer; border-bottom:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:center; }
+    .ac-item:last-child { border-bottom:none; }
+    .ac-item:active { background:var(--c-bg); }
+    .ac-item-main { font-weight:600; color:var(--c-text); }
+    .ac-item-sub { font-size:12px; color:var(--c-text-sec); }
+    .ac-ico { font-size:12px; color:var(--c-text-ter); }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="top-bar-btn" onclick="confirmBack()">&#8592;</button>
+  <div style="flex:1;min-width:0;">
+    <div class="top-bar-title">Nuovo cliente</div>
+    <div style="font-size:11px;opacity:.7;">Anagrafica</div>
+  </div>
+  <button class="top-bar-btn" style="background:var(--c-accent);border-radius:8px;width:auto;padding:0 14px;font-size:13px;font-weight:700;" onclick="salva()">&#128190; Salva</button>
+</div>
+
+<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 32px;" id="formWrap">
+
+  <!-- ANAGRAFICA -->
+  <div class="fsec">
+    <div class="fsec-hdr">&#128100; ANAGRAFICA</div>
+    <div class="fsec-body">
+      <div class="form-group-m">
+        <label class="form-label-m">Nome / Ragione sociale <span class="req">*</span></label>
+        <input class="form-ctrl" type="text" id="fNome" placeholder="es. Rossi Mario" onchange="markDirty()"/>
+      </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Telefono</label>
+          <input class="form-ctrl" type="tel" id="fTelefono" placeholder="es. 345 1234567" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">E-mail</label>
+          <input class="form-ctrl" type="email" id="fEmail" placeholder="es. mario@email.it" onchange="markDirty()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INDIRIZZO -->
+  <div class="fsec">
+    <div class="fsec-hdr">&#128205; INDIRIZZO <span style="font-size:10px;font-weight:400;opacity:.7;margin-left:4px;">— proposto come predefinito per nuovi cantieri</span></div>
+    <div class="fsec-body">
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Tipo via</label>
+          <input class="form-ctrl" type="text" id="fTipoVia" placeholder="Via" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Indirizzo</label>
+          <input class="form-ctrl" type="text" id="fIndirizzo" placeholder="es. Roma, 5" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div class="form-group-m">
+        <label class="form-label-m">Comune</label>
+        <div class="ac-wrap">
+          <input class="form-ctrl" type="text" id="fComune" placeholder="Cerca comune..." autocomplete="off"
+            oninput="onComuneInput()" onblur="onComuneBlur()" onchange="markDirty()"/>
+          <div class="ac-list" id="acList"></div>
+        </div>
+      </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Provincia</label>
+          <input class="form-ctrl" type="text" id="fProvincia" placeholder="es. PN" maxlength="2"
+            oninput="this.value=this.value.toUpperCase()" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">CAP</label>
+          <input class="form-ctrl" type="text" id="fCap" placeholder="es. 33070" maxlength="5" onchange="markDirty()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTE -->
+  <div class="fsec">
+    <div class="fsec-hdr">&#128221; NOTE</div>
+    <div class="fsec-body">
+      <div class="form-group-m">
+        <textarea class="form-ctrl" id="fNote" rows="3" placeholder="Note sul cliente..." onchange="markDirty()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:4px 0 24px;">
+    <button class="btn btn-primary btn-full btn-lg" onclick="salva()">&#128100; Salva cliente</button>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn btn-ghost" onclick="confirmBack()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-local.js"></script>
+<script src="js/api-mobile.js"></script>
+<script>
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+
+var _dirty = false;
+var _lkIndirizzo = [];
+var _acTimeout = null;
+var _acSelected = false;
+
+function markDirty() { _dirty = true; }
+
+// ── AUTOCOMPLETE COMUNE ──
+function load() {
+  DBLocal.getLookup('LK_INDIRIZZO', function(rows) {
+    _lkIndirizzo = rows || [];
+  });
+}
+
+function onComuneInput() {
+  markDirty();
+  _acSelected = false;
+  clearTimeout(_acTimeout);
+  _acTimeout = setTimeout(showSuggestions, 150);
+}
+
+function showSuggestions() {
+  var q = (document.getElementById('fComune').value || '').trim().toLowerCase();
+  var list = document.getElementById('acList');
+  if (q.length < 2) { list.className = 'ac-list'; return; }
+
+  var matches = _lkIndirizzo.filter(function(r) {
+    return r && r.comune && r.comune.toLowerCase().indexOf(q) === 0;
+  }).slice(0, 8);
+
+  // Se nessun match con starts-with, prova contains
+  if (!matches.length) {
+    matches = _lkIndirizzo.filter(function(r) {
+      return r && r.comune && r.comune.toLowerCase().indexOf(q) >= 0;
+    }).slice(0, 8);
+  }
+
+  if (!matches.length) { list.className = 'ac-list'; return; }
+
+  list.innerHTML = matches.map(function(r) {
+    var cap = r.cap || '';
+    var prov = r.provincia || '';
+    return '<div class="ac-item" onmousedown="selectComune(\'' +
+      esc(r.comune) + '\',\'' + esc(prov) + '\',\'' + esc(cap) + '\')">' +
+      '<div><div class="ac-item-main">' + esc(r.comune) + '</div>' +
+      '<div class="ac-item-sub">' + (prov ? '(' + esc(prov) + ')' : '') + (cap ? ' ' + esc(cap) : '') + '</div></div>' +
+      '<div class="ac-ico">&#8250;</div>' +
+      '</div>';
+  }).join('');
+  list.className = 'ac-list open';
+}
+
+function selectComune(comune, prov, cap) {
+  _acSelected = true;
+  document.getElementById('fComune').value = comune;
+  if (prov) document.getElementById('fProvincia').value = prov;
+  if (cap)  document.getElementById('fCap').value = cap;
+  document.getElementById('acList').className = 'ac-list';
+  markDirty();
+}
+
+function onComuneBlur() {
+  // Ritardo per permettere il click su ac-item prima di chiudere
+  setTimeout(function() {
+    document.getElementById('acList').className = 'ac-list';
+  }, 200);
+}
+
+// ── VALIDAZIONE ──
+function valida() {
+  var errs = [];
+  var nome = (document.getElementById('fNome').value || '').trim();
+  if (!nome) errs.push('Nome / Ragione sociale obbligatorio');
+  return errs;
+}
+
+// ── SALVA ──
+function salva() {
+  var errs = valida();
+  if (errs.length) { alert('Campi obbligatori:\n' + errs.join('\n')); return; }
+
+  var data = {
+    nome:       (document.getElementById('fNome').value || '').trim(),
+    telefono:   document.getElementById('fTelefono').value || null,
+    email:      document.getElementById('fEmail').value || null,
+    tipo_via:   document.getElementById('fTipoVia').value || null,
+    indirizzo:  document.getElementById('fIndirizzo').value || null,
+    comune:     document.getElementById('fComune').value || null,
+    provincia:  document.getElementById('fProvincia').value || null,
+    cap:        document.getElementById('fCap').value || null,
+    note:       document.getElementById('fNote').value || null,
+    stato:      'attivo'
+  };
+
+  var btn = document.querySelector('button[onclick="salva()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
+
+  API.writeRecord('insert', 'clienti', data, function(err, saved) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva'; }
+    if (err) { alert('Errore salvataggio:\n\n' + err); return; }
+    _dirty = false;
+    API.miniSync('clienti', function() {
+      // Torna alla lista clienti in home
+      window.location.replace('home.html');
+    });
+  });
+}
+
+function confirmBack() {
+  if (_dirty && !confirm('Hai modifiche non salvate. Vuoi uscire?')) return;
+  window.location.replace('home.html');
+}
+
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+window.addEventListener('beforeunload', function(e) { if (_dirty) { e.preventDefault(); e.returnValue = ''; } });
+load();
+</script>
+</body>
+</html>
