@@ -320,6 +320,7 @@ function renderPosizioneRow(p) {
 }
 
 function apriDettaglio(id) {
+  _currentPosId = id;
   var p = _posizioni.find(function(x){ return x.id===id; });
   if (!p) return;
   var tub = calcTub(p, _dbSerr);
@@ -411,11 +412,6 @@ function nuovaPosizione(){
   window.location.href='pos-serr-edit.html?id_rilievo='+idRilievo;
 }
 var _currentPosId = null;
-var _origApriDettaglio = apriDettaglio;
-function apriDettaglio(id){
-  _currentPosId = id;
-  _origApriDettaglio(id);
-}
 function modificaPosizione(){
   if(!_currentPosId) return;
   closeSheet();
