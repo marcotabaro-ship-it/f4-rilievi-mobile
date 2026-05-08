@@ -383,22 +383,22 @@ function salva(){
     if(conflict){document.getElementById('conflictBanner').style.display='';window.scrollTo(0,0);return;}
     if(err){alert('Errore: '+err);return;}
     _dirty=false;
-    API.miniSync('posizioni_porte',function(){ window.location.href='rilievo-porte.html?id='+idRilievo; });
+    API.miniSync('posizioni_porte',function(){ window.location.replace('rilievo-porte.html?id='+idRilievo); });
   });
 }
 function forceOverwrite(){
   document.getElementById('conflictBanner').style.display='none';
   API.savePosizione('posizioni_porte','update',raccogliDati(),null,function(err){
     if(err){alert('Errore: '+err);return;}
-    _dirty=false; window.location.href='rilievo-porte.html?id='+idRilievo;
+    _dirty=false; window.location.replace('rilievo-porte.html?id='+idRilievo);
   });
 }
 function reloadRecord(){
-  window.location.href='pos-porte-edit.html?id_rilievo='+idRilievo+'&id='+idPos;
+  window.location.replace('pos-porte-edit.html?id_rilievo='+idRilievo+'&id='+idPos);
 }
 function confirmBack(){
   if(_dirty&&!confirm('Hai modifiche non salvate. Vuoi uscire?')) return;
-  window.location.href='rilievo-porte.html?id='+idRilievo;
+  window.location.replace('rilievo-porte.html?id='+idRilievo);
 }
 window.addEventListener('beforeunload',function(e){if(_dirty){e.preventDefault();e.returnValue='';}});
 load();
