@@ -728,10 +728,10 @@ function salva(){
   if(errs.length){alert('Campi mancanti:\n'+errs.join('\n'));return;}
   var data=raccogliDati();
   var op=isNew?'insert':'update';
-  var btn=document.querySelector('.btn-save');
-  btn.disabled=true;btn.textContent='Salvataggio...';
+  var btn=document.querySelector('[onclick="salva()"]');
+  if(btn){btn.disabled=true;btn.textContent='Salvataggio...';}
   API.savePosizione('posizioni_serr',op,data,isNew?null:_loadedAt,function(err,saved,conflict){
-    btn.disabled=false;btn.innerHTML='&#128190; Salva posizione';
+    if(btn){btn.disabled=false;btn.innerHTML='&#128190; Salva posizione';}
     if(conflict){document.getElementById('conflictBanner').style.display='';document.getElementById('formWrap').scrollTo(0,0);return;}
     if(err&&err!=='conflict'){alert('Errore: '+err);return;}
     _dirty=false;
