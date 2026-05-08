@@ -187,11 +187,11 @@
       <div class="form-row-2m">
         <div class="form-group-m">
           <label class="form-label-m">Colore interno</label>
-          <select class="form-ctrl" id="fColoreInt" onchange="onColoreIntChange()" disabled><option value="">—</option></select>
+          <input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>
         </div>
         <div class="form-group-m">
           <label class="form-label-m">Colore esterno</label>
-          <select class="form-ctrl" id="fColoreEst" onchange="markDirty()" disabled><option value="">—</option></select>
+          <input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio Antracite" onchange="markDirty()"/>
         </div>
       </div>
     </div>
@@ -280,6 +280,7 @@ var _dbSerr  = [];
 var _lkColori= [];
 var _lkCopri = [];
 var _rec     = {};
+var _nextNumPos = 1; // prossimo numero_pos disponibile per nuove posizioni
 
 if(!idRilievo){ history.back(); }
 
@@ -348,6 +349,12 @@ function markDirty(){ _dirty=true; }
 
 // ── LOAD DATI ──
 function load(){
+  // Calcola prossimo numero_pos per nuove posizioni
+  DBLocal.getAll('posizioni_serr', function(allPos){
+    var forRilievo=allPos.filter(function(p){return p.id_rilievo===idRilievo;});
+    var maxN=0; forRilievo.forEach(function(p){if((parseInt(p.numero_pos)||0)>maxN)maxN=parseInt(p.numero_pos)||0;});
+    _nextNumPos=maxN+1;
+  });
   DBLocal.getAll('db_serramento', function(db){ _dbSerr=db;
     DBLocal.getLookup('LK_COLORI', function(col){ _lkColori=col||[];
       DBLocal.getLookup('LK_COPRIFILI', function(cop){ _lkCopri=cop||[];
@@ -502,22 +509,8 @@ function onSoloAccChange(){
   ricalcola();
 }
 // colori cascade
-function onColoreIntChange(){
-  markDirty();
-  var mat=document.getElementById('fMateriale').value;
-  var ci=document.getElementById('fColoreInt').value;
-  var selE=document.getElementById('fColoreEst'); while(selE.options.length>1)selE.remove(1);
-  selE.disabled=!ci;
-  var ests=[]; _lkColori.forEach(function(r){if(r.colore_interno===ci){if(r.colore_esterno&&ests.indexOf(r.colore_esterno)<0)ests.push(r.colore_esterno);}});ests.sort();
-  ests.forEach(function(c){selE.appendChild(new Option(c,c));});
-  if(ests.length===1){selE.value=ests[0];}
-}
-function updateColoriDropdowns(){
-  var mat=document.getElementById('fMateriale').value;
-  var selI=document.getElementById('fColoreInt'); while(selI.options.length>1)selI.remove(1); selI.disabled=!mat;
-  var ints=[]; _lkColori.forEach(function(r){if(!mat||(r.materiale===mat||!r.materiale)){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}});ints.sort();
-  ints.forEach(function(c){selI.appendChild(new Option(c,c));});
-}
+function onColoreIntChange(){ markDirty(); } // colori sono text input, nessuna cascade
+function updateColoriDropdowns(){} // colori sono text input, nessuna cascade necessaria
 function onCopriMatChange(lato){
   markDirty();
   var mat=document.getElementById(lato==='int'?'fCopriIntMat':'fCopriEstMat').value;
@@ -594,6 +587,8 @@ function raccogliDati(){
   var soloAcc=document.getElementById('fSoloAcc').checked;
   var pianoVal=document.getElementById('fPiano').value;
   var data=Object.assign({},_rec,{
+    numero_pos: isNew ? _nextNumPos : (_rec.numero_pos||null),
+    ordine: isNew ? (_nextNumPos*10) : (_rec.ordine||null),
     numero_pos_alfa: document.getElementById('fNumAlfa').value||null,
     piano: pianoVal!==''?parseInt(pianoVal):null,
     ambiente: document.getElementById('fAmbiente').value||null,
@@ -661,7 +656,10 @@ function salva(){
       document.getElementById('conflictBanner').style.display='';
       document.getElementById('formWrap').scrollTo(0,0); return;
     }
-    if(err&&err!=='conflict'){ alert('Errore salvataggio: '+err); return; }
+    if(err&&err!=='conflict'){
+      alert('Errore salvataggio:\n\n'+err+'\n\nVerifica che tutti i campi obbligatori siano compilati.');
+      return;
+    }
     _dirty=false;
     API.miniSync('posizioni_serr', function(){
       window.location.replace('rilievo-serr.html?id='+idRilievo);
