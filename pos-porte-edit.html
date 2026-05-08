@@ -294,19 +294,26 @@ function onStileChange(){
 function updateColoriDropdowns(){
   var selI=document.getElementById('fColoreInt'); while(selI.options.length>1)selI.remove(1);
   if(!_lkColori.length){
+    // Fallback: text input se lk_colori vuoto
     var note=document.getElementById('coloriNote'); if(note)note.style.display='';
     selI.outerHTML='<input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>';
     var selE=document.getElementById('fColoreEst');
-    if(selE&&selE.tagName==='SELECT') selE.outerHTML='<input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio" onchange="markDirty()"/>';
+    if(selE&&selE.tagName==='SELECT') selE.outerHTML='<input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio Antracite" onchange="markDirty()"/>';
     return;
   }
+  // Mostra tutti i colori interni disponibili (senza filtro materiale)
+  var selI2=document.getElementById('fColoreInt');
   var ints=[]; _lkColori.forEach(function(r){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}); ints.sort();
-  ints.forEach(function(c){selI.appendChild(new Option(c,c));}); selI.disabled=false;
+  ints.forEach(function(c){selI2.appendChild(new Option(c,c));}); selI2.disabled=false;
 }
 function onColoreIntChange(){
   markDirty();
-  var ci=document.getElementById('fColoreInt').value;
-  var selE=document.getElementById('fColoreEst'); while(selE.options.length>1)selE.remove(1); selE.disabled=!ci;
+  var el=document.getElementById('fColoreInt');
+  if(!el||el.tagName!=='SELECT') return;
+  var ci=el.value;
+  var selE=document.getElementById('fColoreEst');
+  if(!selE||selE.tagName!=='SELECT') return;
+  while(selE.options.length>1) selE.remove(1); selE.disabled=!ci;
   var ests=[]; _lkColori.forEach(function(r){if(r.colore_interno===ci&&r.colore_esterno&&ests.indexOf(r.colore_esterno)<0)ests.push(r.colore_esterno);}); ests.sort();
   ests.forEach(function(c){selE.appendChild(new Option(c,c));}); if(ests.length===1)selE.value=ests[0];
 }
