@@ -1,291 +1,16 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-  <title>Posizione serramenti — F4 Rilievi</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/mobile.css"/>
-  <link rel="manifest" href="manifest.json"/>
-  <meta name="theme-color" content="#1a1a2e"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <style>
-    .fsec { background:var(--c-surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:12px; overflow:hidden; }
-    .fsec-hdr { background:var(--c-primary); color:#a5b4fc; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; padding:8px 14px; display:flex; align-items:center; gap:8px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-    .fsec-hdr-ico { font-size:14px; }
-    .fsec-body { padding:14px; }
-    .form-row-2m { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .form-group-m { margin-bottom:12px; }
-    .form-label-m { display:block; font-size:11px; font-weight:600; color:var(--c-text-sec); margin-bottom:5px; text-transform:uppercase; letter-spacing:.3px; }
-    .form-label-m .req { color:var(--c-red); }
-    .form-ctrl { width:100%; border:2px solid var(--c-border); border-radius:10px; padding:11px 13px; font-size:15px; font-family:inherit; color:var(--c-text); background:var(--c-surface); outline:none; -webkit-appearance:none; transition:border-color .15s; }
-    .form-ctrl:focus { border-color:var(--c-accent); }
-    .form-ctrl.invalid { border-color:var(--c-red); background:#fff5f5; }
-    .form-ctrl:disabled { background:var(--c-bg); color:var(--c-text-sec); }
-    .chk-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--c-border); cursor:pointer; }
-    .chk-row:last-child { border-bottom:none; }
-    .chk-row input[type=checkbox] { width:20px; height:20px; accent-color:var(--c-accent); flex-shrink:0; cursor:pointer; }
-    .chk-row label { font-size:14px; color:var(--c-text); cursor:pointer; flex:1; }
-    .solo-acc-box { background:#fffbeb; border:2px solid #f59e0b; border-radius:12px; padding:12px 14px; margin-bottom:12px; }
-    .solo-acc-box .chk-row { border:none; padding:0; }
-    .solo-acc-box label { font-weight:700; color:#92400e; }
-    .misto-box { background:#eef2ff; border:1px solid #c7d2fe; border-radius:10px; padding:12px; margin-top:8px; }
-    .misto-box .form-row-2m { gap:8px; }
-    .calc-strip { background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px; padding:10px 14px; margin-bottom:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .calc-item .calc-lbl { font-size:11px; color:var(--c-text-sec); }
-    .calc-item .calc-val { font-size:14px; font-weight:700; color:var(--c-green); }
-    .calc-item .calc-val.tub { color:var(--c-accent); }
-    .conflict-banner { background:#fee2e2; border:1px solid #fca5a5; border-radius:10px; padding:12px 14px; margin-bottom:12px; font-size:13px; color:#dc2626; display:none; }
-    .conflict-banner button { background:#dc2626; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; margin-top:8px; }
-    .save-area { padding:16px 14px 24px; }
-  </style>
-</head>
-<body>
-
-<div class="top-bar">
-  <button class="top-bar-btn" onclick="confirmBack()">&#8592;</button>
-  <div style="flex:1;min-width:0;">
-    <div class="top-bar-title" id="tbTitle">Posizione serramenti</div>
-    <div style="font-size:11px;opacity:.7;" id="tbSub">Nuovo</div>
-  </div>
-  <button class="top-bar-btn" style="background:var(--c-accent);border-radius:8px;width:auto;padding:0 14px;font-size:13px;font-weight:700;" onclick="salva()">&#128190; Salva</button>
-</div>
-
-<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 32px;" id="formWrap">
-
-  <div class="conflict-banner" id="conflictBanner">
-    &#9888; Questo record e stato modificato da un altro utente. Vuoi sovrascrivere comunque?
-    <br><button onclick="forceOverwrite()">Sovrascrivi</button>
-    <button onclick="reloadRecord()" style="background:var(--c-accent);">Aggiorna e riapri</button>
-  </div>
-
-  <!-- CALCOLO LIVE -->
-  <div class="calc-strip" id="calcStrip">
-    <div class="calc-item"><div class="calc-lbl">L inserita &times; H inserita</div><div class="calc-val" id="cLins">—</div></div>
-    <div class="calc-item"><div class="calc-lbl">L ordine &times; H ordine</div><div class="calc-val tub" id="cLtub">—</div></div>
-  </div>
-
-  <!-- DATI GENERALI -->
-  <div class="fsec">
-    <div class="fsec-hdr"><span class="fsec-hdr-ico">&#128203;</span> DATI GENERALI</div>
-    <div class="fsec-body">
-      <div class="form-group-m">
-        <label class="form-label-m">N&deg; posizione <span style="font-size:10px;font-weight:400;">(max 7 caratteri)</span></label>
-        <input class="form-ctrl" type="text" id="fNumAlfa" maxlength="7" placeholder="es. CAM01" oninput="this.value=this.value.toUpperCase()" onchange="markDirty()"/>
-      </div>
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">Piano <span class="req">*</span></label>
-          <select class="form-ctrl" id="fPiano" onchange="markDirty()"><option value="">—</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Ambiente</label>
-          <input class="form-ctrl" type="text" id="fAmbiente" placeholder="es. Soggiorno" onchange="markDirty()"/>
-        </div>
-      </div>
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">Tipo serramento <span class="req">*</span></label>
-          <select class="form-ctrl" id="fTipoSerr" onchange="onTipoSerrChange()"><option value="">— Tipo —</option></select>
-        </div>
-        <div class="form-group-m" id="grpNCampi">
-          <label class="form-label-m">N campi <span class="req">*</span></label>
-          <select class="form-ctrl" id="fNCampi" onchange="markDirty()"><option value="">—</option></select>
-        </div>
-      </div>
-      <div class="form-row-2m" id="grpSensoForo">
-        <div class="form-group-m">
-          <label class="form-label-m">Senso apertura</label>
-          <select class="form-ctrl" id="fSenso" onchange="markDirty()"><option value="">—</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Tipo foro <span class="req">*</span></label>
-          <select class="form-ctrl" id="fTipoForo" onchange="ricalcola()"><option value="">— Foro —</option></select>
-        </div>
-      </div>
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">L foro (mm) <span class="req">*</span></label>
-          <input class="form-ctrl" type="number" id="fLmm" inputmode="numeric" placeholder="1000" oninput="ricalcola()"/>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">H foro (mm) <span class="req">*</span></label>
-          <input class="form-ctrl" type="number" id="fHmm" inputmode="numeric" placeholder="2100" oninput="ricalcola()"/>
-        </div>
-      </div>
-      <div class="form-group-m">
-        <label class="form-label-m">Stratigrafia</label>
-        <select class="form-ctrl" id="fStratigrafia" onchange="markDirty()"><option value="">— Default cantiere —</option></select>
-      </div>
-      <div>
-        <div class="chk-row"><input type="checkbox" id="fRimozione" onchange="markDirty()"/><label for="fRimozione">Rimozione serramento esistente</label></div>
-        <div class="chk-row"><input type="checkbox" id="fRimozioneAcc" onchange="markDirty()"/><label for="fRimozioneAcc">Rimozione accessori esistenti</label></div>
-        <div class="chk-row"><input type="checkbox" id="fTaglioMarmo" onchange="markDirty()"/><label for="fTaglioMarmo">Taglio piani marmo</label></div>
-        <div class="chk-row"><input type="checkbox" id="fAngolariPvc" onchange="markDirty()"/><label for="fAngolariPvc">Angolari PVC</label></div>
-      </div>
-      <div class="form-group-m" style="margin-top:10px;">
-        <label class="form-label-m">Note</label>
-        <textarea class="form-ctrl" id="fNote" rows="2" onchange="markDirty()"></textarea>
-      </div>
-    </div>
-  </div>
-
-  <!-- SOLO ACCESSORI -->
-  <div class="solo-acc-box">
-    <div class="chk-row"><input type="checkbox" id="fSoloAcc" onchange="onSoloAccChange()"/><label for="fSoloAcc">&#128230; Solo accessori (nessun serramento installato)</label></div>
-  </div>
-
-  <!-- SERRAMENTO -->
-  <div class="fsec" id="secSerramento">
-    <div class="fsec-hdr"><span class="fsec-hdr-ico">&#128295;</span> SERRAMENTO</div>
-    <div class="fsec-body">
-      <div class="form-group-m">
-        <label class="form-label-m">Materiale <span class="req">*</span></label>
-        <select class="form-ctrl" id="fMateriale" onchange="onMaterialeChange()"><option value="">— Materiale —</option></select>
-      </div>
-      <div class="form-group-m">
-        <label class="form-label-m">Sistema <span class="req">*</span></label>
-        <select class="form-ctrl" id="fSistema" onchange="onSistemaChange()" disabled><option value="">— seleziona materiale —</option></select>
-      </div>
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">Stile design <span class="req">*</span></label>
-          <select class="form-ctrl" id="fStile" onchange="onStileChange()" disabled><option value="">—</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Variante telaio <span class="req">*</span></label>
-          <select class="form-ctrl" id="fVariante" onchange="onVarianteChange()" disabled><option value="">—</option></select>
-        </div>
-      </div>
-      <div class="chk-row" style="margin-bottom:4px;"><input type="checkbox" id="fTelaioMisto" onchange="onTelaioMistoChange()"/><label for="fTelaioMisto">&#127922; Telaio misto per lato</label></div>
-      <div class="misto-box" id="mistoBox" style="display:none;">
-        <div style="font-size:11px;font-weight:700;color:var(--c-accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;">Variante per lato</div>
-        <div class="form-row-2m">
-          <div class="form-group-m"><label class="form-label-m">&#8593; Alto</label><select class="form-ctrl" id="fVarAlto" onchange="ricalcola()" disabled><option value="">—</option></select></div>
-          <div class="form-group-m"><label class="form-label-m">&#8595; Basso</label><select class="form-ctrl" id="fVarBasso" onchange="ricalcola()" disabled><option value="">—</option></select></div>
-          <div class="form-group-m"><label class="form-label-m">&#8592; Sx</label><select class="form-ctrl" id="fVarSx" onchange="ricalcola()" disabled><option value="">—</option></select></div>
-          <div class="form-group-m"><label class="form-label-m">&#8594; Dx</label><select class="form-ctrl" id="fVarDx" onchange="ricalcola()" disabled><option value="">—</option></select></div>
-        </div>
-      </div>
-      <div class="form-row-2m" style="margin-top:8px;">
-        <div class="form-group-m">
-          <label class="form-label-m">Codice</label>
-          <input class="form-ctrl" type="text" id="fCodice" readonly style="background:var(--c-bg);font-family:monospace;font-size:13px;"/>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">N vetri</label>
-          <select class="form-ctrl" id="fNVetri" onchange="markDirty()" disabled><option value="">—</option></select>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- COLORI -->
-  <div class="fsec" id="secColori">
-    <div class="fsec-hdr"><span class="fsec-hdr-ico">&#127912;</span> COLORI</div>
-    <div class="fsec-body">
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">Colore interno</label>
-          <select class="form-ctrl" id="fColoreInt" onchange="onColoreIntChange()"><option value="">—</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Colore esterno</label>
-          <select class="form-ctrl" id="fColoreEst" onchange="markDirty()" disabled><option value="">—</option></select>
-        </div>
-      </div>
-      <div id="coloriNote" style="display:none;font-size:11px;color:var(--c-text-sec);margin-top:6px;">Colori non disponibili offline — sincronizza per caricarli</div>
-    </div>
-  </div>
-
-  <!-- COPRIFILI -->
-  <div class="fsec">
-    <div class="fsec-hdr"><span class="fsec-hdr-ico">&#11035;</span> COPRIFILI</div>
-    <div class="fsec-body">
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">Materiale int.</label>
-          <select class="form-ctrl" id="fCopriIntMat" onchange="onCopriMatChange('int')"><option value="">—</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Dim. int. (mm)</label>
-          <select class="form-ctrl" id="fCopriIntDim" onchange="markDirty()" disabled><option value="">—</option></select>
-        </div>
-      </div>
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">Materiale est.</label>
-          <select class="form-ctrl" id="fCopriEstMat" onchange="onCopriMatChange('est')"><option value="">—</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Dim. est. (mm)</label>
-          <select class="form-ctrl" id="fCopriEstDim" onchange="markDirty()" disabled><option value="">—</option></select>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ACCESSORI -->
-  <div class="fsec">
-    <div class="fsec-hdr"><span class="fsec-hdr-ico">&#128295;</span> ACCESSORI</div>
-    <div class="fsec-body">
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">Schermatura</label>
-          <select class="form-ctrl" id="fSchermatura" onchange="markDirty()"><option value="">— Nessuna —</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Cassonetto</label>
-          <select class="form-ctrl" id="fCassonetto" onchange="markDirty()"><option value="">— Nessuno —</option></select>
-        </div>
-      </div>
-      <div class="form-row-2m">
-        <div class="form-group-m">
-          <label class="form-label-m">Controtelaio</label>
-          <select class="form-ctrl" id="fControtelaio" onchange="markDirty()"><option value="">— Nessuno —</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Zanzariera</label>
-          <select class="form-ctrl" id="fZanzariera" onchange="markDirty()"><option value="">— Nessuna —</option></select>
-        </div>
-      </div>
-      <div class="form-group-m">
-        <label class="form-label-m">Dinoxill</label>
-        <select class="form-ctrl" id="fDinoxill" onchange="markDirty()"><option value="">— Nessuno —</option></select>
-      </div>
-    </div>
-  </div>
-
-  <div class="save-area">
-    <button class="btn btn-primary btn-full btn-lg" onclick="salva()">&#128190; Salva posizione</button>
-    <div style="text-align:center;margin-top:12px;">
-      <button class="btn btn-ghost" onclick="confirmBack()">Annulla e torna indietro</button>
-    </div>
-  </div>
-</div>
-<script src="js/config.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/db-local.js"></script>
-<script src="js/api-mobile.js"></script>
-<script>
-var currentUser = Auth.requireLogin();
-if(!currentUser) throw new Error('not logged');
-
-var params   = new URLSearchParams(window.location.search);
-var idRilievo= params.get('id_rilievo');
-var idPos    = params.get('id');
-var isNew    = !idPos;
-var _dirty   = false;
-var _loadedAt= 0;
-var _dbSerr  = [];
-var _lkColori= [];
-var _lkCopri = [];
-var _rec     = {};
-var _nextNumPos = 1; // prossimo numero_pos disponibile per nuove posizioni
-
-if(!idRilievo){ history.back(); }
-
-// ── CALCOLO TUBOLARITA (identico al desktop) ──
+function updateColoriDropdowns(){
+  var selI=document.getElementById('fColoreInt'); while(selI.options.length>1)selI.remove(1);
+  if(!_lkColori.length){
+    var note=document.getElementById('coloriNote'); if(note)note.style.display='';
+    selI.outerHTML='<input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>';
+    var selE=document.getElementById('fColoreEst');
+    if(selE&&selE.tagName==='SELECT') selE.outerHTML='<input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio Antracite" onchange="markDirty()"/>';
+    return;
+  }
+  var selI2=document.getElementById('fColoreInt');
+  var ints=[]; _lkColori.forEach(function(r){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}); ints.sort();
+  ints.forEach(function(c){selI2.appendChild(new Option(c,c));}); selI2.disabled=false;
+}
 function calcTub(L,H,tf,mat,sis,stil,vari,misto,vA,vB,vS,vD){
   L=parseFloat(L)||0; H=parseFloat(H)||0;
   if(!L||!H) return null;
@@ -405,7 +130,7 @@ function buildLookupDropdowns(cb){
   mats.forEach(function(m){selM.appendChild(new Option(m,m));});
   // Coprifili materiali (sync)
   var matsC=[]; _lkCopri.forEach(function(r){if(r.materiale_sigla&&matsC.indexOf(r.materiale_sigla)<0)matsC.push(r.materiale_sigla);}); matsC.sort();
-  ['fCopriIntMat','fCopriEstMat'].forEach(function(id){var sel=document.getElementById(id);while(sel.options.length>1)sel.remove(1);matsC.forEach(function(m){sel.appendChild(new Option(m,m));});});
+  ['fCopriIntMat','fCopriEstMat'].forEach(function(id){var sel=document.getElementById(id);while(sel.options.length>1)sel.remove(1);var cpD={'P':'PVC','L':'LEGNO','A':'ALLUMINIO'};matsC.forEach(function(m){sel.appendChild(new Option(m+' — '+(cpD[m]||m),m));});});
   // Stratigrafie (async — 10a operazione) — deduplica per nome
   DBLocal.getAll('stratigrafie',function(st){
     var sel=document.getElementById('fStratigrafia'); while(sel.options.length>1)sel.remove(1);
@@ -516,8 +241,11 @@ function onSoloAccChange(){
 // colori cascade
 function onColoreIntChange(){
   markDirty();
-  var ci=document.getElementById('fColoreInt').value;
+  var el=document.getElementById('fColoreInt');
+  if(!el||el.tagName!=='SELECT') return; // text input fallback
+  var ci=el.value;
   var selE=document.getElementById('fColoreEst');
+  if(!selE||selE.tagName!=='SELECT') return;
   while(selE.options.length>1) selE.remove(1); selE.disabled=!ci;
   var ests=[]; _lkColori.forEach(function(r){if(r.colore_interno===ci&&r.colore_esterno&&ests.indexOf(r.colore_esterno)<0)ests.push(r.colore_esterno);}); ests.sort();
   ests.forEach(function(c){selE.appendChild(new Option(c,c));}); if(ests.length===1)selE.value=ests[0];
@@ -532,8 +260,7 @@ function updateColoriDropdowns(){
     if(selE&&selE.tagName==='SELECT') selE.outerHTML='<input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio Antracite" onchange="markDirty()"/>';
     return;
   }
-  var mat=document.getElementById('fMateriale').value;
-  var ints=[]; _lkColori.forEach(function(r){if(!mat||(r.materiale===mat||!r.materiale)){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}});ints.sort();
+  var ints=[]; _lkColori.forEach(function(r){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}); ints.sort();
   ints.forEach(function(c){selI.appendChild(new Option(c,c));}); selI.disabled=false;
 }
 function onCopriMatChange(lato){
