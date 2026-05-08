@@ -45,9 +45,8 @@ var API = (function(){
     x.send(JSON.stringify(data));
   }
 
-  // ������ SYNC con jitter anti-storm ������
   function jitteredAutoSync(onDone){
-    var jitter=Math.floor(Math.random()*20000); // 0-20s
+    var jitter=Math.floor(Math.random()*20000);
     setTimeout(function(){
       if(!isOnline()){ if(onDone) onDone('offline'); return; }
       processSyncQueue(function(){
@@ -64,9 +63,7 @@ var API = (function(){
     return ts ? (Date.now()-parseInt(ts))/3600000 : Infinity;
   }
 
-  // ������ CONFLICT CHECK ������
   function checkConflict(table, id, loadedAt, cb){
-    // cb(true) = conflitto, cb(false) = OK
     if(!isOnline()){ cb(false); return; }
     sfetch(table+'?id=eq.'+id+'&select=updated_at', function(rows){
       if(!rows||!rows.length){ cb(false); return; }
@@ -75,11 +72,21 @@ var API = (function(){
     }, function(){ cb(false); });
   }
 
-  // ������ SAVE POSIZIONE (con conflict check) ������
+  function sanitizePayload(payload){
+    var bools=['telaio_misto','solo_accessori','rimozione','rimozione_accessori',
+               'taglio_marmo','angolari_pvc','sopraluce','vetri','mostrine',
+               'allargamento_telaio','fornitura_ctl_int','fornitura_ctl_bli',
+               'fornitura_ctl_rei','install_ctl_int','install_ctl_bli','install_ctl_rei'];
+    bools.forEach(function(k){
+      if(payload[k]===null||payload[k]===undefined) payload[k]=false;
+      if(payload[k]==='SI'||payload[k]==='true') payload[k]=true;
+      if(payload[k]==='NO'||payload[k]==='false') payload[k]=false;
+    });
+    return payload;
+  }
+
   function savePosizione(table, op, data, loadedAt, cb){
-    // op = 'insert' | 'update'
     if(!isOnline()){
-      // Offline: genera id locale per nuovi record + accoda
       var stored=Object.assign({},data);
       if(op==='insert' && !stored.id){
         stored.id='local_'+Date.now()+'_'+Math.random().toString(36).substring(2,7);
@@ -92,26 +99,17 @@ var API = (function(){
     function doSave(){
       var method=op==='insert'?'POST':'PATCH';
       var path=table+(op!=='insert'?'?id=eq.'+data.id:'');
-      var payload=Object.assign({},data);
+      var payload=sanitizePayload(Object.assign({},data));
       if(op==='insert'){ delete payload.id; }
       payload.updated_at=new Date().toISOString();
-      // Sanitize booleani NOT NULL
-      if(payload.telaio_misto===null||payload.telaio_misto===undefined)payload.telaio_misto=false;
-      if(payload.solo_accessori===null||payload.solo_accessori===undefined)payload.solo_accessori=false;
-      if(payload.rimozione===null||payload.rimozione===undefined)payload.rimozione=false;
-      if(payload.rimozione_accessori===null||payload.rimozione_accessori===undefined)payload.rimozione_accessori=false;
-      if(payload.taglio_marmo===null||payload.taglio_marmo===undefined)payload.taglio_marmo=false;
-      if(payload.angolari_pvc===null||payload.angolari_pvc===undefined)payload.angolari_pvc=false;
       spost(path, payload, method, function(res){
         var saved=Array.isArray(res)?res[0]:res;
         if(!saved || !saved.id){
-          // Supabase ha risposto 2xx ma senza record ��� di solito RLS o colonna mancante
           cb('Supabase ha restituito risposta vuota. Controlla i campi obbligatori o i permessi RLS.', null, false);
           return;
         }
         DBLocal.putOne(table, saved, function(){ cb(null, saved, false); });
       }, function(err){
-        // Errore HTTP reale ��� mostra all utente, NON accoda silenziosamente
         cb('Errore server: '+err, null, false);
       });
     }
@@ -125,7 +123,6 @@ var API = (function(){
     }
   }
 
-  // ������ SYNC STEPS ������
   function syncAll(onProgress, onDone){
     var steps=[
       {label:'Clienti',         fn:syncClienti},
@@ -202,7 +199,6 @@ var API = (function(){
     }, function(e){ cb(e); });
   }
 
-  // ������ SYNC LOOKUP TABLES (tutte in un solo step) ������
   var LOOKUP_TABLES=[
     {name:'LK_PIANO',          path:'lk_piano?stato=eq.attivo&select=*&order=piano.asc'},
     {name:'LK_TIPO_SERR',      path:'lk_tipo_serr?stato=eq.attivo&select=*&order=id.asc'},
@@ -229,12 +225,11 @@ var API = (function(){
       var lk=LOOKUP_TABLES[i++];
       sfetch(lk.path, function(rows){
         DBLocal.putLookup(lk.name, rows, function(){ next(); });
-      }, function(){ next(); }); // errore silenzioso: tabella potrebbe non esistere
+      }, function(){ next(); });
     }
     next();
   }
 
-  // ������ MINI-SYNC (solo tabella specifica, post-save) ������
   function miniSync(table, cb){
     var map={
       'posizioni_serr': syncPosizioniSerr,
@@ -247,7 +242,6 @@ var API = (function(){
     else if(cb) cb(null);
   }
 
-  // ������ SYNC QUEUE ������
   function addToSyncQueue(op, table, data, cb){
     DBLocal.addToQueue('sync_queue', {op:op, table:table, data:data, ts:Date.now()}, cb);
   }
@@ -261,8 +255,8 @@ var API = (function(){
         var item=items[i++];
         var method=item.op==='insert'?'POST':(item.op==='update'?'PATCH':'DELETE');
         var path=item.table+(item.op!=='insert'?'?id=eq.'+item.data.id:'');
-        setTimeout(function(){ // 300ms tra le richieste per non stressare Supabase
-          spost(path, item.data, method, function(){
+        setTimeout(function(){
+          spost(path, sanitizePayload(Object.assign({},item.data)), method, function(){
             DBLocal.removeFromQueue('sync_queue', item._qid, next);
           }, function(err){
             console.error('sync queue error', err);
