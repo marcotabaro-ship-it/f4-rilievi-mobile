@@ -95,6 +95,13 @@ var API = (function(){
       var payload=Object.assign({},data);
       if(op==='insert'){ delete payload.id; }
       payload.updated_at=new Date().toISOString();
+      // Sanitize booleani NOT NULL
+      if(payload.telaio_misto===null||payload.telaio_misto===undefined)payload.telaio_misto=false;
+      if(payload.solo_accessori===null||payload.solo_accessori===undefined)payload.solo_accessori=false;
+      if(payload.rimozione===null||payload.rimozione===undefined)payload.rimozione=false;
+      if(payload.rimozione_accessori===null||payload.rimozione_accessori===undefined)payload.rimozione_accessori=false;
+      if(payload.taglio_marmo===null||payload.taglio_marmo===undefined)payload.taglio_marmo=false;
+      if(payload.angolari_pvc===null||payload.angolari_pvc===undefined)payload.angolari_pvc=false;
       spost(path, payload, method, function(res){
         var saved=Array.isArray(res)?res[0]:res;
         if(!saved || !saved.id){
