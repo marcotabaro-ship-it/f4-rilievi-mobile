@@ -64,9 +64,9 @@
 
 <div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 0;" id="formWrap">
 
-  <div class="calc-strip" id="calcStrip">
-    <div class="calc-item"><label>L x H inserita</label><span id="cLarch">—</span></div>
-    <div class="calc-item"><label>L x H ordine</label><span id="cLtub" style="color:#1565C0;">—</span></div>
+  <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="calcStrip">
+    <div><div style="font-size:10px;color:#388e3c;margin-bottom:2px;">L x H inserita</div><div style="font-size:14px;font-weight:700;color:#1b5e20;" id="cLarch">—</div></div>
+    <div><div style="font-size:10px;color:#388e3c;margin-bottom:2px;">L x H ordine</div><div style="font-size:14px;font-weight:700;color:#1565C0;" id="cLtub">—</div></div>
   </div>
 
   <div class="conflict-banner" id="conflictBanner">
@@ -275,9 +275,9 @@
   <div style="height:80px;"></div>
 </div>
 
-<div class="save-area" style="display:flex;gap:10px;">
-  <button onclick="confirmBack()" style="padding:14px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">&#8592; Annulla</button>
-  <button class="btn-save" style="flex:1;" onclick="salva()">&#128190; Salva posizione</button>
+<div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #e5e7eb;padding:12px 16px;display:flex;gap:10px;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.1);">
+  <button onclick="confirmBack()" style="padding:14px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">&#8592; Annulla</button>
+  <button onclick="salva()" style="flex:1;padding:14px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">&#128190; Salva posizione</button>
 </div>
 
 <script src="js/config.js"></script>
@@ -347,7 +347,7 @@ function ricalcola(){
   var soloAcc=document.getElementById('fSoloAcc').checked;
   if(soloAcc){document.getElementById('cLtub').textContent=fmt(L,H);return;}
   var p={
-    H_mm:H,L_mm:L,
+    H_mm:H,L_mm:L,h_mm:H,l_mm:L,
     tipo_foro:document.getElementById('fTipoForo').value,
     tipo_serramento:document.getElementById('fTipoSerr').value,
     materiale:document.getElementById('fMateriale').value,
@@ -425,6 +425,24 @@ function onVarianteChange(silent){
   var sti=document.getElementById('fStile').value,vr=document.getElementById('fVariante').value;
   var rec=_dbSerr.find(function(d){return d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti&&d.variante_telaio===vr;});
   document.getElementById('fCodice').value=rec?(rec.codice||rec.codice_serramento||''):'';
+  // Popola N Vetri
+  var nvEl=document.getElementById('fNVetri');
+  var prevNv=nvEl.value;
+  nvEl.innerHTML='<option value="">—</option>';
+  if(sis){
+    var lkV=[];DBLocal.getLookup('LK_VETRO',function(rows){lkV=rows||[];});
+    // Filtra per sistema o mostra D/T
+    var vetriPerSis=lkV.filter(function(v){return v&&v.sistema===sis;});
+    if(vetriPerSis.length===0)vetriPerSis=lkV;
+    if(vetriPerSis.length>0){
+      vetriPerSis.forEach(function(v){var o=new Option(v.n_vetri==='T'?'Triplo':'Doppio',v.n_vetri);nvEl.appendChild(o);});
+      if(vetriPerSis.length===1)nvEl.value=vetriPerSis[0].n_vetri;else if(prevNv)nvEl.value=prevNv;
+    } else {
+      ['D','T'].forEach(function(v){nvEl.appendChild(new Option(v==='T'?'Triplo':'Doppio',v));});
+      if(prevNv)nvEl.value=prevNv;
+    }
+    nvEl.disabled=false;
+  } else { nvEl.disabled=true; }
   ricalcola();
 }
 
@@ -654,14 +672,14 @@ function raccogliDati(){
     n_campi:soloAcc?null:(parseInt(document.getElementById('fNCampi').value)||null),
     senso_apertura:soloAcc?null:document.getElementById('fSenso').value||null,
     tipo_foro:document.getElementById('fTipoForo').value||null,
-    L_mm:parseInt(document.getElementById('fLmm').value)||null,
-    H_mm:parseInt(document.getElementById('fHmm').value)||null,
-    id_stratigrafia:document.getElementById('fStratigrafia').value||null,
-    rimozione:document.getElementById('fRimozione').checked?'SI':null,
-    rimozione_accessori:document.getElementById('fRimozioneAcc').checked||null,
-    taglio_marmo:document.getElementById('fTaglioMarmo').checked||null,
-    angolari_pvc:document.getElementById('fAngolariPvc').checked||null,
-    solo_accessori:soloAcc||null,
+    l_mm:parseInt(document.getElementById('fLmm').value)||null,
+    h_mm:parseInt(document.getElementById('fHmm').value)||null,
+    id_stratigrafia_override:document.getElementById('fStratigrafia').value||null,
+    rimozione:document.getElementById('fRimozione').checked,
+    rimozione_accessori:document.getElementById('fRimozioneAcc').checked,
+    taglio_marmo:document.getElementById('fTaglioMarmo').checked,
+    angolari_pvc:document.getElementById('fAngolariPvc').checked,
+    solo_accessori:soloAcc,
     note:document.getElementById('fNote').value||null,
     materiale:soloAcc?null:document.getElementById('fMateriale').value||null,
     sistema:soloAcc?null:document.getElementById('fSistema').value||null,
@@ -673,7 +691,7 @@ function raccogliDati(){
     variante_sx:misto?document.getElementById('fVarSx').value||null:null,
     variante_dx:misto?document.getElementById('fVarDx').value||null:null,
     n_vetri:soloAcc?null:document.getElementById('fNVetri').value||null,
-    codice:soloAcc?null:document.getElementById('fCodice').value||null,
+    codice_serramento:soloAcc?null:document.getElementById('fCodice').value||null,
     colore_int:soloAcc?null:document.getElementById('fColoreInt').value||null,
     colore_est:soloAcc?null:document.getElementById('fColoreEst').value||null,
     coprifilo_int_mat:document.getElementById('fCopriIntMat').value||null,
