@@ -361,40 +361,49 @@ function load(){
 }
 
 function buildLookupDropdowns(cb){
-  function fillSel(id, lkName, valField, lblField){
-    DBLocal.getLookup(lkName, function(rows){
-      var sel=document.getElementById(id);
-      var cur=sel.value;
-      while(sel.options.length>1) sel.remove(1);
-      (rows||[]).forEach(function(r){
-        var o=new Option(r[lblField]?r[valField]+' — '+r[lblField]:r[valField], r[valField]);
-        sel.appendChild(o);
-      });
-      if(cur) sel.value=cur;
-      if(cb){ cb=null; afterDropdowns(); }
+  // 10 operazioni async — cb chiamata solo quando TUTTE completano
+  var total=10, done_count=0;
+  function done(){ done_count++; if(done_count>=total&&cb){var f=cb;cb=null;f();} }
+  function fillS(id,lk,v,l){
+    DBLocal.getLookup(lk,function(rows){
+      var sel=document.getElementById(id); while(sel.options.length>1)sel.remove(1);
+      (rows||[]).forEach(function(r){ sel.appendChild(new Option(r[l]?r[v]+' — '+r[l]:String(r[v]),String(r[v]))); });
+      done();
     });
   }
-  var pending=7;
-  function done(){ pending--; if(pending<=0&&cb){ cb(); cb=null; } }
-  function fillS(id,lk,v,l){ DBLocal.getLookup(lk,function(rows){ var sel=document.getElementById(id); while(sel.options.length>1)sel.remove(1); (rows||[]).forEach(function(r){ sel.appendChild(new Option(r[l]?r[v]+' — '+r[l]:r[v],r[v])); }); done(); }); }
-  fillS('fPiano','LK_PIANO','piano','descrizione');
-  fillS('fTipoSerr','LK_TIPO_SERR','sigla','descrizione');
-  fillS('fSenso','LK_SENSI_APERTURA','sigla','descrizione');
-  fillS('fTipoForo','LK_TIPO_FORO_SERR','sigla','descrizione');
-  fillS('fSchermatura','LK_SCHERMATURA','sigla','descrizione_completa');
-  fillS('fCassonetto','LK_CASSONETTO','sigla','descrizione');
-  fillS('fControtelaio','LK_CONTROTELAIO','sigla','descrizione');
-  DBLocal.getLookup('LK_ZANZARIERA',function(rows){ var sel=document.getElementById('fZanzariera'); while(sel.options.length>1)sel.remove(1); (rows||[]).forEach(function(r){sel.appendChild(new Option(r.sigla+(r.descrizione?' — '+r.descrizione:''),r.sigla));}); done(); });
-  DBLocal.getLookup('LK_DINOXILL',function(rows){ var sel=document.getElementById('fDinoxill'); while(sel.options.length>1)sel.remove(1); (rows||[]).forEach(function(r){sel.appendChild(new Option(r.sigla+(r.descrizione?' — '+r.descrizione:''),r.sigla));}); done(); });
-  // materiale cascade da db_serramento
-  var mats=[]; _dbSerr.forEach(function(r){ if(r.materiale&&mats.indexOf(r.materiale)<0) mats.push(r.materiale); }); mats.sort();
+  fillS('fPiano','LK_PIANO','piano','descrizione');           // 1
+  fillS('fTipoSerr','LK_TIPO_SERR','sigla','descrizione');    // 2
+  fillS('fSenso','LK_SENSI_APERTURA','sigla','descrizione');  // 3
+  fillS('fTipoForo','LK_TIPO_FORO_SERR','sigla','descrizione'); // 4
+  fillS('fSchermatura','LK_SCHERMATURA','sigla','descrizione_completa'); // 5
+  fillS('fCassonetto','LK_CASSONETTO','sigla','descrizione'); // 6
+  fillS('fControtelaio','LK_CONTROTELAIO','sigla','descrizione'); // 7
+  DBLocal.getLookup('LK_ZANZARIERA',function(rows){
+    var sel=document.getElementById('fZanzariera'); while(sel.options.length>1)sel.remove(1);
+    (rows||[]).forEach(function(r){sel.appendChild(new Option(r.sigla+(r.descrizione?' — '+r.descrizione:''),r.sigla));});
+    done(); // 8
+  });
+  DBLocal.getLookup('LK_DINOXILL',function(rows){
+    var sel=document.getElementById('fDinoxill'); while(sel.options.length>1)sel.remove(1);
+    (rows||[]).forEach(function(r){sel.appendChild(new Option(r.sigla+(r.descrizione?' — '+r.descrizione:''),r.sigla));});
+    done(); // 9
+  });
+  // N CAMPI hardcoded 1-6
+  var selNC=document.getElementById('fNCampi'); while(selNC.options.length>1)selNC.remove(1);
+  [1,2,3,4,5,6].forEach(function(n){selNC.appendChild(new Option(n,n));});
+  // Materiali da db_serramento (sync)
+  var mats=[]; _dbSerr.forEach(function(r){if(r.materiale&&mats.indexOf(r.materiale)<0)mats.push(r.materiale);}); mats.sort();
   var selM=document.getElementById('fMateriale'); while(selM.options.length>1)selM.remove(1);
   mats.forEach(function(m){selM.appendChild(new Option(m,m));});
-  // coprifili materiali
+  // Coprifili materiali (sync)
   var matsC=[]; _lkCopri.forEach(function(r){if(r.materiale_sigla&&matsC.indexOf(r.materiale_sigla)<0)matsC.push(r.materiale_sigla);}); matsC.sort();
-  ['fCopriIntMat','fCopriEstMat'].forEach(function(id){ var sel=document.getElementById(id); while(sel.options.length>1)sel.remove(1); matsC.forEach(function(m){sel.appendChild(new Option(m,m));}); });
-  // stratigrafie
-  DBLocal.getAll('stratigrafie',function(st){ var sel=document.getElementById('fStratigrafia'); while(sel.options.length>1)sel.remove(1); st.forEach(function(s){sel.appendChild(new Option(s.nome||s.id,s.id));}); if(cb){cb();cb=null;} });
+  ['fCopriIntMat','fCopriEstMat'].forEach(function(id){var sel=document.getElementById(id);while(sel.options.length>1)sel.remove(1);matsC.forEach(function(m){sel.appendChild(new Option(m,m));});});
+  // Stratigrafie (async — 10a operazione)
+  DBLocal.getAll('stratigrafie',function(st){
+    var sel=document.getElementById('fStratigrafia'); while(sel.options.length>1)sel.remove(1);
+    st.forEach(function(s){sel.appendChild(new Option(s.nome||s.id,s.id));});
+    done(); // 10
+  });
 }
 function afterDropdowns(){}
 
@@ -535,7 +544,7 @@ function populateForm(p){
   function sv(id,val){ var el=document.getElementById(id); if(el) el.value=val||''; }
   function sc(id,val){ var el=document.getElementById(id); if(el) el.checked=!!val; }
   sv('fNumAlfa', p.numero_pos_alfa);
-  sv('fPiano', p.piano!=null?p.piano:'');
+  sv('fPiano', p.piano!=null?String(p.piano):'');
   sv('fAmbiente', p.ambiente);
   sv('fTipoSerr', p.tipo_serramento);
   sv('fTipoForo', p.tipo_foro);
@@ -564,7 +573,7 @@ function populateForm(p){
         sv('fVarSx', p.variante_sx); sv('fVarDx', p.variante_dx);
         sv('fNVetri', p.n_vetri); sv('fCodice', p.codice||'');
         // colori
-        updateColoriDropdowns(); setTimeout(function(){
+        if(_lkColori.length) updateColoriDropdowns(); setTimeout(function(){
           sv('fColoreInt', p.colore_int);
           onColoreIntChange(); setTimeout(function(){ sv('fColoreEst', p.colore_est); },100);
         },100);
@@ -655,7 +664,7 @@ function salva(){
     if(err&&err!=='conflict'){ alert('Errore salvataggio: '+err); return; }
     _dirty=false;
     API.miniSync('posizioni_serr', function(){
-      window.location.href='rilievo-serr.html?id='+idRilievo;
+      window.location.replace('rilievo-serr.html?id='+idRilievo);
     });
   });
 }
@@ -665,7 +674,7 @@ function forceOverwrite(){
   API.savePosizione('posizioni_serr','update',data,null,function(err,saved){
     if(err){alert('Errore: '+err);return;}
     _dirty=false;
-    window.location.href='rilievo-serr.html?id='+idRilievo;
+    window.location.replace('rilievo-serr.html?id='+idRilievo);
   });
 }
 function reloadRecord(){
@@ -674,7 +683,7 @@ function reloadRecord(){
 }
 function confirmBack(){
   if(_dirty && !confirm('Hai modifiche non salvate. Vuoi uscire comunque?')) return;
-  window.location.href='rilievo-serr.html?id='+idRilievo;
+  window.location.replace('rilievo-serr.html?id='+idRilievo);
 }
 
 window.addEventListener('beforeunload',function(e){if(_dirty){e.preventDefault();e.returnValue='';}});
