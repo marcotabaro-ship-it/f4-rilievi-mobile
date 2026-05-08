@@ -187,13 +187,14 @@
       <div class="form-row-2m">
         <div class="form-group-m">
           <label class="form-label-m">Colore interno</label>
-          <input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>
+          <select class="form-ctrl" id="fColoreInt" onchange="onColoreIntChange()"><option value="">—</option></select>
         </div>
         <div class="form-group-m">
           <label class="form-label-m">Colore esterno</label>
-          <input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio Antracite" onchange="markDirty()"/>
+          <select class="form-ctrl" id="fColoreEst" onchange="markDirty()" disabled><option value="">—</option></select>
         </div>
       </div>
+      <div id="coloriNote" style="display:none;font-size:11px;color:var(--c-text-sec);margin-top:6px;">Colori non disponibili offline — sincronizza per caricarli</div>
     </div>
   </div>
 
@@ -509,8 +510,28 @@ function onSoloAccChange(){
   ricalcola();
 }
 // colori cascade
-function onColoreIntChange(){ markDirty(); } // colori sono text input, nessuna cascade
-function updateColoriDropdowns(){} // colori sono text input, nessuna cascade necessaria
+function onColoreIntChange(){
+  markDirty();
+  var ci=document.getElementById('fColoreInt').value;
+  var selE=document.getElementById('fColoreEst');
+  while(selE.options.length>1) selE.remove(1); selE.disabled=!ci;
+  var ests=[]; _lkColori.forEach(function(r){if(r.colore_interno===ci&&r.colore_esterno&&ests.indexOf(r.colore_esterno)<0)ests.push(r.colore_esterno);}); ests.sort();
+  ests.forEach(function(c){selE.appendChild(new Option(c,c));}); if(ests.length===1)selE.value=ests[0];
+}
+function updateColoriDropdowns(){
+  var selI=document.getElementById('fColoreInt'); while(selI.options.length>1)selI.remove(1);
+  if(!_lkColori.length){
+    // Fallback: text input se lk_colori non disponibile
+    var note=document.getElementById('coloriNote'); if(note)note.style.display='';
+    selI.outerHTML='<input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>';
+    var selE=document.getElementById('fColoreEst');
+    if(selE&&selE.tagName==='SELECT') selE.outerHTML='<input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio Antracite" onchange="markDirty()"/>';
+    return;
+  }
+  var mat=document.getElementById('fMateriale').value;
+  var ints=[]; _lkColori.forEach(function(r){if(!mat||(r.materiale===mat||!r.materiale)){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}});ints.sort();
+  ints.forEach(function(c){selI.appendChild(new Option(c,c));}); selI.disabled=false;
+}
 function onCopriMatChange(lato){
   markDirty();
   var mat=document.getElementById(lato==='int'?'fCopriIntMat':'fCopriEstMat').value;
@@ -594,8 +615,8 @@ function raccogliDati(){
     ambiente: document.getElementById('fAmbiente').value||null,
     tipo_serramento: soloAcc?null:document.getElementById('fTipoSerr').value||null,
     tipo_foro: document.getElementById('fTipoForo').value||null,
-    L_mm: parseInt(document.getElementById('fLmm').value)||null,
-    H_mm: parseInt(document.getElementById('fHmm').value)||null,
+    l_mm: parseInt(document.getElementById('fLmm').value)||null,
+    h_mm: parseInt(document.getElementById('fHmm').value)||null,
     id_stratigrafia: document.getElementById('fStratigrafia').value||null,
     rimozione: document.getElementById('fRimozione').checked?'SI':null,
     rimozione_accessori: document.getElementById('fRimozioneAcc').checked||null,
