@@ -1,11 +1,14 @@
-var CACHE_NAME = 'f4-mobile-v2';
+var CACHE_NAME = 'f4-mobile-v3';
 var APP_SHELL = [
   '/f4-rilievi-mobile/',
   '/f4-rilievi-mobile/index.html',
   '/f4-rilievi-mobile/login.html',
   '/f4-rilievi-mobile/home.html',
-  '/f4-rilievi-mobile/clienti.html',
-  '/f4-rilievi-mobile/rilievi.html',
+  '/f4-rilievi-mobile/cliente.html',
+  '/f4-rilievi-mobile/rilievo-serr.html',
+  '/f4-rilievi-mobile/rilievo-porte.html',
+  '/f4-rilievi-mobile/pos-serr-edit.html',
+  '/f4-rilievi-mobile/pos-porte-edit.html',
   '/f4-rilievi-mobile/css/mobile.css',
   '/f4-rilievi-mobile/js/config.js',
   '/f4-rilievi-mobile/js/auth.js',
@@ -35,11 +38,13 @@ self.addEventListener('fetch', function(e){
   if(e.request.method !== 'GET') return;
   var url = e.request.url;
   if(url.indexOf('supabase.co') > -1) return;
+  if(url.indexOf('fonts.googleapis.com') > -1) return;
+  if(url.indexOf('fonts.gstatic.com') > -1) return;
   e.respondWith(
     caches.match(e.request).then(function(cached){
       if(cached) return cached;
       return fetch(e.request).then(function(resp){
-        if(!resp || resp.status !== 200) return resp;
+        if(!resp || resp.status !== 200 || resp.type === 'opaque') return resp;
         var clone = resp.clone();
         caches.open(CACHE_NAME).then(function(cache){ cache.put(e.request, clone); });
         return resp;
