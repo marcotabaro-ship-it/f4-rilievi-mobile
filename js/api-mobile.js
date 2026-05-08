@@ -72,15 +72,21 @@ var API = (function(){
     }, function(){ cb(false); });
   }
 
-  function sanitizePayload(payload){
+  function sanitizePayload(payload, table){
     var bools=['telaio_misto','solo_accessori','rimozione','rimozione_accessori',
-               'taglio_marmo','angolari_pvc','sopraluce','vetri','mostrine',
-               'allargamento_telaio','fornitura_ctl_int','fornitura_ctl_bli',
-               'fornitura_ctl_rei','install_ctl_int','install_ctl_bli','install_ctl_rei'];
+               'taglio_marmo','angolari_pvc'];
+    if(table==='posizioni_porte'){
+      bools=bools.concat(['sopraluce','vetri','mostrine','allargamento_telaio',
+        'fornitura_ctl_int','fornitura_ctl_bli','fornitura_ctl_rei',
+        'install_ctl_int','install_ctl_bli','install_ctl_rei']);
+    }
     bools.forEach(function(k){
       if(payload[k]===null||payload[k]===undefined) payload[k]=false;
       if(payload[k]==='SI'||payload[k]==='true') payload[k]=true;
       if(payload[k]==='NO'||payload[k]==='false') payload[k]=false;
+    });
+    Object.keys(payload).forEach(function(k){
+      if(payload[k]===undefined) delete payload[k];
     });
     return payload;
   }
@@ -99,13 +105,13 @@ var API = (function(){
     function doSave(){
       var method=op==='insert'?'POST':'PATCH';
       var path=table+(op!=='insert'?'?id=eq.'+data.id:'');
-      var payload=sanitizePayload(Object.assign({},data));
+      var payload=sanitizePayload(Object.assign({},data), table);
       if(op==='insert'){ delete payload.id; }
       payload.updated_at=new Date().toISOString();
       spost(path, payload, method, function(res){
         var saved=Array.isArray(res)?res[0]:res;
         if(!saved || !saved.id){
-          cb('Supabase ha restituito risposta vuota. Controlla i campi obbligatori o i permessi RLS.', null, false);
+          cb('Supabase ha restituito risposta vuota. Controlla RLS.', null, false);
           return;
         }
         DBLocal.putOne(table, saved, function(){ cb(null, saved, false); });
@@ -256,7 +262,7 @@ var API = (function(){
         var method=item.op==='insert'?'POST':(item.op==='update'?'PATCH':'DELETE');
         var path=item.table+(item.op!=='insert'?'?id=eq.'+item.data.id:'');
         setTimeout(function(){
-          spost(path, sanitizePayload(Object.assign({},item.data)), method, function(){
+          spost(path, sanitizePayload(Object.assign({},item.data), item.table), method, function(){
             DBLocal.removeFromQueue('sync_queue', item._qid, next);
           }, function(err){
             console.error('sync queue error', err);
