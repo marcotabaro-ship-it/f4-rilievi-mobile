@@ -90,7 +90,12 @@
     <button class="sheet-close" onclick="closeSheet()">&#10005;</button>
   </div>
   <div class="sheet-body" id="shBody"></div>
+  <div class="sheet-footer">
+    <button class="btn btn-primary btn-full" id="btnModifica" onclick="modificaPosizione()">&#9998; Modifica posizione</button>
+  </div>
 </div>
+
+<button class="btn-fab" id="fabNuova" onclick="nuovaPosizione()" title="Nuova posizione" style="display:none;">&#43;</button>
 
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
@@ -264,6 +269,7 @@ function renderPosizioni() {
   }
 
   container.innerHTML = html;
+  document.getElementById('fabNuova').style.display = '';
 }
 
 function renderPosizioneRow(p) {
@@ -399,6 +405,21 @@ function apriDettaglio(id) {
 function closeSheet() {
   document.getElementById('sheetOverlay').className = 'sheet-overlay';
   document.getElementById('sheetPos').className = 'bottom-sheet';
+}
+
+function nuovaPosizione(){
+  window.location.href='pos-serr-edit.html?id_rilievo='+idRilievo;
+}
+var _currentPosId = null;
+var _origApriDettaglio = apriDettaglio;
+function apriDettaglio(id){
+  _currentPosId = id;
+  _origApriDettaglio(id);
+}
+function modificaPosizione(){
+  if(!_currentPosId) return;
+  closeSheet();
+  window.location.href='pos-serr-edit.html?id_rilievo='+idRilievo+'&id='+_currentPosId;
 }
 
 load();
