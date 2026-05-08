@@ -146,11 +146,11 @@
       <div class="form-row-2m">
         <div class="form-group-m">
           <label class="form-label-m">Colore interno</label>
-          <select class="form-ctrl" id="fColoreInt" onchange="onColoreIntChange()" disabled><option value="">—</option></select>
+          <input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>
         </div>
         <div class="form-group-m">
           <label class="form-label-m">Colore esterno</label>
-          <select class="form-ctrl" id="fColoreEst" onchange="markDirty()" disabled><option value="">—</option></select>
+          <input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio" onchange="markDirty()"/>
         </div>
       </div>
     </div>
@@ -201,6 +201,7 @@ var idRilievo=params.get('id_rilievo');
 var idPos=params.get('id');
 var isNew=!idPos;
 var _dirty=false, _loadedAt=0, _rec={}, _dbPorte=[], _lkColori=[];
+var _nextNumPos=1;
 
 if(!idRilievo){ history.back(); }
 
@@ -228,6 +229,11 @@ function ricalcola(){
 function markDirty(){ _dirty=true; }
 
 function load(){
+  DBLocal.getAll('posizioni_porte',function(allPos){
+    var fr=allPos.filter(function(p){return p.id_rilievo===idRilievo;});
+    var mx=0; fr.forEach(function(p){if((parseInt(p.numero_pos)||0)>mx)mx=parseInt(p.numero_pos)||0;});
+    _nextNumPos=mx+1;
+  });
   DBLocal.getAll('db_porte',function(db){ _dbPorte=db;
     DBLocal.getLookup('LK_COLORI',function(col){ _lkColori=col||[];
       buildDropdowns(function(){
@@ -284,18 +290,8 @@ function onStileChange(){
   vari.forEach(function(v){selV.appendChild(new Option(v,v));});
   selV.disabled=false; ricalcola();
 }
-function updateColoriDropdowns(){
-  var selI=document.getElementById('fColoreInt'); while(selI.options.length>1)selI.remove(1);
-  var ints=[]; _lkColori.forEach(function(r){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}); ints.sort();
-  ints.forEach(function(c){selI.appendChild(new Option(c,c));}); selI.disabled=false;
-}
-function onColoreIntChange(){
-  markDirty();
-  var ci=document.getElementById('fColoreInt').value;
-  var selE=document.getElementById('fColoreEst'); while(selE.options.length>1)selE.remove(1); selE.disabled=!ci;
-  var ests=[]; _lkColori.forEach(function(r){if(r.colore_interno===ci&&r.colore_esterno&&ests.indexOf(r.colore_esterno)<0)ests.push(r.colore_esterno);}); ests.sort();
-  ests.forEach(function(c){selE.appendChild(new Option(c,c));}); if(ests.length===1)selE.value=ests[0];
-}
+function updateColoriDropdowns(){} // colori sono text input
+function onColoreIntChange(){ markDirty(); } // colori sono text input
 
 function setupNew(){
   document.getElementById('tbTitle').textContent='Nuova posizione';
@@ -339,6 +335,8 @@ function populateForm(p){
 
 function raccogliDati(){
   return Object.assign({},_rec,{
+    numero_pos: isNew?_nextNumPos:(_rec.numero_pos||null),
+    ordine: isNew?(_nextNumPos*10):(_rec.ordine||null),
     numero_pos_alfa:document.getElementById('fNumAlfa').value||null,
     piano:(function(v){return v!==''?parseInt(v):null;})(document.getElementById('fPiano').value),
     ambiente:document.getElementById('fAmbiente').value||null,
@@ -381,7 +379,7 @@ function salva(){
   API.savePosizione('posizioni_porte',op,data,isNew?null:_loadedAt,function(err,saved,conflict){
     btn.disabled=false; btn.innerHTML='&#128190; Salva posizione';
     if(conflict){document.getElementById('conflictBanner').style.display='';window.scrollTo(0,0);return;}
-    if(err){alert('Errore: '+err);return;}
+    if(err){alert('Errore salvataggio:\n\n'+err+'\n\nVerifica campi obbligatori.');return;}
     _dirty=false;
     API.miniSync('posizioni_porte',function(){ window.location.replace('rilievo-porte.html?id='+idRilievo); });
   });
