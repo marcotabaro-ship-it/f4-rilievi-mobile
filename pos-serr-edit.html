@@ -275,8 +275,9 @@
   <div style="height:80px;"></div>
 </div>
 
-<div class="save-area">
-  <button class="btn-save" onclick="salva()">&#128190; Salva posizione</button>
+<div class="save-area" style="display:flex;gap:10px;">
+  <button onclick="confirmBack()" style="padding:14px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">&#8592; Annulla</button>
+  <button class="btn-save" style="flex:1;" onclick="salva()">&#128190; Salva posizione</button>
 </div>
 
 <script src="js/config.js"></script>
@@ -610,6 +611,11 @@ function loadStratigrafie(){
 function load(){
   DBLocal.getAll('db_serramento',function(db){
     _dbSerr=db;
+    // Popola dropdown Materiale dalle opzioni di db_serramento
+    var matSeen={};_dbSerr.forEach(function(d){if(d&&d.materiale)matSeen[d.materiale]=1;});
+    var mSel=document.getElementById('fMateriale');
+    while(mSel.options.length>1)mSel.remove(1);
+    Object.keys(matSeen).sort().forEach(function(m){mSel.appendChild(new Option(m,m));});
     DBLocal.getLookup('LK_COLORI',function(col){
       _lkColori=col||[];
       DBLocal.getLookup('LK_COPRIFILI',function(cop){
