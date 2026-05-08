@@ -17,7 +17,7 @@
     .form-group-m{margin-bottom:12px;}
     .form-label-m{display:block;font-size:11px;font-weight:600;color:var(--c-text-sec);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px;}
     .req{color:var(--c-red);}
-    .form-ctrl{width:100%;border:2px solid var(--c-border);border-radius:10px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--c-text);background:var(--c-surface);outline:none;-webkit-appearance:none;transition:border-color .15s;}
+    .form-ctrl{width:100%;border:2px solid var(--c-border);border-radius:10px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--c-text);background:var(--c-surface);outline:none;-webkit-appearance:none;transition:border-color .15s;box-sizing:border-box;}
     .form-ctrl:focus{border-color:var(--c-orange);}
     .form-ctrl:disabled{background:var(--c-bg);color:var(--c-text-sec);}
     .chk-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--c-border);cursor:pointer;}
@@ -42,12 +42,13 @@
   <button class="top-bar-btn" style="background:var(--c-orange);border-radius:8px;width:auto;padding:0 14px;font-size:13px;font-weight:700;" onclick="salva()">&#128190; Salva</button>
 </div>
 
-<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 32px;">
+<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 32px;" id="formWrap">
 
   <div class="conflict-banner" id="conflictBanner">
     &#9888; Record modificato da un altro utente.
-    <br><button onclick="forceOverwrite()">Sovrascrivi</button>
-    <button onclick="reloadRecord()" style="background:var(--c-orange);">Aggiorna e riapri</button>
+    <br>
+    <button onclick="reloadRecord()">Aggiorna e riapri</button>
+    <button onclick="forceOverwrite()" style="background:var(--c-orange);">Sovrascrivi</button>
   </div>
 
   <div class="calc-strip">
@@ -61,12 +62,13 @@
     <div class="fsec-body">
       <div class="form-group-m">
         <label class="form-label-m">N&deg; posizione <span style="font-size:10px;font-weight:400;">(max 7 caratteri)</span></label>
-        <input class="form-ctrl" type="text" id="fNumAlfa" maxlength="7" placeholder="es. CAM01" oninput="this.value=this.value.toUpperCase()" onchange="markDirty()"/>
+        <input class="form-ctrl" type="text" id="fNumAlfa" maxlength="7" placeholder="es. CAM01"
+          oninput="this.value=this.value.toUpperCase()" onchange="markDirty()"/>
       </div>
       <div class="form-row-2m">
         <div class="form-group-m">
           <label class="form-label-m">Piano <span class="req">*</span></label>
-          <select class="form-ctrl" id="fPiano" onchange="markDirty()"><option value="">—</option></select>
+          <select class="form-ctrl" id="fPiano" onchange="markDirty()"><option value="">— Piano —</option></select>
         </div>
         <div class="form-group-m">
           <label class="form-label-m">Ambiente</label>
@@ -153,7 +155,6 @@
           <select class="form-ctrl" id="fColoreEst" onchange="markDirty()" disabled><option value="">—</option></select>
         </div>
       </div>
-      <div id="coloriNote" style="display:none;font-size:11px;color:var(--c-text-sec);margin-top:6px;">Colori non disponibili offline — sincronizza per caricarli</div>
     </div>
   </div>
 
@@ -171,8 +172,7 @@
           </select>
         </div>
         <div class="form-group-m">
-          <label class="form-label-m" style="padding-top:20px;">&nbsp;</label>
-          <div class="chk-row" style="padding:11px 0;border:none;">
+          <div class="chk-row" style="padding:30px 0 11px;border:none;">
             <input type="checkbox" id="fRivestimento" onchange="markDirty()"/>
             <label for="fRivestimento">Rivestimento stipiti</label>
           </div>
@@ -181,7 +181,7 @@
     </div>
   </div>
 
-  <div style="padding:16px 14px 24px;">
+  <div style="padding:4px 0 24px;">
     <button class="btn btn-orange btn-full btn-lg" onclick="salva()">&#128190; Salva posizione</button>
     <div style="text-align:center;margin-top:12px;">
       <button class="btn btn-ghost" onclick="confirmBack()">Annulla e torna indietro</button>
@@ -194,236 +194,361 @@
 <script src="js/db-local.js"></script>
 <script src="js/api-mobile.js"></script>
 <script>
-var currentUser=Auth.requireLogin();
-if(!currentUser) throw new Error('not logged');
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
 
-var params=new URLSearchParams(window.location.search);
-var idRilievo=params.get('id_rilievo');
-var idPos=params.get('id');
-var isNew=!idPos;
-var _dirty=false, _loadedAt=0, _rec={}, _dbPorte=[], _lkColori=[];
-var _nextNumPos=1;
+var params = new URLSearchParams(window.location.search);
+var idRilievo = params.get('id_rilievo');
+var idPos = params.get('id');
+var isNew = !idPos;
+var _dirty = false, _loadedAt = 0, _rec = {}, _dbPorte = [], _lkColori = [];
+var _nextNumPos = 1;
 
-if(!idRilievo){ history.back(); }
+if (!idRilievo) { history.back(); }
 
-function ricalcola(){
-  markDirty();
-  var L=parseFloat(document.getElementById('fLmm').value)||0;
-  var H=parseFloat(document.getElementById('fHmm').value)||0;
-  var tf=document.getElementById('fTipoForo').value;
-  document.getElementById('cLins').textContent=(L&&H)?L+' x '+H:'—';
-  if(!L||!H){ document.getElementById('cLord').textContent='—'; return; }
-  var ord=null;
-  if(tf==='N'){ ord={Lt:L,Ht:H}; }
-  else if(tf==='P'){
-    var forn=document.getElementById('fFornitore').value;
-    var sis=document.getElementById('fSistema').value;
-    var stil=document.getElementById('fStile').value;
-    var rec=null;
-    for(var i=0;i<_dbPorte.length;i++){ var d=_dbPorte[i]; if((d.fornitore===forn||!forn)&&(d.descrizione===sis||d.sistema===sis)&&(!stil||d.stile_design===stil)){rec=d;break;} }
-    var offL=rec?(parseFloat(rec.offset_larghezza_mm)||0):0;
-    var offH=rec?(parseFloat(rec.offset_altezza_mm)||0):0;
-    ord={Lt:Math.round(L+offL),Ht:Math.round(H+offH)};
+// ── UTILITY ──
+function setOpt(id, val) {
+  if (val === null || val === undefined || val === '') return;
+  var v = String(val);
+  var el = document.getElementById(id);
+  if (!el) return;
+  if (el.tagName === 'SELECT') {
+    if (!Array.from(el.options).some(function(o) { return o.value === v; })) {
+      var o = document.createElement('option');
+      o.value = v; o.text = v; el.appendChild(o);
+    }
   }
-  document.getElementById('cLord').textContent=ord?ord.Lt+' x '+ord.Ht:'—';
+  el.value = v;
 }
-function markDirty(){ _dirty=true; }
+function sc(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.checked = !!(val === true || val === 'true' || val === 'SI');
+}
+function markDirty() { _dirty = true; }
 
-function load(){
-  DBLocal.getAll('posizioni_porte',function(allPos){
-    var fr=allPos.filter(function(p){return p.id_rilievo===idRilievo;});
-    var mx=0; fr.forEach(function(p){if((parseInt(p.numero_pos)||0)>mx)mx=parseInt(p.numero_pos)||0;});
-    _nextNumPos=mx+1;
+// ── CALCOLO ──
+function ricalcola() {
+  markDirty();
+  var L = parseFloat(document.getElementById('fLmm').value) || 0;
+  var H = parseFloat(document.getElementById('fHmm').value) || 0;
+  document.getElementById('cLins').textContent = (L && H) ? L + ' x ' + H : '—';
+  if (!L || !H) { document.getElementById('cLord').textContent = '—'; return; }
+  var tf = document.getElementById('fTipoForo').value;
+  var ord = null;
+  if (tf === 'N') {
+    ord = {Lt: L, Ht: H};
+  } else if (tf === 'P') {
+    var forn = document.getElementById('fFornitore').value;
+    var sis = document.getElementById('fSistema').value;
+    var stil = document.getElementById('fStile').value;
+    var rec = null;
+    for (var i = 0; i < _dbPorte.length; i++) {
+      var d = _dbPorte[i];
+      if ((d.fornitore === forn || !forn) && (d.descrizione === sis || d.sistema === sis) && (!stil || d.stile_design === stil)) { rec = d; break; }
+    }
+    var offL = rec ? (parseFloat(rec.offset_larghezza_mm) || 0) : 0;
+    var offH = rec ? (parseFloat(rec.offset_altezza_mm) || 0) : 0;
+    ord = {Lt: Math.round(L + offL), Ht: Math.round(H + offH)};
+  }
+  document.getElementById('cLord').textContent = ord ? ord.Lt + ' x ' + ord.Ht : '—';
+}
+
+// ── CARICAMENTO INIZIALE ──
+function load() {
+  // Calcola prossimo numero posizione
+  DBLocal.getAll('posizioni_porte', function(allPos) {
+    var fr = allPos.filter(function(p) { return p.id_rilievo === idRilievo; });
+    var mx = 0;
+    fr.forEach(function(p) { if ((parseInt(p.numero_pos) || 0) > mx) mx = parseInt(p.numero_pos) || 0; });
+    _nextNumPos = mx + 1;
   });
-  DBLocal.getAll('db_porte',function(db){ _dbPorte=db;
-    DBLocal.getLookup('LK_COLORI',function(col){ _lkColori=col||[];
-      buildDropdowns(function(){
-        if(isNew) setupNew(); else loadExisting();
+
+  DBLocal.getAll('db_porte', function(db) {
+    _dbPorte = db;
+    DBLocal.getLookup('LK_COLORI', function(col) {
+      _lkColori = col || [];
+      buildDropdowns(function() {
+        if (isNew) setupNew(); else loadExisting();
       });
     });
   });
 }
 
-function buildDropdowns(cb){
-  var pending=4;
-  function done(){ pending--; if(pending<=0&&cb){cb();cb=null;} }
-  function fillS(id,lk,v,l){ DBLocal.getLookup(lk,function(rows){ var sel=document.getElementById(id); while(sel.options.length>1)sel.remove(1); (rows||[]).forEach(function(r){sel.appendChild(new Option(r[l]?r[v]+' — '+r[l]:r[v],r[v]));}); done(); }); }
-  fillS('fPiano','LK_PIANO','piano','descrizione');
-  fillS('fTipoPorta','LK_TIPO_PORTA','sigla','descrizione');
-  fillS('fSenso','LK_SENSI_APERTURA','sigla','descrizione');
-  // fornitori da db_porte
-  var forn=[]; _dbPorte.forEach(function(r){if(r.fornitore&&forn.indexOf(r.fornitore)<0)forn.push(r.fornitore);}); forn.sort();
-  var selF=document.getElementById('fFornitore'); while(selF.options.length>1)selF.remove(1);
-  forn.forEach(function(f){selF.appendChild(new Option(f,f));});
+// ── DROPDOWN LOOKUP ──
+function buildDropdowns(cb) {
+  var total = 4, done_count = 0;
+  function done() { done_count++; if (done_count >= total && cb) cb(); }
+
+  // Piano — stesso formato di serramenti
+  DBLocal.getLookup('LK_PIANO', function(rows) {
+    var sel = document.getElementById('fPiano');
+    while (sel.options.length > 1) sel.remove(1);
+    (rows || []).sort(function(a, b) { return a.piano - b.piano; }).forEach(function(r) {
+      sel.appendChild(new Option('Piano ' + (r.piano >= 0 ? '+' : '') + r.piano, r.piano));
+    });
+    done();
+  });
+
+  // Tipo porta
+  DBLocal.getLookup('LK_TIPO_PORTA', function(rows) {
+    var sel = document.getElementById('fTipoPorta');
+    while (sel.options.length > 1) sel.remove(1);
+    (rows || []).forEach(function(r) {
+      if (r && r.sigla) sel.appendChild(new Option(r.sigla + (r.descrizione ? ' — ' + r.descrizione : ''), r.sigla));
+    });
+    done();
+  });
+
+  // Senso apertura
+  DBLocal.getLookup('LK_SENSI_APERTURA', function(rows) {
+    var sel = document.getElementById('fSenso');
+    while (sel.options.length > 1) sel.remove(1);
+    (rows || []).forEach(function(r) {
+      if (r && r.sigla) sel.appendChild(new Option(r.sigla + (r.descrizione ? ' — ' + r.descrizione : ''), r.sigla));
+    });
+    done();
+  });
+
+  // Fornitori da db_porte
+  var forn = [];
+  _dbPorte.forEach(function(r) { if (r.fornitore && forn.indexOf(r.fornitore) < 0) forn.push(r.fornitore); });
+  forn.sort();
+  var selF = document.getElementById('fFornitore');
+  while (selF.options.length > 1) selF.remove(1);
+  forn.forEach(function(f) { selF.appendChild(new Option(f, f)); });
   done();
 }
 
-function onFornitoreChange(){
-  markDirty();
-  var forn=document.getElementById('fFornitore').value;
-  var selS=document.getElementById('fSistema'); while(selS.options.length>1)selS.remove(1); selS.disabled=!forn;
-  if(!forn){['fStile','fVariante'].forEach(function(id){var s=document.getElementById(id);while(s.options.length>1)s.remove(1);s.disabled=true;});return;}
-  var sis=[]; _dbPorte.forEach(function(r){if(r.fornitore===forn){var v=r.descrizione||r.sistema;if(v&&sis.indexOf(v)<0)sis.push(v);}});sis.sort();
-  sis.forEach(function(s){selS.appendChild(new Option(s,s));});
-  selS.disabled=false;
-  updateColoriDropdowns();ricalcola();
-}
-function onSistemaChange(){
-  markDirty();
-  var forn=document.getElementById('fFornitore').value;
-  var sis=document.getElementById('fSistema').value;
-  var selSt=document.getElementById('fStile'); while(selSt.options.length>1)selSt.remove(1);
-  if(!sis){selSt.disabled=true;return;}
-  var stili=[]; _dbPorte.forEach(function(r){if(r.fornitore===forn&&(r.descrizione===sis||r.sistema===sis)){if(r.stile_design&&stili.indexOf(r.stile_design)<0)stili.push(r.stile_design);}});stili.sort();
-  stili.forEach(function(s){selSt.appendChild(new Option(s,s));});
-  selSt.disabled=false;
-  var selV=document.getElementById('fVariante'); while(selV.options.length>1)selV.remove(1); selV.disabled=true;
+// ── CASCADE FORNITORE → SISTEMA → STILE → VARIANTE ──
+function onFornitoreChange(silent) {
+  if (!silent) markDirty();
+  var forn = document.getElementById('fFornitore').value;
+  var selS = document.getElementById('fSistema');
+  selS.innerHTML = '<option value="">— seleziona fornitore —</option>';
+  selS.disabled = !forn;
+  ['fStile', 'fVariante'].forEach(function(id) {
+    var s = document.getElementById(id); s.innerHTML = '<option value="">—</option>'; s.disabled = true;
+  });
+  if (!forn) return;
+  var sis = [];
+  _dbPorte.forEach(function(r) {
+    if (r.fornitore === forn) { var v = r.descrizione || r.sistema; if (v && sis.indexOf(v) < 0) sis.push(v); }
+  });
+  sis.sort();
+  sis.forEach(function(s) { selS.appendChild(new Option(s, s)); });
+  selS.disabled = false;
+  updateColoriDropdowns();
   ricalcola();
 }
-function onStileChange(){
-  markDirty();
-  var forn=document.getElementById('fFornitore').value;
-  var sis=document.getElementById('fSistema').value;
-  var stil=document.getElementById('fStile').value;
-  var selV=document.getElementById('fVariante'); while(selV.options.length>1)selV.remove(1);
-  if(!stil){selV.disabled=true;return;}
-  var vari=[]; _dbPorte.forEach(function(r){if(r.fornitore===forn&&(r.descrizione===sis||r.sistema===sis)&&r.stile_design===stil){if(r.variante_telaio&&vari.indexOf(r.variante_telaio)<0)vari.push(r.variante_telaio);}});vari.sort();
-  vari.forEach(function(v){selV.appendChild(new Option(v,v));});
-  selV.disabled=false; ricalcola();
-}
-function updateColoriDropdowns(){
-  var selI=document.getElementById('fColoreInt'); while(selI.options.length>1)selI.remove(1);
-  if(!_lkColori.length){
-    // Fallback: text input se lk_colori vuoto
-    var note=document.getElementById('coloriNote'); if(note)note.style.display='';
-    selI.outerHTML='<input class="form-ctrl" type="text" id="fColoreInt" placeholder="es. Bianco" onchange="markDirty()"/>';
-    var selE=document.getElementById('fColoreEst');
-    if(selE&&selE.tagName==='SELECT') selE.outerHTML='<input class="form-ctrl" type="text" id="fColoreEst" placeholder="es. Grigio Antracite" onchange="markDirty()"/>';
-    return;
-  }
-  // Mostra tutti i colori interni disponibili (senza filtro materiale)
-  var selI2=document.getElementById('fColoreInt');
-  var ints=[]; _lkColori.forEach(function(r){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}); ints.sort();
-  ints.forEach(function(c){selI2.appendChild(new Option(c,c));}); selI2.disabled=false;
-}
-function onColoreIntChange(){
-  markDirty();
-  var el=document.getElementById('fColoreInt');
-  if(!el||el.tagName!=='SELECT') return;
-  var ci=el.value;
-  var selE=document.getElementById('fColoreEst');
-  if(!selE||selE.tagName!=='SELECT') return;
-  while(selE.options.length>1) selE.remove(1); selE.disabled=!ci;
-  var ests=[]; _lkColori.forEach(function(r){if(r.colore_interno===ci&&r.colore_esterno&&ests.indexOf(r.colore_esterno)<0)ests.push(r.colore_esterno);}); ests.sort();
-  ests.forEach(function(c){selE.appendChild(new Option(c,c));}); if(ests.length===1)selE.value=ests[0];
+
+function onSistemaChange(silent) {
+  if (!silent) markDirty();
+  var forn = document.getElementById('fFornitore').value;
+  var sis = document.getElementById('fSistema').value;
+  var selSt = document.getElementById('fStile');
+  selSt.innerHTML = '<option value="">—</option>';
+  selSt.disabled = true;
+  var selV = document.getElementById('fVariante');
+  selV.innerHTML = '<option value="">—</option>';
+  selV.disabled = true;
+  if (!sis) return;
+  var stili = [];
+  _dbPorte.forEach(function(r) {
+    if (r.fornitore === forn && (r.descrizione === sis || r.sistema === sis) && r.stile_design && stili.indexOf(r.stile_design) < 0)
+      stili.push(r.stile_design);
+  });
+  stili.sort();
+  stili.forEach(function(s) { selSt.appendChild(new Option(s, s)); });
+  selSt.disabled = false;
+  ricalcola();
 }
 
-function setupNew(){
-  document.getElementById('tbTitle').textContent='Nuova posizione';
-  document.getElementById('tbSub').textContent='Rilievo '+idRilievo.substring(0,8);
-  _loadedAt=Date.now(); _rec={id_rilievo:idRilievo,stato:'attivo'};
+function onStileChange(silent) {
+  if (!silent) markDirty();
+  var forn = document.getElementById('fFornitore').value;
+  var sis = document.getElementById('fSistema').value;
+  var stil = document.getElementById('fStile').value;
+  var selV = document.getElementById('fVariante');
+  selV.innerHTML = '<option value="">—</option>';
+  selV.disabled = true;
+  if (!stil) return;
+  var vari = [];
+  _dbPorte.forEach(function(r) {
+    if (r.fornitore === forn && (r.descrizione === sis || r.sistema === sis) && r.stile_design === stil && r.variante_telaio && vari.indexOf(r.variante_telaio) < 0)
+      vari.push(r.variante_telaio);
+  });
+  vari.sort();
+  vari.forEach(function(v) { selV.appendChild(new Option(v, v)); });
+  selV.disabled = false;
+  ricalcola();
 }
-function loadExisting(){
-  DBLocal.getById('posizioni_porte',idPos,function(p){
-    if(!p){alert('Posizione non trovata');history.back();return;}
-    _rec=p; _loadedAt=new Date(p.updated_at||0).getTime()||Date.now();
-    document.getElementById('tbTitle').textContent='Posizione '+(p.numero_pos_alfa||p.numero_pos||'?');
-    document.getElementById('tbSub').textContent='Modifica';
+
+function updateColoriDropdowns() {
+  var selI = document.getElementById('fColoreInt');
+  if (!selI || selI.tagName !== 'SELECT') return;
+  while (selI.options.length > 1) selI.remove(1);
+  if (!_lkColori.length) { selI.disabled = true; return; }
+  var ints = [];
+  _lkColori.forEach(function(r) { if (r.colore_interno && ints.indexOf(r.colore_interno) < 0) ints.push(r.colore_interno); });
+  ints.sort();
+  ints.forEach(function(c) { selI.appendChild(new Option(c, c)); });
+  selI.disabled = false;
+}
+
+function onColoreIntChange(silent) {
+  if (!silent) markDirty();
+  var selI = document.getElementById('fColoreInt');
+  if (!selI || selI.tagName !== 'SELECT') return;
+  var ci = selI.value;
+  var selE = document.getElementById('fColoreEst');
+  if (!selE || selE.tagName !== 'SELECT') return;
+  while (selE.options.length > 1) selE.remove(1);
+  selE.disabled = !ci;
+  var ests = [];
+  _lkColori.forEach(function(r) { if (r.colore_interno === ci && r.colore_esterno && ests.indexOf(r.colore_esterno) < 0) ests.push(r.colore_esterno); });
+  ests.sort();
+  ests.forEach(function(c) { selE.appendChild(new Option(c, c)); });
+  if (ests.length === 1) selE.value = ests[0];
+}
+
+// ── SETUP NUOVO ──
+function setupNew() {
+  document.getElementById('tbTitle').textContent = 'Nuova posizione';
+  document.getElementById('tbSub').textContent = 'Porte';
+  _loadedAt = Date.now();
+  _rec = {id_rilievo: idRilievo, stato: 'attivo'};
+}
+
+// ── CARICA ESISTENTE ──
+function loadExisting() {
+  DBLocal.getById('posizioni_porte', idPos, function(p) {
+    if (!p) { alert('Posizione non trovata'); history.back(); return; }
+    _rec = p;
+    _loadedAt = new Date(p.updated_at || 0).getTime() || Date.now();
+    document.getElementById('tbTitle').textContent = 'Posizione ' + (p.numero_pos_alfa || p.numero_pos || '?');
+    document.getElementById('tbSub').textContent = 'Modifica';
     populateForm(p);
   });
 }
-function populateForm(p){
-  function sv(id,v){ var el=document.getElementById(id);if(el)el.value=v||''; }
-  function sc(id,v){ var el=document.getElementById(id);if(el)el.checked=!!v; }
-  sv('fNumAlfa',p.numero_pos_alfa); sv('fPiano',p.piano!=null?p.piano:'');
-  sv('fAmbiente',p.ambiente); sv('fTipoPorta',p.tipo_porta);
-  sv('fNFoglie',p.n_foglie); sv('fTipoForo',p.tipo_foro); sv('fSenso',p.senso_apertura);
-  sv('fLmm',p.L_mm||p.l_mm); sv('fHmm',p.H_mm||p.h_mm); sv('fNote',p.note);
-  sc('fRimozione',p.rimozione==='SI'||p.rimozione===true);
-  sc('fTaglioMarmo',p.taglio_marmo); sc('fAngolariPvc',p.angolari_pvc);
-  sc('fRivestimento',p.rivestimento_stipiti); sv('fControtelaio',p.controtelaio);
-  sv('fFornitore',p.fornitore);
-  if(p.fornitore){ onFornitoreChange(); setTimeout(function(){
-    sv('fSistema',p.sistema);
-    if(p.sistema){ onSistemaChange(); setTimeout(function(){
-      sv('fStile',p.stile_design);
-      if(p.stile_design){ onStileChange(); setTimeout(function(){
-        sv('fVariante',p.variante_telaio);
-        updateColoriDropdowns(); setTimeout(function(){
-          sv('fColoreInt',p.colore_int); onColoreIntChange(); setTimeout(function(){ sv('fColoreEst',p.colore_est); },100);
-        },100);
-        ricalcola(); _dirty=false;
-      },100); }
-    },100); }
-  },100); }
+
+function populateForm(p) {
+  setOpt('fNumAlfa', p.numero_pos_alfa);
+  setOpt('fPiano', p.piano != null ? p.piano : '');
+  setOpt('fAmbiente', p.ambiente);
+  setOpt('fTipoPorta', p.tipo_porta);
+  setOpt('fNFoglie', p.n_foglie);
+  setOpt('fTipoForo', p.tipo_foro);
+  setOpt('fSenso', p.senso_apertura);
+  var lEl = document.getElementById('fLmm'); if (lEl) lEl.value = p.L_mm || p.l_mm || '';
+  var hEl = document.getElementById('fHmm'); if (hEl) hEl.value = p.H_mm || p.h_mm || '';
+  var nEl = document.getElementById('fNote'); if (nEl) nEl.value = p.note || '';
+  sc('fRimozione', p.rimozione);
+  sc('fTaglioMarmo', p.taglio_marmo);
+  sc('fAngolariPvc', p.angolari_pvc);
+  sc('fRivestimento', p.rivestimento_stipiti);
+  setOpt('fControtelaio', p.controtelaio);
+
+  // Cascade fornitore → sistema → stile → variante (sincrono come serramenti)
+  if (p.fornitore) {
+    setOpt('fFornitore', p.fornitore);
+    onFornitoreChange(true);
+    setOpt('fSistema', p.sistema);
+    if (p.sistema) {
+      onSistemaChange(true);
+      setOpt('fStile', p.stile_design);
+      if (p.stile_design) {
+        onStileChange(true);
+        setOpt('fVariante', p.variante_telaio);
+      }
+    }
+  }
+
+  // Colori
+  updateColoriDropdowns();
+  setOpt('fColoreInt', p.colore_int);
+  onColoreIntChange(true);
+  setOpt('fColoreEst', p.colore_est);
+
+  ricalcola();
+  _dirty = false;
 }
 
-function raccogliDati(){
-  return Object.assign({},_rec,{
-    numero_pos: isNew?_nextNumPos:(_rec.numero_pos||null),
-    ordine: isNew?(_nextNumPos*10):(_rec.ordine||null),
-    numero_pos_alfa:document.getElementById('fNumAlfa').value||null,
-    piano:(function(v){return v!==''?parseInt(v):null;})(document.getElementById('fPiano').value),
-    ambiente:document.getElementById('fAmbiente').value||null,
-    tipo_porta:document.getElementById('fTipoPorta').value||null,
-    n_foglie:document.getElementById('fNFoglie').value||null,
-    tipo_foro:document.getElementById('fTipoForo').value||null,
-    senso_apertura:document.getElementById('fSenso').value||null,
-    l_mm:parseInt(document.getElementById('fLmm').value)||null,
-    h_mm:parseInt(document.getElementById('fHmm').value)||null,
-    fornitore:document.getElementById('fFornitore').value||null,
-    sistema:document.getElementById('fSistema').value||null,
-    stile_design:document.getElementById('fStile').value||null,
-    variante_telaio:document.getElementById('fVariante').value||null,
-    colore_int:document.getElementById('fColoreInt').value||null,
-    colore_est:document.getElementById('fColoreEst').value||null,
-    controtelaio:document.getElementById('fControtelaio').value||null,
-    rivestimento_stipiti:document.getElementById('fRivestimento').checked||null,
-    rimozione:document.getElementById('fRimozione').checked?'SI':null,
-    taglio_marmo:document.getElementById('fTaglioMarmo').checked||null,
-    angolari_pvc:document.getElementById('fAngolariPvc').checked||null,
-    note:document.getElementById('fNote').value||null,
-    stato:'attivo'
+// ── RACCOLTA DATI ──
+function raccogliDati() {
+  return Object.assign({}, _rec, {
+    numero_pos: isNew ? _nextNumPos : (_rec.numero_pos || null),
+    ordine: isNew ? (_nextNumPos * 10) : (_rec.ordine || null),
+    numero_pos_alfa: document.getElementById('fNumAlfa').value || null,
+    piano: (function() { var v = document.getElementById('fPiano').value; return v !== '' ? parseInt(v) : null; })(),
+    ambiente: document.getElementById('fAmbiente').value || null,
+    tipo_porta: document.getElementById('fTipoPorta').value || null,
+    n_foglie: document.getElementById('fNFoglie').value || null,
+    tipo_foro: document.getElementById('fTipoForo').value || null,
+    senso_apertura: document.getElementById('fSenso').value || null,
+    l_mm: parseInt(document.getElementById('fLmm').value) || null,
+    h_mm: parseInt(document.getElementById('fHmm').value) || null,
+    fornitore: document.getElementById('fFornitore').value || null,
+    sistema: document.getElementById('fSistema').value || null,
+    stile_design: document.getElementById('fStile').value || null,
+    variante_telaio: document.getElementById('fVariante').value || null,
+    colore_int: document.getElementById('fColoreInt').value || null,
+    colore_est: document.getElementById('fColoreEst').value || null,
+    controtelaio: document.getElementById('fControtelaio').value || null,
+    rivestimento_stipiti: document.getElementById('fRivestimento').checked || null,
+    rimozione: document.getElementById('fRimozione').checked ? 'SI' : null,
+    taglio_marmo: document.getElementById('fTaglioMarmo').checked || null,
+    angolari_pvc: document.getElementById('fAngolariPvc').checked || null,
+    note: document.getElementById('fNote').value || null,
+    stato: 'attivo'
   });
 }
-function valida(){
-  var errs=[];
-  if(!document.getElementById('fTipoForo').value) errs.push('Tipo foro obbligatorio');
-  if(!document.getElementById('fLmm').value) errs.push('L foro obbligatorio');
-  if(!document.getElementById('fHmm').value) errs.push('H foro obbligatorio');
-  if(!document.getElementById('fFornitore').value) errs.push('Fornitore obbligatorio');
+
+// ── VALIDAZIONE ──
+function valida() {
+  var errs = [];
+  if (!document.getElementById('fTipoForo').value) errs.push('Tipo foro obbligatorio');
+  if (!document.getElementById('fLmm').value) errs.push('L foro obbligatorio');
+  if (!document.getElementById('fHmm').value) errs.push('H foro obbligatorio');
+  if (!document.getElementById('fFornitore').value) errs.push('Fornitore obbligatorio');
   return errs;
 }
-function salva(){
-  var errs=valida();
-  if(errs.length){alert('Campi obbligatori:\n'+errs.join('\n'));return;}
-  var data=raccogliDati();
-  var op=isNew?'insert':'update';
-  var btn=document.querySelector('button[onclick="salva()"]');
-  btn.disabled=true; btn.textContent='Salvataggio...';
-  API.savePosizione('posizioni_porte',op,data,isNew?null:_loadedAt,function(err,saved,conflict){
-    btn.disabled=false; btn.innerHTML='&#128190; Salva posizione';
-    if(conflict){document.getElementById('conflictBanner').style.display='';window.scrollTo(0,0);return;}
-    if(err){alert('Errore salvataggio:\n\n'+err+'\n\nVerifica campi obbligatori.');return;}
-    _dirty=false;
-    API.miniSync('posizioni_porte',function(){ window.location.replace('rilievo-porte.html?id='+idRilievo); });
+
+// ── SALVA ──
+function salva() {
+  var errs = valida();
+  if (errs.length) { alert('Campi obbligatori:\n' + errs.join('\n')); return; }
+  var data = raccogliDati();
+  var op = isNew ? 'insert' : 'update';
+  var btn = document.querySelector('button[onclick="salva()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
+  API.savePosizione('posizioni_porte', op, data, isNew ? null : _loadedAt, function(err, saved, conflict) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva'; }
+    if (conflict) { document.getElementById('conflictBanner').style.display = 'block'; document.getElementById('formWrap').scrollTo(0, 0); return; }
+    if (err) { alert('Errore salvataggio:\n\n' + err); return; }
+    _dirty = false;
+    API.miniSync('posizioni_porte', function() { window.location.replace('rilievo-porte.html?id=' + idRilievo); });
   });
 }
-function forceOverwrite(){
-  document.getElementById('conflictBanner').style.display='none';
-  API.savePosizione('posizioni_porte','update',raccogliDati(),null,function(err){
-    if(err){alert('Errore: '+err);return;}
-    _dirty=false; window.location.replace('rilievo-porte.html?id='+idRilievo);
+
+function forceOverwrite() {
+  document.getElementById('conflictBanner').style.display = 'none';
+  API.savePosizione('posizioni_porte', 'update', raccogliDati(), null, function(err) {
+    if (err) { alert('Errore: ' + err); return; }
+    _dirty = false;
+    window.location.replace('rilievo-porte.html?id=' + idRilievo);
   });
 }
-function reloadRecord(){
-  window.location.replace('pos-porte-edit.html?id_rilievo='+idRilievo+'&id='+idPos);
+
+function reloadRecord() {
+  window.location.replace('pos-porte-edit.html?id_rilievo=' + idRilievo + '&id=' + idPos);
 }
-function confirmBack(){
-  if(_dirty&&!confirm('Hai modifiche non salvate. Vuoi uscire?')) return;
-  window.location.replace('rilievo-porte.html?id='+idRilievo);
+
+function confirmBack() {
+  if (_dirty && !confirm('Hai modifiche non salvate. Vuoi uscire?')) return;
+  window.location.replace('rilievo-porte.html?id=' + idRilievo);
 }
-window.addEventListener('beforeunload',function(e){if(_dirty){e.preventDefault();e.returnValue='';}});
+
+window.addEventListener('beforeunload', function(e) { if (_dirty) { e.preventDefault(); e.returnValue = ''; } });
 load();
 </script>
 </body>
