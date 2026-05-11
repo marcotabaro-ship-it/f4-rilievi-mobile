@@ -47,9 +47,9 @@
     <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
   </div>
   <div class="top-bar-actions">
-    <div class="top-bar-online" id="onlineIndicator" title=""></div>
-    <div class="top-bar-avatar" id="userAvatar">TM</div>
-  </div>
+  <button class="top-bar-btn" onclick="apriModificaRilievo()" title="Modifica rilievo" style="font-size:16px;">&#9998;</button>
+  <div class="top-bar-online" id="onlineIndicator" title=""></div>
+  <div class="top-bar-avatar" id="userAvatar">TM</div>
 </div>
 
 <div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="mainWrap">
@@ -409,6 +409,10 @@ function eliminaPosizione() {
     renderPosizioni();
     API.miniSync('posizioni_serr', function() {});
   });
+}
+
+function apriModificaRilievo() {
+  window.location.href = 'rilievo-edit.html?id=' + idRilievo;
 }
 
 load();
