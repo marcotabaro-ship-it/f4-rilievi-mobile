@@ -28,7 +28,7 @@
     .calc-lbl{font-size:11px;color:var(--c-text-sec);}
     .calc-val{font-size:14px;font-weight:700;color:var(--c-orange);}
     .conflict-banner{background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#dc2626;display:none;}
-    .conflict-banner button{background:#dc2626;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;}
+    .conflict-banner button{background:#dc2626;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;margin-right:6px;}
   </style>
 </head>
 <body>
@@ -42,18 +42,18 @@
   <button class="top-bar-btn" style="background:var(--c-orange);border-radius:8px;width:auto;padding:0 14px;font-size:13px;font-weight:700;" onclick="salva()">&#128190; Salva</button>
 </div>
 
-<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 32px;" id="formWrap">
-
-  <div class="conflict-banner" id="conflictBanner">
-    &#9888; Record modificato da un altro utente.
-    <br>
-    <button onclick="reloadRecord()">Aggiorna e riapri</button>
-    <button onclick="forceOverwrite()" style="background:var(--c-orange);">Sovrascrivi</button>
-  </div>
+<div style="position:fixed;top:56px;bottom:72px;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 8px;" id="formWrap">
 
   <div class="calc-strip">
     <div><div class="calc-lbl">L &times; H inserita</div><div class="calc-val" id="cLins">—</div></div>
     <div><div class="calc-lbl">L &times; H ordine</div><div class="calc-val" id="cLord">—</div></div>
+  </div>
+
+  <div class="conflict-banner" id="conflictBanner">
+    &#9888; Record modificato da un altro utente.
+    <br>
+    <button onclick="reloadRecord()">Ricarica</button>
+    <button onclick="forceOverwrite()" style="background:var(--c-orange);">Sovrascrivi</button>
   </div>
 
   <!-- DATI GENERALI -->
@@ -61,7 +61,7 @@
     <div class="fsec-hdr">&#128203; DATI GENERALI</div>
     <div class="fsec-body">
       <div class="form-group-m">
-        <label class="form-label-m">N&deg; posizione <span style="font-size:10px;font-weight:400;">(max 7 caratteri)</span></label>
+        <label class="form-label-m">N&#176; posizione <span style="font-size:10px;font-weight:400;">(max 7 car.)</span></label>
         <input class="form-ctrl" type="text" id="fNumAlfa" maxlength="7" placeholder="es. CAM01"
           oninput="this.value=this.value.toUpperCase()" onchange="markDirty()"/>
       </div>
@@ -78,16 +78,13 @@
       <div class="form-row-2m">
         <div class="form-group-m">
           <label class="form-label-m">Tipo porta <span class="req">*</span></label>
-          <select class="form-ctrl" id="fTipoPorta" onchange="markDirty()"><option value="">— Tipo —</option></select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">N foglie</label>
-          <select class="form-ctrl" id="fNFoglie" onchange="markDirty()">
-            <option value="">—</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <select class="form-ctrl" id="fTipoPorta" onchange="markDirty()">
+            <option value="">— Tipo —</option>
+            <option value="INT">INT — Interna</option>
+            <option value="BLI">BLI — Blindata</option>
+            <option value="REI">REI — REI</option>
           </select>
         </div>
-      </div>
-      <div class="form-row-2m">
         <div class="form-group-m">
           <label class="form-label-m">Tipo foro <span class="req">*</span></label>
           <select class="form-ctrl" id="fTipoForo" onchange="ricalcola()">
@@ -95,10 +92,6 @@
             <option value="N">N — Netta passaggio</option>
             <option value="P">P — Posa in luce</option>
           </select>
-        </div>
-        <div class="form-group-m">
-          <label class="form-label-m">Senso apertura</label>
-          <select class="form-ctrl" id="fSenso" onchange="markDirty()"><option value="">—</option></select>
         </div>
       </div>
       <div class="form-row-2m">
@@ -111,10 +104,24 @@
           <input class="form-ctrl" type="number" id="fHmm" inputmode="numeric" placeholder="2100" oninput="ricalcola()"/>
         </div>
       </div>
-      <div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Sp. muro (mm)</label>
+          <input class="form-ctrl" type="number" id="fSpMuro" inputmode="numeric" placeholder="es. 150" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Decentr. telaio (mm)</label>
+          <input class="form-ctrl" type="number" id="fDecentrato" inputmode="numeric" placeholder="es. 0" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div class="form-group-m" style="margin-top:2px;">
+        <div class="chk-row"><input type="checkbox" id="fSopraluce" onchange="markDirty()"/><label for="fSopraluce">Sopraluce presente</label></div>
         <div class="chk-row"><input type="checkbox" id="fRimozione" onchange="markDirty()"/><label for="fRimozione">Rimozione porta esistente</label></div>
-        <div class="chk-row"><input type="checkbox" id="fTaglioMarmo" onchange="markDirty()"/><label for="fTaglioMarmo">Taglio piani marmo</label></div>
-        <div class="chk-row"><input type="checkbox" id="fAngolariPvc" onchange="markDirty()"/><label for="fAngolariPvc">Angolari PVC</label></div>
+        <div class="chk-row"><input type="checkbox" id="fAllargamento" onchange="toggleAllargamento()"/><label for="fAllargamento">Allargamento telaio</label></div>
+      </div>
+      <div class="form-group-m" id="grpAllargMm" style="display:none;">
+        <label class="form-label-m">Allargamento (mm)</label>
+        <input class="form-ctrl" type="number" id="fAllargamentoMm" inputmode="numeric" placeholder="es. 50" onchange="markDirty()"/>
       </div>
       <div class="form-group-m" style="margin-top:10px;">
         <label class="form-label-m">Note</label>
@@ -133,60 +140,103 @@
       </div>
       <div class="form-group-m">
         <label class="form-label-m">Sistema <span class="req">*</span></label>
-        <select class="form-ctrl" id="fSistema" onchange="onSistemaChange()" disabled><option value="">— seleziona fornitore —</option></select>
+        <select class="form-ctrl" id="fSistema" onchange="markDirty()" disabled><option value="">— seleziona fornitore —</option></select>
       </div>
       <div class="form-row-2m">
         <div class="form-group-m">
-          <label class="form-label-m">Stile design</label>
-          <select class="form-ctrl" id="fStile" onchange="onStileChange()" disabled><option value="">—</option></select>
+          <label class="form-label-m">Collezione</label>
+          <input class="form-ctrl" type="text" id="fCollezione" placeholder="es. GAROFOLI" onchange="markDirty()"/>
         </div>
         <div class="form-group-m">
-          <label class="form-label-m">Variante telaio</label>
-          <select class="form-ctrl" id="fVariante" onchange="ricalcola()" disabled><option value="">—</option></select>
+          <label class="form-label-m">Modello</label>
+          <input class="form-ctrl" type="text" id="fModello" placeholder="es. ALPHA" onchange="markDirty()"/>
         </div>
       </div>
       <div class="form-row-2m">
         <div class="form-group-m">
-          <label class="form-label-m">Colore interno</label>
-          <select class="form-ctrl" id="fColoreInt" onchange="onColoreIntChange()"><option value="">—</option></select>
+          <label class="form-label-m">Versione porta</label>
+          <input class="form-ctrl" type="text" id="fVersione" placeholder="es. RASOMURO" onchange="markDirty()"/>
         </div>
         <div class="form-group-m">
-          <label class="form-label-m">Colore esterno</label>
-          <select class="form-ctrl" id="fColoreEst" onchange="markDirty()" disabled><option value="">—</option></select>
+          <label class="form-label-m">Essenza</label>
+          <input class="form-ctrl" type="text" id="fEssenza" placeholder="es. ROVERE" onchange="markDirty()"/>
         </div>
+      </div>
+      <div class="form-group-m">
+        <label class="form-label-m">Verso apertura</label>
+        <select class="form-ctrl" id="fVerso" onchange="markDirty()">
+          <option value="">—</option>
+          <option value="D">D — Destra</option>
+          <option value="S">S — Sinistra</option>
+          <option value="DS">DS — Doppio senso</option>
+        </select>
       </div>
     </div>
   </div>
 
-  <!-- INSTALLAZIONE -->
+  <!-- CONTROTELAIO -->
   <div class="fsec">
-    <div class="fsec-hdr">&#9881; INSTALLAZIONE</div>
+    <div class="fsec-hdr">&#9881; CONTROTELAIO</div>
+    <div class="fsec-body">
+      <div class="form-group-m" style="margin-bottom:6px;">
+        <label class="form-label-m">Fornitura CTL</label>
+        <div class="chk-row"><input type="checkbox" id="fFornCTLInt" onchange="markDirty()"/><label for="fFornCTLInt">Fornitura CTL porta interna</label></div>
+        <div class="chk-row"><input type="checkbox" id="fFornCTLBli" onchange="markDirty()"/><label for="fFornCTLBli">Fornitura CTL blindata</label></div>
+        <div class="chk-row"><input type="checkbox" id="fFornCTLRei" onchange="markDirty()"/><label for="fFornCTLRei">Fornitura CTL REI</label></div>
+      </div>
+      <div class="form-group-m" style="margin-bottom:0;">
+        <label class="form-label-m">Installazione CTL</label>
+        <div class="chk-row"><input type="checkbox" id="fInstCTLInt" onchange="markDirty()"/><label for="fInstCTLInt">Installazione CTL porta interna</label></div>
+        <div class="chk-row"><input type="checkbox" id="fInstCTLBli" onchange="markDirty()"/><label for="fInstCTLBli">Installazione CTL blindata</label></div>
+        <div class="chk-row"><input type="checkbox" id="fInstCTLRei" onchange="markDirty()"/><label for="fInstCTLRei">Installazione CTL REI</label></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERRATURA E FINITURE -->
+  <div class="fsec">
+    <div class="fsec-hdr">&#128273; SERRATURA E FINITURE</div>
     <div class="fsec-body">
       <div class="form-row-2m">
         <div class="form-group-m">
-          <label class="form-label-m">Controtelaio</label>
-          <select class="form-ctrl" id="fControtelaio" onchange="markDirty()">
-            <option value="">— Nessuno —</option>
-            <option value="L">CTL Legno</option>
-            <option value="T">Termocassa</option>
-          </select>
+          <label class="form-label-m">Tipo serratura</label>
+          <input class="form-ctrl" type="text" id="fTipoSerratura" placeholder="es. PATENT" onchange="markDirty()"/>
         </div>
         <div class="form-group-m">
-          <div class="chk-row" style="padding:30px 0 11px;border:none;">
-            <input type="checkbox" id="fRivestimento" onchange="markDirty()"/>
-            <label for="fRivestimento">Rivestimento stipiti</label>
-          </div>
+          <label class="form-label-m">Colore serratura</label>
+          <input class="form-ctrl" type="text" id="fColoreSerratura" placeholder="es. CROMO" onchange="markDirty()"/>
         </div>
       </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Colore cerniere</label>
+          <input class="form-ctrl" type="text" id="fColoreCerniere" placeholder="es. INOX" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Maniglia — marca</label>
+          <input class="form-ctrl" type="text" id="fManigliaMarca" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Maniglia — modello</label>
+          <input class="form-ctrl" type="text" id="fManigliaModello" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Maniglia — colore/mat.</label>
+          <input class="form-ctrl" type="text" id="fManigliaColore" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div class="chk-row"><input type="checkbox" id="fVetri" onchange="markDirty()"/><label for="fVetri">Presenza vetri</label></div>
+      <div class="chk-row"><input type="checkbox" id="fMostrine" onchange="markDirty()"/><label for="fMostrine">Mostrine presenti</label></div>
     </div>
   </div>
 
-  <div style="padding:4px 0 24px;">
-    <button class="btn btn-orange btn-full btn-lg" onclick="salva()">&#128190; Salva posizione</button>
-    <div style="text-align:center;margin-top:12px;">
-      <button class="btn btn-ghost" onclick="confirmBack()">Annulla e torna indietro</button>
-    </div>
-  </div>
+</div>
+
+<div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #e5e7eb;padding:12px 16px;display:flex;gap:10px;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.1);">
+  <button onclick="confirmBack()" style="padding:14px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">&#8592;</button>
+  <button onclick="salva()" style="flex:1;padding:14px;background:var(--c-orange);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">&#128190; Salva posizione</button>
 </div>
 
 <script src="js/config.js"></script>
@@ -199,9 +249,9 @@ if (!currentUser) throw new Error('not logged');
 
 var params = new URLSearchParams(window.location.search);
 var idRilievo = params.get('id_rilievo');
-var idPos = params.get('id');
-var isNew = !idPos;
-var _dirty = false, _loadedAt = 0, _rec = {}, _dbPorte = [], _lkColori = [];
+var idPos     = params.get('id');
+var isNew     = !idPos;
+var _dirty = false, _loadedAt = 0, _rec = {}, _dbPorte = [];
 var _nextNumPos = 1;
 
 if (!idRilievo) { history.back(); }
@@ -210,23 +260,20 @@ if (!idRilievo) { history.back(); }
 function setOpt(id, val) {
   if (val === null || val === undefined || val === '') return;
   var v = String(val);
-  var el = document.getElementById(id);
-  if (!el) return;
+  var el = document.getElementById(id); if (!el) return;
   if (el.tagName === 'SELECT') {
-    if (!Array.from(el.options).some(function(o) { return o.value === v; })) {
-      var o = document.createElement('option');
-      o.value = v; o.text = v; el.appendChild(o);
+    if (!Array.from(el.options).some(function(o){ return o.value === v; })) {
+      var o = document.createElement('option'); o.value = v; o.text = v; el.appendChild(o);
     }
   }
   el.value = v;
 }
-function sc(id, val) {
-  var el = document.getElementById(id);
-  if (el) el.checked = !!(val === true || val === 'true' || val === 'SI');
-}
+function sc(id, val) { var el = document.getElementById(id); if (el) el.checked = !!(val === true || val === 'true' || val === 'SI'); }
+function gv(id) { var el = document.getElementById(id); return el ? (el.value || null) : null; }
+function gb(id) { var el = document.getElementById(id); return el ? el.checked : false; }
 function markDirty() { _dirty = true; }
 
-// ── CALCOLO ──
+// ── CALCOLO DIMENSIONE ORDINE ──
 function ricalcola() {
   markDirty();
   var L = parseFloat(document.getElementById('fLmm').value) || 0;
@@ -234,199 +281,88 @@ function ricalcola() {
   document.getElementById('cLins').textContent = (L && H) ? L + ' x ' + H : '—';
   if (!L || !H) { document.getElementById('cLord').textContent = '—'; return; }
   var tf = document.getElementById('fTipoForo').value;
-  var ord = null;
+  // Foro N = dimensioni finali, Foro P = cerca offset in db_porte
   if (tf === 'N') {
-    ord = {Lt: L, Ht: H};
-  } else if (tf === 'P') {
-    var forn = document.getElementById('fFornitore').value;
-    var sis = document.getElementById('fSistema').value;
-    var stil = document.getElementById('fStile').value;
-    var rec = null;
-    for (var i = 0; i < _dbPorte.length; i++) {
-      var d = _dbPorte[i];
-      if ((d.fornitore === forn || !forn) && (d.descrizione === sis || d.sistema === sis) && (!stil || d.stile_design === stil)) { rec = d; break; }
-    }
-    var offL = rec ? (parseFloat(rec.offset_larghezza_mm) || 0) : 0;
-    var offH = rec ? (parseFloat(rec.offset_altezza_mm) || 0) : 0;
-    ord = {Lt: Math.round(L + offL), Ht: Math.round(H + offH)};
+    document.getElementById('cLord').textContent = Math.round(L) + ' x ' + Math.round(H);
+    return;
   }
-  document.getElementById('cLord').textContent = ord ? ord.Lt + ' x ' + ord.Ht : '—';
+  if (tf === 'P') {
+    var forn = document.getElementById('fFornitore').value;
+    var sis  = document.getElementById('fSistema').value;
+    var rec  = _dbPorte.find(function(d){ return d.fornitore === forn && (d.descrizione === sis || d.sistema === sis); });
+    var offL = rec ? (parseFloat(rec.offset_larghezza_mm) || 0) : 0;
+    var offH = rec ? (parseFloat(rec.offset_altezza_mm)   || 0) : 0;
+    document.getElementById('cLord').textContent = Math.round(L + offL) + ' x ' + Math.round(H + offH);
+    return;
+  }
+  document.getElementById('cLord').textContent = '—';
 }
 
-// ── CARICAMENTO INIZIALE ──
-function load() {
-  // Calcola prossimo numero posizione
-  DBLocal.getAll('posizioni_porte', function(allPos) {
-    var fr = allPos.filter(function(p) { return p.id_rilievo === idRilievo; });
-    var mx = 0;
-    fr.forEach(function(p) { if ((parseInt(p.numero_pos) || 0) > mx) mx = parseInt(p.numero_pos) || 0; });
-    _nextNumPos = mx + 1;
-  });
-
-  DBLocal.getAll('db_porte', function(db) {
-    _dbPorte = db;
-    DBLocal.getLookup('LK_COLORI', function(col) {
-      _lkColori = col || [];
-      buildDropdowns(function() {
-        if (isNew) setupNew(); else loadExisting();
-      });
-    });
-  });
+function toggleAllargamento() {
+  markDirty();
+  var chk = document.getElementById('fAllargamento').checked;
+  document.getElementById('grpAllargMm').style.display = chk ? 'block' : 'none';
 }
 
-// ── DROPDOWN LOOKUP ──
-function buildDropdowns(cb) {
-  var total = 4, done_count = 0;
-  function done() { done_count++; if (done_count >= total && cb) cb(); }
-
-  // Piano — stesso formato di serramenti
-  DBLocal.getLookup('LK_PIANO', function(rows) {
-    var sel = document.getElementById('fPiano');
-    while (sel.options.length > 1) sel.remove(1);
-    (rows || []).sort(function(a, b) { return a.piano - b.piano; }).forEach(function(r) {
-      sel.appendChild(new Option('Piano ' + (r.piano >= 0 ? '+' : '') + r.piano, r.piano));
-    });
-    done();
-  });
-
-  // Tipo porta
-  DBLocal.getLookup('LK_TIPO_PORTA', function(rows) {
-    var sel = document.getElementById('fTipoPorta');
-    while (sel.options.length > 1) sel.remove(1);
-    (rows || []).forEach(function(r) {
-      if (r && r.sigla) sel.appendChild(new Option(r.sigla + (r.descrizione ? ' — ' + r.descrizione : ''), r.sigla));
-    });
-    done();
-  });
-
-  // Senso apertura
-  DBLocal.getLookup('LK_SENSI_APERTURA', function(rows) {
-    var sel = document.getElementById('fSenso');
-    while (sel.options.length > 1) sel.remove(1);
-    (rows || []).forEach(function(r) {
-      if (r && r.sigla) sel.appendChild(new Option(r.sigla + (r.descrizione ? ' — ' + r.descrizione : ''), r.sigla));
-    });
-    done();
-  });
-
-  // Fornitori da db_porte
-  var forn = [];
-  _dbPorte.forEach(function(r) { if (r.fornitore && forn.indexOf(r.fornitore) < 0) forn.push(r.fornitore); });
-  forn.sort();
-  var selF = document.getElementById('fFornitore');
-  while (selF.options.length > 1) selF.remove(1);
-  forn.forEach(function(f) { selF.appendChild(new Option(f, f)); });
-  done();
-}
-
-// ── CASCADE FORNITORE → SISTEMA → STILE → VARIANTE ──
+// ── CASCADE FORNITORE → SISTEMA ──
 function onFornitoreChange(silent) {
   if (!silent) markDirty();
   var forn = document.getElementById('fFornitore').value;
   var selS = document.getElementById('fSistema');
   selS.innerHTML = '<option value="">— seleziona fornitore —</option>';
-  selS.disabled = !forn;
-  ['fStile', 'fVariante'].forEach(function(id) {
-    var s = document.getElementById(id); s.innerHTML = '<option value="">—</option>'; s.disabled = true;
-  });
+  selS.disabled  = !forn;
   if (!forn) return;
   var sis = [];
-  _dbPorte.forEach(function(r) {
-    if (r.fornitore === forn) { var v = r.descrizione || r.sistema; if (v && sis.indexOf(v) < 0) sis.push(v); }
-  });
+  _dbPorte.forEach(function(d){ if (d.fornitore === forn){ var v = d.descrizione || d.sistema; if (v && sis.indexOf(v) < 0) sis.push(v); } });
   sis.sort();
-  sis.forEach(function(s) { selS.appendChild(new Option(s, s)); });
+  sis.forEach(function(s){ selS.appendChild(new Option(s, s)); });
   selS.disabled = false;
-  updateColoriDropdowns();
   ricalcola();
 }
 
-function onSistemaChange(silent) {
-  if (!silent) markDirty();
-  var forn = document.getElementById('fFornitore').value;
-  var sis = document.getElementById('fSistema').value;
-  var selSt = document.getElementById('fStile');
-  selSt.innerHTML = '<option value="">—</option>';
-  selSt.disabled = true;
-  var selV = document.getElementById('fVariante');
-  selV.innerHTML = '<option value="">—</option>';
-  selV.disabled = true;
-  if (!sis) return;
-  var stili = [];
-  _dbPorte.forEach(function(r) {
-    if (r.fornitore === forn && (r.descrizione === sis || r.sistema === sis) && r.stile_design && stili.indexOf(r.stile_design) < 0)
-      stili.push(r.stile_design);
+// ── CARICAMENTO INIZIALE ──
+function load() {
+  // Prossimo numero posizione
+  DBLocal.getAll('posizioni_porte', function(allPos){
+    var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo; });
+    var mx = 0;
+    fr.forEach(function(p){ if ((parseInt(p.numero_pos) || 0) > mx) mx = parseInt(p.numero_pos) || 0; });
+    _nextNumPos = mx + 1;
   });
-  stili.sort();
-  stili.forEach(function(s) { selSt.appendChild(new Option(s, s)); });
-  selSt.disabled = false;
-  ricalcola();
-}
 
-function onStileChange(silent) {
-  if (!silent) markDirty();
-  var forn = document.getElementById('fFornitore').value;
-  var sis = document.getElementById('fSistema').value;
-  var stil = document.getElementById('fStile').value;
-  var selV = document.getElementById('fVariante');
-  selV.innerHTML = '<option value="">—</option>';
-  selV.disabled = true;
-  if (!stil) return;
-  var vari = [];
-  _dbPorte.forEach(function(r) {
-    if (r.fornitore === forn && (r.descrizione === sis || r.sistema === sis) && r.stile_design === stil && r.variante_telaio && vari.indexOf(r.variante_telaio) < 0)
-      vari.push(r.variante_telaio);
+  // Piano
+  DBLocal.getLookup('LK_PIANO', function(rows){
+    var sel = document.getElementById('fPiano');
+    while (sel.options.length > 1) sel.remove(1);
+    (rows || []).sort(function(a,b){ return a.piano - b.piano; }).forEach(function(r){
+      sel.appendChild(new Option('Piano ' + (r.piano >= 0 ? '+' : '') + r.piano, r.piano));
+    });
   });
-  vari.sort();
-  vari.forEach(function(v) { selV.appendChild(new Option(v, v)); });
-  selV.disabled = false;
-  ricalcola();
+
+  // DB Porte per cascade fornitore → sistema
+  DBLocal.getAll('db_porte', function(db){
+    _dbPorte = db;
+    var forn = []; db.forEach(function(d){ if (d.fornitore && forn.indexOf(d.fornitore) < 0) forn.push(d.fornitore); }); forn.sort();
+    var selF = document.getElementById('fFornitore');
+    while (selF.options.length > 1) selF.remove(1);
+    forn.forEach(function(f){ selF.appendChild(new Option(f, f)); });
+    if (isNew) setupNew(); else loadExisting();
+  });
 }
 
-function updateColoriDropdowns() {
-  var selI = document.getElementById('fColoreInt');
-  if (!selI || selI.tagName !== 'SELECT') return;
-  while (selI.options.length > 1) selI.remove(1);
-  if (!_lkColori.length) { selI.disabled = true; return; }
-  var ints = [];
-  _lkColori.forEach(function(r) { if (r.colore_interno && ints.indexOf(r.colore_interno) < 0) ints.push(r.colore_interno); });
-  ints.sort();
-  ints.forEach(function(c) { selI.appendChild(new Option(c, c)); });
-  selI.disabled = false;
-}
-
-function onColoreIntChange(silent) {
-  if (!silent) markDirty();
-  var selI = document.getElementById('fColoreInt');
-  if (!selI || selI.tagName !== 'SELECT') return;
-  var ci = selI.value;
-  var selE = document.getElementById('fColoreEst');
-  if (!selE || selE.tagName !== 'SELECT') return;
-  while (selE.options.length > 1) selE.remove(1);
-  selE.disabled = !ci;
-  var ests = [];
-  _lkColori.forEach(function(r) { if (r.colore_interno === ci && r.colore_esterno && ests.indexOf(r.colore_esterno) < 0) ests.push(r.colore_esterno); });
-  ests.sort();
-  ests.forEach(function(c) { selE.appendChild(new Option(c, c)); });
-  if (ests.length === 1) selE.value = ests[0];
-}
-
-// ── SETUP NUOVO ──
 function setupNew() {
   document.getElementById('tbTitle').textContent = 'Nuova posizione';
-  document.getElementById('tbSub').textContent = 'Porte';
+  document.getElementById('tbSub').textContent   = 'Porte';
   _loadedAt = Date.now();
-  _rec = {id_rilievo: idRilievo, stato: 'attivo'};
+  _rec = { id_rilievo: idRilievo, stato: 'attivo' };
 }
 
-// ── CARICA ESISTENTE ──
 function loadExisting() {
-  DBLocal.getById('posizioni_porte', idPos, function(p) {
+  DBLocal.getById('posizioni_porte', idPos, function(p){
     if (!p) { alert('Posizione non trovata'); history.back(); return; }
-    _rec = p;
-    _loadedAt = new Date(p.updated_at || 0).getTime() || Date.now();
+    _rec = p; _loadedAt = new Date(p.updated_at || 0).getTime() || Date.now();
     document.getElementById('tbTitle').textContent = 'Posizione ' + (p.numero_pos_alfa || p.numero_pos || '?');
-    document.getElementById('tbSub').textContent = 'Modifica';
+    document.getElementById('tbSub').textContent   = 'Modifica';
     populateForm(p);
   });
 }
@@ -436,79 +372,101 @@ function populateForm(p) {
   setOpt('fPiano', p.piano != null ? p.piano : '');
   setOpt('fAmbiente', p.ambiente);
   setOpt('fTipoPorta', p.tipo_porta);
-  setOpt('fNFoglie', p.n_foglie);
-  setOpt('fTipoForo', p.tipo_foro);
-  setOpt('fSenso', p.senso_apertura);
-  var lEl = document.getElementById('fLmm'); if (lEl) lEl.value = p.L_mm || p.l_mm || '';
-  var hEl = document.getElementById('fHmm'); if (hEl) hEl.value = p.H_mm || p.h_mm || '';
+  setOpt('fTipoForo',  p.tipo_foro);
+  var lEl = document.getElementById('fLmm'); if (lEl) lEl.value = p.l_mm || p.L_mm || '';
+  var hEl = document.getElementById('fHmm'); if (hEl) hEl.value = p.h_mm || p.H_mm || '';
+  setOpt('fSpMuro',     p.sp_muro_mm);
+  setOpt('fDecentrato', p.telaio_decentrato_mm);
+  sc('fSopraluce',   p.sopraluce);
+  sc('fRimozione',   p.rimozione);
+  sc('fAllargamento', p.allargamento_telaio);
+  toggleAllargamento();
+  if (p.allargamento_mm) document.getElementById('fAllargamentoMm').value = p.allargamento_mm;
   var nEl = document.getElementById('fNote'); if (nEl) nEl.value = p.note || '';
-  sc('fRimozione', p.rimozione);
-  sc('fTaglioMarmo', p.taglio_marmo);
-  sc('fAngolariPvc', p.angolari_pvc);
-  sc('fRivestimento', p.rivestimento_stipiti);
-  setOpt('fControtelaio', p.controtelaio);
 
-  // Cascade fornitore → sistema → stile → variante (sincrono come serramenti)
+  // Cascade fornitore → sistema
   if (p.fornitore) {
     setOpt('fFornitore', p.fornitore);
     onFornitoreChange(true);
     setOpt('fSistema', p.sistema);
-    if (p.sistema) {
-      onSistemaChange(true);
-      setOpt('fStile', p.stile_design);
-      if (p.stile_design) {
-        onStileChange(true);
-        setOpt('fVariante', p.variante_telaio);
-      }
-    }
   }
 
-  // Colori
-  updateColoriDropdowns();
-  setOpt('fColoreInt', p.colore_int);
-  onColoreIntChange(true);
-  setOpt('fColoreEst', p.colore_est);
+  setOpt('fCollezione',       p.collezione);
+  setOpt('fModello',          p.modello);
+  setOpt('fVersione',         p.versione_porta);
+  setOpt('fEssenza',          p.essenza);
+  setOpt('fVerso',            p.verso_apertura);
+  setOpt('fTipoSerratura',    p.tipo_serratura);
+  setOpt('fColoreSerratura',  p.colore_serratura);
+  setOpt('fColoreCerniere',   p.colore_cerniere);
+  setOpt('fManigliaMarca',    p.maniglia_marca);
+  setOpt('fManigliaModello',  p.maniglia_modello);
+  setOpt('fManigliaColore',   p.maniglia_colore_mat);
+
+  sc('fFornCTLInt', p.fornitura_ctl_int);
+  sc('fFornCTLBli', p.fornitura_ctl_bli);
+  sc('fFornCTLRei', p.fornitura_ctl_rei);
+  sc('fInstCTLInt', p.install_ctl_int);
+  sc('fInstCTLBli', p.install_ctl_bli);
+  sc('fInstCTLRei', p.install_ctl_rei);
+  sc('fVetri',    p.vetri);
+  sc('fMostrine', p.mostrine);
 
   ricalcola();
   _dirty = false;
 }
 
-// ── RACCOLTA DATI ──
+// ── RACCOLTA DATI (solo campi esistenti in posizioni_porte) ──
 function raccogliDati() {
   return Object.assign({}, _rec, {
-    numero_pos: isNew ? _nextNumPos : (_rec.numero_pos || null),
-    ordine: isNew ? (_nextNumPos * 10) : (_rec.ordine || null),
-    numero_pos_alfa: document.getElementById('fNumAlfa').value || null,
-    piano: (function() { var v = document.getElementById('fPiano').value; return v !== '' ? parseInt(v) : null; })(),
-    ambiente: document.getElementById('fAmbiente').value || null,
-    tipo_porta: document.getElementById('fTipoPorta').value || null,
-    n_foglie: document.getElementById('fNFoglie').value || null,
-    tipo_foro: document.getElementById('fTipoForo').value || null,
-    senso_apertura: document.getElementById('fSenso').value || null,
-    l_mm: parseInt(document.getElementById('fLmm').value) || null,
-    h_mm: parseInt(document.getElementById('fHmm').value) || null,
-    fornitore: document.getElementById('fFornitore').value || null,
-    sistema: document.getElementById('fSistema').value || null,
-    stile_design: document.getElementById('fStile').value || null,
-    variante_telaio: document.getElementById('fVariante').value || null,
-    colore_int: document.getElementById('fColoreInt').value || null,
-    colore_est: document.getElementById('fColoreEst').value || null,
-    controtelaio: document.getElementById('fControtelaio').value || null,
-    rivestimento_stipiti: document.getElementById('fRivestimento').checked || null,
-    rimozione: document.getElementById('fRimozione').checked ? 'SI' : null,
-    taglio_marmo: document.getElementById('fTaglioMarmo').checked || null,
-    angolari_pvc: document.getElementById('fAngolariPvc').checked || null,
-    note: document.getElementById('fNote').value || null,
-    stato: 'attivo'
+    numero_pos:           isNew ? _nextNumPos : (_rec.numero_pos || null),
+    ordine:               isNew ? (_nextNumPos * 10) : (_rec.ordine || null),
+    numero_pos_alfa:      (gv('fNumAlfa') || '').toUpperCase().trim() || null,
+    piano:                (function(){ var v = document.getElementById('fPiano').value; return v !== '' ? parseInt(v) : null; })(),
+    ambiente:             gv('fAmbiente'),
+    tipo_porta:           gv('fTipoPorta'),
+    tipo_foro:            gv('fTipoForo'),
+    l_mm:                 parseInt(document.getElementById('fLmm').value) || null,
+    h_mm:                 parseInt(document.getElementById('fHmm').value) || null,
+    sp_muro_mm:           parseInt(document.getElementById('fSpMuro').value) || null,
+    telaio_decentrato_mm: parseInt(document.getElementById('fDecentrato').value) || null,
+    sopraluce:            gb('fSopraluce'),
+    rimozione:            gb('fRimozione'),
+    allargamento_telaio:  gb('fAllargamento'),
+    allargamento_mm:      gb('fAllargamento') ? (parseInt(document.getElementById('fAllargamentoMm').value) || null) : null,
+    fornitore:            gv('fFornitore'),
+    sistema:              gv('fSistema'),
+    collezione:           gv('fCollezione'),
+    modello:              gv('fModello'),
+    versione_porta:       gv('fVersione'),
+    essenza:              gv('fEssenza'),
+    verso_apertura:       gv('fVerso'),
+    tipo_serratura:       gv('fTipoSerratura'),
+    colore_serratura:     gv('fColoreSerratura'),
+    colore_cerniere:      gv('fColoreCerniere'),
+    maniglia_marca:       gv('fManigliaMarca'),
+    maniglia_modello:     gv('fManigliaModello'),
+    maniglia_colore_mat:  gv('fManigliaColore'),
+    fornitura_ctl_int:    gb('fFornCTLInt'),
+    fornitura_ctl_bli:    gb('fFornCTLBli'),
+    fornitura_ctl_rei:    gb('fFornCTLRei'),
+    install_ctl_int:      gb('fInstCTLInt'),
+    install_ctl_bli:      gb('fInstCTLBli'),
+    install_ctl_rei:      gb('fInstCTLRei'),
+    vetri:                gb('fVetri'),
+    mostrine:             gb('fMostrine'),
+    note:                 gv('fNote'),
+    stato:                'attivo'
   });
 }
 
 // ── VALIDAZIONE ──
 function valida() {
   var errs = [];
-  if (!document.getElementById('fTipoForo').value) errs.push('Tipo foro obbligatorio');
-  if (!document.getElementById('fLmm').value) errs.push('L foro obbligatorio');
-  if (!document.getElementById('fHmm').value) errs.push('H foro obbligatorio');
+  if (!document.getElementById('fTipoPorta').value) errs.push('Tipo porta obbligatorio');
+  if (!document.getElementById('fTipoForo').value)  errs.push('Tipo foro obbligatorio');
+  if (!document.getElementById('fLmm').value)       errs.push('L foro obbligatorio');
+  if (!document.getElementById('fHmm').value)       errs.push('H foro obbligatorio');
   if (!document.getElementById('fFornitore').value) errs.push('Fornitore obbligatorio');
   return errs;
 }
@@ -518,37 +476,37 @@ function salva() {
   var errs = valida();
   if (errs.length) { alert('Campi obbligatori:\n' + errs.join('\n')); return; }
   var data = raccogliDati();
-  var op = isNew ? 'insert' : 'update';
-  var btn = document.querySelector('button[onclick="salva()"]');
+  var op   = isNew ? 'insert' : 'update';
+  var btn  = document.querySelector('[onclick="salva()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
-  API.savePosizione('posizioni_porte', op, data, isNew ? null : _loadedAt, function(err, saved, conflict) {
-    if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva'; }
-    if (conflict) { document.getElementById('conflictBanner').style.display = 'block'; document.getElementById('formWrap').scrollTo(0, 0); return; }
-    if (err) { alert('Errore salvataggio:\n\n' + err); return; }
+  API.savePosizione('posizioni_porte', op, data, isNew ? null : _loadedAt, function(err, saved, conflict){
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva posizione'; }
+    if (conflict) { document.getElementById('conflictBanner').style.display = 'block'; document.getElementById('formWrap').scrollTo(0,0); return; }
+    if (err && err !== 'conflict') { alert('Errore: ' + err); return; }
     _dirty = false;
-    API.miniSync('posizioni_porte', function() { window.location.replace('rilievo-porte.html?id=' + idRilievo); });
+    API.miniSync('posizioni_porte', function(){
+      window.location.replace('rilievo-porte.html?id=' + idRilievo);
+    });
   });
 }
 
 function forceOverwrite() {
   document.getElementById('conflictBanner').style.display = 'none';
-  API.savePosizione('posizioni_porte', 'update', raccogliDati(), null, function(err) {
+  API.savePosizione('posizioni_porte', 'update', raccogliDati(), null, function(err){
     if (err) { alert('Errore: ' + err); return; }
     _dirty = false;
     window.location.replace('rilievo-porte.html?id=' + idRilievo);
   });
 }
-
 function reloadRecord() {
   window.location.replace('pos-porte-edit.html?id_rilievo=' + idRilievo + '&id=' + idPos);
 }
-
 function confirmBack() {
   if (_dirty && !confirm('Hai modifiche non salvate. Vuoi uscire?')) return;
   window.location.replace('rilievo-porte.html?id=' + idRilievo);
 }
 
-window.addEventListener('beforeunload', function(e) { if (_dirty) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', function(e){ if (_dirty){ e.preventDefault(); e.returnValue=''; } });
 load();
 </script>
 </body>
