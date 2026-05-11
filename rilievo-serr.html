@@ -34,6 +34,8 @@
     .chip-serr  { background:#ede9fe; color:#5b21b6; }
     .chip-acc   { background:#fef3c7; color:#92400e; }
     .chip-geo   { background:#e0f2fe; color:#0369a1; }
+    .btn-del-sheet { flex:0 0 auto; padding:14px 16px; background:#fee2e2; color:#dc2626; border:2px solid #fca5a5; border-radius:10px; font-size:18px; font-weight:700; cursor:pointer; font-family:inherit; line-height:1; }
+    .btn-del-sheet:active { background:#fecaca; }
   </style>
 </head>
 <body>
@@ -52,7 +54,6 @@
 
 <div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="mainWrap">
 
-  <!-- INFO RILIEVO -->
   <div id="cardRilievo" style="background:var(--c-primary);color:#fff;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
     <div style="flex:1;">
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;" id="rilBadges"></div>
@@ -64,7 +65,6 @@
     </div>
   </div>
 
-  <!-- FILTER TIPO -->
   <div class="filter-row" style="padding:10px 14px 6px;margin-bottom:0;">
     <button class="filter-chip active" onclick="setFiltro('tutti',this)">Tutti</button>
     <button class="filter-chip" onclick="setFiltro('I',this)">I</button>
@@ -79,10 +79,8 @@
   <div id="listaPosizioni" style="padding-bottom:24px;"><div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div></div>
 </div>
 
-<!-- SHEET OVERLAY -->
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
 
-<!-- BOTTOM SHEET: DETTAGLIO POSIZIONE -->
 <div class="bottom-sheet" id="sheetPos">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
@@ -90,13 +88,13 @@
     <button class="sheet-close" onclick="closeSheet()">&#10005;</button>
   </div>
   <div class="sheet-body" id="shBody"></div>
-  <div class="sheet-footer">
+  <div class="sheet-footer" style="display:flex;gap:10px;">
+    <button class="btn-del-sheet" onclick="eliminaPosizione()" title="Elimina posizione">&#128465;</button>
     <button class="btn btn-primary btn-full" id="btnModifica" onclick="modificaPosizione()">&#9998; Modifica posizione</button>
   </div>
 </div>
 
 <button class="btn-fab" id="fabNuova" onclick="nuovaPosizione()" title="Nuova posizione" style="display:none;">&#43;</button>
-
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/db-local.js"></script>
@@ -113,7 +111,6 @@ if (!idRilievo) { history.back(); }
 var _rilievo=null, _posizioni=[], _capitoli=[], _dbSerr=[], _cantiere=null, _clienti=[];
 var _filtro='tutti';
 
-// ── CALCOLO TUBOLARITA ──
 function calcTub(p, dbSerr) {
   var H=parseFloat(p.H_mm||p.h_mm)||0, L=parseFloat(p.L_mm||p.l_mm)||0;
   var tf=(p.tipo_foro||'').toUpperCase(), ts=(p.tipo_serramento||'').toUpperCase();
@@ -169,7 +166,6 @@ function load() {
         if (cant) sub += (sub?' — ':'')+cant.nome_cantiere;
         document.getElementById('tbSub').textContent = sub || '—';
 
-        // badges rilievo
         var badges = '';
         if (ril.gru==='SI') badges += '<span style="background:rgba(79,70,229,.3);color:#a5b4fc;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">&#127959; GRU</span> ';
         if (ril.allarme===true) badges += '<span style="background:rgba(220,38,38,.3);color:#fca5a5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">&#9888; ALLARME</span> ';
@@ -182,7 +178,6 @@ function load() {
         if (ril.data_posa) info.push('Posa: '+ril.data_posa);
         document.getElementById('rilInfo').textContent = info.join(' · ');
 
-        // Carica posizioni, capitoli, db_serramento
         DBLocal.getAll('posizioni_serr', function(pos){
           _posizioni = pos.filter(function(p){ return p.id_rilievo===idRilievo && p.stato==='attivo'; });
           document.getElementById('rilNPosN').textContent = _posizioni.length;
@@ -208,8 +203,6 @@ function setFiltro(f, btn) {
 
 function renderPosizioni() {
   var container = document.getElementById('listaPosizioni');
-
-  // Filtra
   var pos = _posizioni.filter(function(p){
     if (_filtro==='tutti') return true;
     if (_filtro==='ACC') return p.solo_accessori===true;
@@ -221,7 +214,6 @@ function renderPosizioni() {
     return;
   }
 
-  // Costruiamo righe ordinate con capitoli
   var righe = [];
   pos.forEach(function(p){ righe.push({tipo:'pos',ordine:p.ordine!=null?p.ordine:p.numero_pos,data:p}); });
   _capitoli.forEach(function(cap){
@@ -246,24 +238,20 @@ function renderPosizioni() {
       }
       capCorr=r.data; posCapCorr=[];
       html += '<div class="cap-hdr"><span>'+esc(r.data.titolo)+'</span></div>';
-      html += '<div class="card" style="margin:0 0 0 0;border-radius:0;">';
+      html += '<div class="card" style="margin:0;border-radius:0;">';
       return;
     }
     if (r.tipo==='cap_fin') {
-      if (capCorr) {
-        flushCap();
-        html += '</div>';
-      }
+      if (capCorr) { flushCap(); html += '</div>'; }
       capCorr=null; posCapCorr=[];
       return;
     }
-    // posizione
     var p=r.data;
     if (capCorr) { posCapCorr.push(p); html += renderPosizioneRow(p); }
     else posiFuori.push(p);
   });
   if (posiFuori.length) {
-    html += '<div class="card" style="border-radius:var(--radius);margin:0 0 0 0;">';
+    html += '<div class="card" style="border-radius:var(--radius);margin:0;">';
     posiFuori.forEach(function(p){ html += renderPosizioneRow(p); });
     html += '</div>';
   }
@@ -277,41 +265,35 @@ function renderPosizioneRow(p) {
   var L=v(p.L_mm||p.l_mm), H=v(p.H_mm||p.h_mm);
   var dimIns = L&&H ? L+' &times; '+H : '—';
   var dimCalc = tub ? Math.round(tub.Lt)+' &times; '+Math.round(tub.Ht) : '';
-
   var tipoLabel = p.solo_accessori ? 'ACC' : (p.tipo_serramento||'?');
   var pianoStr = p.piano!=null ? ('P'+(p.piano>=0?'+':'')+p.piano) : '—';
-
   var varStr = '';
-  if (p.telaio_misto) {
-    varStr = 'Su('+v(p.variante_alto)+') Giu('+v(p.variante_basso)+') Sx('+v(p.variante_sx)+') Dx('+v(p.variante_dx)+')';
-  } else if (p.variante_telaio) {
-    varStr = p.variante_telaio;
-  }
+  if (p.telaio_misto) { varStr = 'Su('+v(p.variante_alto)+') Giu('+v(p.variante_basso)+') Sx('+v(p.variante_sx)+') Dx('+v(p.variante_dx)+')'; }
+  else if (p.variante_telaio) { varStr = p.variante_telaio; }
   var sisStr = p.solo_accessori ? '—' : ([p.sistema, varStr].filter(Boolean).join(' / '));
-
   var chips = '';
   if (p.controtelaio) chips += '<span class="badge badge-serr" style="font-size:10px;">'+(p.controtelaio==='T'?'TC':'CTL-L')+'</span>';
   if (p.schermatura)  chips += '<span class="badge badge-attivo" style="font-size:10px;">'+esc(p.schermatura)+'</span>';
   if (p.cassonetto)   chips += '<span class="badge" style="background:#fff3e0;color:#E65100;font-size:10px;">Cass</span>';
-  if (p.zanzariera)   chips += '<span class="badge" style="background:#d1fae5;color:#065f46;font-size:10px;">Zanz-'+esc(p.zanzariera)+'</span>';
-  if (p.coprifilo_int_mat) chips += '<span class="badge" style="background:#f3f4f6;color:#374151;font-size:10px;">CopI-'+esc(p.coprifilo_int_dim||p.coprifilo_int_mat)+'</span>';
-  if (p.coprifilo_est_mat) chips += '<span class="badge" style="background:#f3f4f6;color:#374151;font-size:10px;">CopE-'+esc(p.coprifilo_est_dim||p.coprifilo_est_mat)+'</span>';
-  if (p.rimozione==='SI'||p.rimozione===true) chips += '<span class="badge badge-disattivo" style="font-size:10px;">RimS</span>';
+  if (p.zanzariera)   chips += '<span class="badge" style="background:#d1fae5;color:#065f46;font-size:10px;">Zanz</span>';
+  if (p.coprifilo_int_mat) chips += '<span class="badge" style="background:#f3f4f6;color:#374151;font-size:10px;">CopI</span>';
+  if (p.coprifilo_est_mat) chips += '<span class="badge" style="background:#f3f4f6;color:#374151;font-size:10px;">CopE</span>';
+  if (p.rimozione==='SI'||p.rimozione===true) chips += '<span class="badge badge-disattivo" style="font-size:10px;">Rim</span>';
   if (p.taglio_marmo===true) chips += '<span class="badge" style="background:#fef9c3;color:#713f12;font-size:10px;">Mrm</span>';
-  if (p.dinoxill)     chips += '<span class="badge" style="background:#ede9fe;color:#5b21b6;font-size:10px;">'+esc(p.dinoxill)+'</span>';
-
+  if (p.dinoxill) chips += '<span class="badge" style="background:#ede9fe;color:#5b21b6;font-size:10px;">'+esc(p.dinoxill)+'</span>';
   var numDisp = p.numero_pos_alfa || p.numero_pos;
-
   return '<div class="pos-row" onclick="apriDettaglio(\''+p.id+'\')" data-id="'+p.id+'">'+
     '<div class="pos-num">'+esc(String(numDisp))+(p.solo_accessori?'<span class="acc-lbl">ACC</span>':'')+'</div>'+
     '<div class="pos-body">'+
       '<div style="display:flex;align-items:baseline;gap:8px;">'+
         '<span class="pos-tipo">'+esc(tipoLabel)+'</span>'+
         '<span style="font-size:10px;color:var(--c-text-ter);">'+pianoStr+'</span>'+
-        (p.ambiente?'<span style="font-size:10px;color:var(--c-text-sec);">'+esc(p.ambiente)+'</span>':'')+'</div>'+
+        (p.ambiente?'<span style="font-size:10px;color:var(--c-text-sec);">'+esc(p.ambiente)+'</span>':'')+
+      '</div>'+
       '<div style="display:flex;align-items:baseline;gap:8px;">'+
         '<span class="pos-dim">'+dimIns+'</span>'+
-        (dimCalc?'<span class="pos-dim-calc">('+dimCalc+')</span>':'')+'</div>'+
+        (dimCalc?'<span class="pos-dim-calc">('+dimCalc+')</span>':'')+
+      '</div>'+
       '<div class="pos-sis">'+esc(sisStr)+'</div>'+
       (chips?'<div class="pos-acc">'+chips+'</div>':'')+
     '</div>'+
@@ -331,7 +313,6 @@ function apriDettaglio(id) {
 
   var html = '';
 
-  // GEOMETRIA
   html += '<div class="det-sec"><div class="det-sec-title">&#128207; Geometria</div>';
   html += '<div class="det-row"><span class="det-lbl">Piano</span><span class="det-val">'+pianoStr+'</span></div>';
   if (p.ambiente) html += '<div class="det-row"><span class="det-lbl">Ambiente</span><span class="det-val">'+esc(p.ambiente)+'</span></div>';
@@ -345,7 +326,6 @@ function apriDettaglio(id) {
   }
   html += '</div>';
 
-  // SERRAMENTO
   if (!p.solo_accessori) {
     html += '<div class="det-sec"><div class="det-sec-title">&#128295; Serramento</div>';
     html += '<div class="det-row"><span class="det-lbl">Materiale</span><span class="det-val">'+esc(p.materiale||'—')+'</span></div>';
@@ -362,25 +342,23 @@ function apriDettaglio(id) {
     if (p.colore_est) html += '<div class="det-row"><span class="det-lbl">Colore est.</span><span class="det-val">'+esc(p.colore_est)+'</span></div>';
     html += '</div>';
   } else {
-    html += '<div style="background:#fef3c7;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:#92400e;font-weight:600;">&#128230; Solo accessori &mdash; nessun serramento installato</div>';
+    html += '<div style="background:#fef3c7;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:#92400e;font-weight:600;">&#128230; Solo accessori</div>';
   }
 
-  // ACCESSORI
   var hasAcc = p.controtelaio||p.schermatura||p.cassonetto||p.zanzariera||p.dinoxill||p.coprifilo_int_mat||p.coprifilo_est_mat||p.oscurante_tipo;
   if (hasAcc) {
     html += '<div class="det-sec"><div class="det-sec-title">&#127754; Accessori</div>';
     if (p.controtelaio) html += '<div class="det-row"><span class="det-lbl">Controtelaio</span><span class="det-val">'+(p.controtelaio==='T'?'Termocassa':'CTL Legno')+'</span></div>';
     if (p.schermatura)  html += '<div class="det-row"><span class="det-lbl">Schermatura</span><span class="det-val">'+esc(p.schermatura)+'</span></div>';
     if (p.cassonetto)   html += '<div class="det-row"><span class="det-lbl">Cassonetto</span><span class="det-val">'+(p.cassonetto==='P'?'PVC':'Legno')+'</span></div>';
-    if (p.zanzariera)   html += '<div class="det-row"><span class="det-lbl">Zanzariera</span><span class="det-val">'+(p.zanzariera==='V'?'Verticale':'Orizzontale')+'</span></div>';
+    if (p.zanzariera)   html += '<div class="det-row"><span class="det-lbl">Zanzariera</span><span class="det-val">'+esc(p.zanzariera)+'</span></div>';
     if (p.oscurante_tipo) html += '<div class="det-row"><span class="det-lbl">Oscurante</span><span class="det-val">'+esc(p.oscurante_tipo)+'</span></div>';
     if (p.coprifilo_int_mat) html += '<div class="det-row"><span class="det-lbl">Coprifilo int.</span><span class="det-val">'+esc(p.coprifilo_int_mat)+' '+esc(v(p.coprifilo_int_dim))+' mm</span></div>';
     if (p.coprifilo_est_mat) html += '<div class="det-row"><span class="det-lbl">Coprifilo est.</span><span class="det-val">'+esc(p.coprifilo_est_mat)+' '+esc(v(p.coprifilo_est_dim))+' mm</span></div>';
-    if (p.dinoxill)     html += '<div class="det-row"><span class="det-lbl">Dinoxill</span><span class="det-val">'+esc(p.dinoxill)+'</span></div>';
+    if (p.dinoxill) html += '<div class="det-row"><span class="det-lbl">Dinoxill</span><span class="det-val">'+esc(p.dinoxill)+'</span></div>';
     html += '</div>';
   }
 
-  // FLAG
   var hasFlag = p.rimozione==='SI'||p.rimozione===true||p.rimozione_accessori||p.taglio_marmo||p.angolari_pvc;
   if (hasFlag) {
     html += '<div class="det-sec"><div class="det-sec-title">&#9873; Rimozione e flag</div>';
@@ -391,7 +369,6 @@ function apriDettaglio(id) {
     html += '</div>';
   }
 
-  // NOTE
   if (p.note) {
     html += '<div class="det-sec"><div class="det-sec-title">&#128221; Note</div>';
     html += '<div style="font-size:13px;color:var(--c-text);line-height:1.5;background:var(--c-bg);border-radius:8px;padding:10px 12px;">'+esc(p.note)+'</div>';
@@ -408,14 +385,30 @@ function closeSheet() {
   document.getElementById('sheetPos').className = 'bottom-sheet';
 }
 
-function nuovaPosizione(){
-  window.location.href='pos-serr-edit.html?id_rilievo='+idRilievo;
+function nuovaPosizione() {
+  window.location.href = 'pos-serr-edit.html?id_rilievo=' + idRilievo;
 }
+
 var _currentPosId = null;
-function modificaPosizione(){
-  if(!_currentPosId) return;
+
+function modificaPosizione() {
+  if (!_currentPosId) return;
   closeSheet();
-  window.location.href='pos-serr-edit.html?id_rilievo='+idRilievo+'&id='+_currentPosId;
+  window.location.href = 'pos-serr-edit.html?id_rilievo=' + idRilievo + '&id=' + _currentPosId;
+}
+
+function eliminaPosizione() {
+  if (!_currentPosId) return;
+  if (!confirm("Eliminare questa posizione? L'operazione non e reversibile da mobile.")) return;
+  var id = _currentPosId;
+  closeSheet();
+  API.writeRecord('update', 'posizioni_serr', {id: id, stato: 'disattivo'}, function(err) {
+    if (err) { alert('Errore eliminazione: ' + err); return; }
+    _posizioni = _posizioni.filter(function(p) { return p.id !== id; });
+    document.getElementById('rilNPosN').textContent = _posizioni.length;
+    renderPosizioni();
+    API.miniSync('posizioni_serr', function() {});
+  });
 }
 
 load();
