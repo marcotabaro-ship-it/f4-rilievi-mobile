@@ -16,7 +16,6 @@
     .pos-body { flex:1; min-width:0; }
     .pos-tipo { font-size:11px; font-weight:700; color:var(--c-orange); }
     .pos-dim  { font-size:13px; font-weight:600; color:var(--c-text); }
-    .pos-dim-calc { font-size:11px; color:var(--c-orange); font-style:italic; }
     .pos-sis  { font-size:11px; color:var(--c-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
     .pos-acc  { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
     .cap-hdr  { background:var(--c-primary); color:#fcd34d; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:7px 14px; display:flex; align-items:center; justify-content:space-between; }
@@ -27,7 +26,8 @@
     .det-row:last-child { border-bottom:none; }
     .det-lbl  { color:var(--c-text-sec); font-size:12px; }
     .det-val  { font-weight:600; color:var(--c-text); text-align:right; max-width:60%; }
-    .det-val.calc { color:var(--c-orange); font-style:italic; }
+    .btn-del-sheet { flex:0 0 auto; padding:14px 16px; background:#fee2e2; color:#dc2626; border:2px solid #fca5a5; border-radius:10px; font-size:18px; font-weight:700; cursor:pointer; font-family:inherit; line-height:1; }
+    .btn-del-sheet:active { background:#fecaca; }
   </style>
 </head>
 <body>
@@ -59,9 +59,9 @@
 
   <div class="filter-row" style="padding:10px 14px 6px;margin-bottom:0;">
     <button class="filter-chip active" onclick="setFiltro('tutti',this)">Tutti</button>
-    <button class="filter-chip orange" onclick="setFiltro('BATTENTE',this)">Battente</button>
-    <button class="filter-chip orange" onclick="setFiltro('SCORREVOLE',this)">Scorrevole</button>
-    <button class="filter-chip orange" onclick="setFiltro('ROTOTRASLANTE',this)">Rotot.</button>
+    <button class="filter-chip orange" onclick="setFiltro('INT',this)">INT</button>
+    <button class="filter-chip orange" onclick="setFiltro('BLI',this)">BLI</button>
+    <button class="filter-chip orange" onclick="setFiltro('REI',this)">REI</button>
   </div>
 
   <div id="listaPosizioni" style="padding-bottom:24px;"><div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div></div>
@@ -75,13 +75,13 @@
     <button class="sheet-close" onclick="closeSheet()">&#10005;</button>
   </div>
   <div class="sheet-body" id="shBody"></div>
-  <div class="sheet-footer">
+  <div class="sheet-footer" style="display:flex;gap:10px;">
+    <button class="btn-del-sheet" onclick="eliminaPosizione()" title="Elimina posizione">&#128465;</button>
     <button class="btn btn-orange btn-full" id="btnModifica" onclick="modificaPosizione()">&#9998; Modifica posizione</button>
   </div>
 </div>
 
 <button class="btn-fab" id="fabNuova" onclick="nuovaPosizione()" title="Nuova posizione" style="display:none;background:var(--c-orange);">&#43;</button>
-
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/db-local.js"></script>
@@ -97,20 +97,14 @@ if (!idRilievo) { history.back(); }
 
 var _rilievo=null, _posizioni=[], _capitoli=[], _dbPorte=[], _filtro='tutti';
 
-// ── CALCOLO DIM PORTE ──
 function calcDimPorta(p, dbPorte) {
   var H=parseFloat(p.H_mm||p.h_mm)||0, L=parseFloat(p.L_mm||p.l_mm)||0;
   var tf=(p.tipo_foro||'').toUpperCase();
   if (!H||!L) return null;
-  // Foro N (netta passaggio) = dim gia' definitive, nessuna aggiunta
   if (tf==='N') return {Lt:Math.round(L), Ht:Math.round(H)};
-  // Foro P (posa in luce) = cerca record in db_porte e aggiunge offset
   if (tf==='P') {
     var rec=null;
-    for(var i=0;i<dbPorte.length;i++){
-      var d=dbPorte[i];
-      if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design){rec=d;break;}
-    }
+    for(var i=0;i<dbPorte.length;i++){var d=dbPorte[i];if(d&&d.fornitore===p.fornitore&&(d.descrizione===p.sistema||d.sistema===p.sistema)){rec=d;break;}}
     var offL=rec?(parseFloat(rec.offset_larghezza_mm)||0):0;
     var offH=rec?(parseFloat(rec.offset_altezza_mm)||0):0;
     return {Lt:Math.round(L+offL), Ht:Math.round(H+offH)};
@@ -231,16 +225,13 @@ function renderPortaRow(p) {
   var dimCalc=dim?Math.round(dim.Lt)+' &times; '+Math.round(dim.Ht):'';
   var tipoLabel=p.tipo_porta||'?';
   var pianoStr=p.piano!=null?('P'+(p.piano>=0?'+':'')+p.piano):'—';
-  var sisStr=[p.fornitore, p.sistema, p.variante_telaio].filter(Boolean).join(' / ');
-
+  var sisStr=[p.fornitore, p.sistema].filter(Boolean).join(' / ');
   var chips='';
-  if(p.controtelaio) chips+='<span class="badge" style="background:#fff3e0;color:#E65100;font-size:10px;">'+(p.controtelaio==='T'?'TC':'CTL-L')+'</span>';
-  if(p.rivestimento_stipiti) chips+='<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">Riv</span>';
+  var hasCTL=p.fornitura_ctl_int==='SI'||p.install_ctl_int==='SI'||p.fornitura_ctl_bli==='SI'||p.install_ctl_bli==='SI';
+  if(hasCTL) chips+='<span class="badge" style="background:#fff3e0;color:#E65100;font-size:10px;">CTL</span>';
+  if(p.allargamento_telaio===true||p.allargamento_telaio==='SI') chips+='<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">ALL</span>';
   if(p.rimozione==='SI'||p.rimozione===true) chips+='<span class="badge badge-disattivo" style="font-size:10px;">Rim</span>';
-  if(p.taglio_marmo===true) chips+='<span class="badge" style="background:#fef9c3;color:#713f12;font-size:10px;">Mrm</span>';
-
   var numDisp=p.numero_pos_alfa||p.numero_pos;
-
   return '<div class="pos-row" onclick="apriDettaglio(\''+p.id+'\')">'+
     '<div class="pos-num">'+esc(String(numDisp))+'</div>'+
     '<div class="pos-body">'+
@@ -248,11 +239,10 @@ function renderPortaRow(p) {
         '<span class="pos-tipo">'+esc(tipoLabel)+'</span>'+
         '<span style="font-size:10px;color:var(--c-text-ter);">'+pianoStr+'</span>'+
         (p.ambiente?'<span style="font-size:10px;color:var(--c-text-sec);">'+esc(p.ambiente)+'</span>':'')+
-        (p.n_foglie?'<span style="font-size:10px;color:var(--c-text-ter);">'+p.n_foglie+' fog.</span>':'')+
       '</div>'+
       '<div style="display:flex;align-items:baseline;gap:8px;">'+
         '<span class="pos-dim">'+dimIns+'</span>'+
-        (dimCalc&&dimCalc!==dimIns?'<span class="pos-dim-calc">('+dimCalc+')</span>':'')+
+        (dimCalc&&dimCalc!==dimIns?'<span style="font-size:11px;color:var(--c-orange);font-style:italic;">('+dimCalc+')</span>':'')+
       '</div>'+
       (sisStr?'<div class="pos-sis">'+esc(sisStr)+'</div>':'')+
       (chips?'<div class="pos-acc">'+chips+'</div>':'')+
@@ -272,51 +262,61 @@ function apriDettaglio(id) {
 
   var html='';
 
-  // GEOMETRIA
   html+='<div class="det-sec"><div class="det-sec-title">&#128207; Geometria</div>';
   html+='<div class="det-row"><span class="det-lbl">Piano</span><span class="det-val">'+pianoStr+'</span></div>';
   if(p.ambiente) html+='<div class="det-row"><span class="det-lbl">Ambiente</span><span class="det-val">'+esc(p.ambiente)+'</span></div>';
-  if(p.n_foglie) html+='<div class="det-row"><span class="det-lbl">N foglie</span><span class="det-val">'+esc(v(p.n_foglie))+'</span></div>';
-  html+='<div class="det-row"><span class="det-lbl">Tipo foro</span><span class="det-val">'+esc(p.tipo_foro==='N'?'N — Netta passaggio':p.tipo_foro==='P'?'P — Posa in luce':p.tipo_foro||'—')+'</span></div>';
-  html+='<div class="det-row"><span class="det-lbl">L inserita</span><span class="det-val">'+esc(v(p.L_mm||p.l_mm)||'—')+' mm</span></div>';
-  html+='<div class="det-row"><span class="det-lbl">H inserita</span><span class="det-val">'+esc(v(p.H_mm||p.h_mm)||'—')+' mm</span></div>';
+  html+='<div class="det-row"><span class="det-lbl">Tipo foro</span><span class="det-val">'+esc(p.tipo_foro||'—')+'</span></div>';
+  html+='<div class="det-row"><span class="det-lbl">L inserita</span><span class="det-val">'+esc(v(p.l_mm||p.L_mm)||'—')+' mm</span></div>';
+  html+='<div class="det-row"><span class="det-lbl">H inserita</span><span class="det-val">'+esc(v(p.h_mm||p.H_mm)||'—')+' mm</span></div>';
   if(dim){
-    html+='<div class="det-row"><span class="det-lbl">L ordine</span><span class="det-val calc">'+dim.Lt+' mm</span></div>';
-    html+='<div class="det-row"><span class="det-lbl">H ordine</span><span class="det-val calc">'+dim.Ht+' mm</span></div>';
+    html+='<div class="det-row"><span class="det-lbl">L ordine</span><span class="det-val" style="color:var(--c-orange);font-style:italic;">'+dim.Lt+' mm</span></div>';
+    html+='<div class="det-row"><span class="det-lbl">H ordine</span><span class="det-val" style="color:var(--c-orange);font-style:italic;">'+dim.Ht+' mm</span></div>';
   }
+  if(p.sp_muro_mm) html+='<div class="det-row"><span class="det-lbl">Sp. muro</span><span class="det-val">'+esc(v(p.sp_muro_mm))+' mm</span></div>';
+  if(p.telaio_decentrato_mm) html+='<div class="det-row"><span class="det-lbl">Decentr. telaio</span><span class="det-val">'+esc(v(p.telaio_decentrato_mm))+' mm</span></div>';
   html+='</div>';
 
-  // PORTA
   html+='<div class="det-sec"><div class="det-sec-title">&#128682; Porta</div>';
   if(p.fornitore) html+='<div class="det-row"><span class="det-lbl">Fornitore</span><span class="det-val">'+esc(p.fornitore)+'</span></div>';
-  if(p.materiale) html+='<div class="det-row"><span class="det-lbl">Materiale</span><span class="det-val">'+esc(p.materiale)+'</span></div>';
   if(p.sistema)   html+='<div class="det-row"><span class="det-lbl">Sistema</span><span class="det-val">'+esc(p.sistema)+'</span></div>';
-  if(p.stile_design) html+='<div class="det-row"><span class="det-lbl">Stile design</span><span class="det-val">'+esc(p.stile_design)+'</span></div>';
-  if(p.variante_telaio) html+='<div class="det-row"><span class="det-lbl">Variante telaio</span><span class="det-val">'+esc(p.variante_telaio)+'</span></div>';
-  if(p.senso_apertura) html+='<div class="det-row"><span class="det-lbl">Senso apertura</span><span class="det-val">'+esc(p.senso_apertura)+'</span></div>';
-  if(p.colore_int) html+='<div class="det-row"><span class="det-lbl">Colore int.</span><span class="det-val">'+esc(p.colore_int)+'</span></div>';
-  if(p.colore_est) html+='<div class="det-row"><span class="det-lbl">Colore est.</span><span class="det-val">'+esc(p.colore_est)+'</span></div>';
+  if(p.collezione) html+='<div class="det-row"><span class="det-lbl">Collezione</span><span class="det-val">'+esc(p.collezione)+'</span></div>';
+  if(p.modello)   html+='<div class="det-row"><span class="det-lbl">Modello</span><span class="det-val">'+esc(p.modello)+'</span></div>';
+  if(p.versione_porta) html+='<div class="det-row"><span class="det-lbl">Versione</span><span class="det-val">'+esc(p.versione_porta)+'</span></div>';
+  if(p.essenza)   html+='<div class="det-row"><span class="det-lbl">Essenza</span><span class="det-val">'+esc(p.essenza)+'</span></div>';
+  if(p.verso_apertura) html+='<div class="det-row"><span class="det-lbl">Verso apertura</span><span class="det-val">'+esc(p.verso_apertura)+'</span></div>';
+  if(p.sopraluce===true||p.sopraluce==='SI') html+='<div class="det-row"><span class="det-lbl">Sopraluce</span><span class="det-val">&#9989;</span></div>';
   html+='</div>';
 
-  // CONTROTELAIO/RIVESTIMENTO
-  if(p.controtelaio||p.rivestimento_stipiti) {
-    html+='<div class="det-sec"><div class="det-sec-title">&#9881; Installazione</div>';
-    if(p.controtelaio) html+='<div class="det-row"><span class="det-lbl">Controtelaio</span><span class="det-val">'+(p.controtelaio==='T'?'Termocassa':'CTL Legno')+'</span></div>';
-    if(p.rivestimento_stipiti) html+='<div class="det-row"><span class="det-lbl">Rivestimento stipiti</span><span class="det-val">&#9989;</span></div>';
-    html+='</div>';
-  }
-
-  // FLAG
-  var hasFlag=p.rimozione==='SI'||p.rimozione===true||p.taglio_marmo||p.angolari_pvc;
-  if(hasFlag){
-    html+='<div class="det-sec"><div class="det-sec-title">&#9873; Rimozione e flag</div>';
+  var hasFlag=p.allargamento_telaio===true||p.allargamento_telaio==='SI'||p.rimozione==='SI'||p.rimozione===true;
+  var hasCTL=p.fornitura_ctl_int==='SI'||p.install_ctl_int==='SI'||p.fornitura_ctl_bli==='SI'||p.install_ctl_bli==='SI'||p.fornitura_ctl_rei==='SI'||p.install_ctl_rei==='SI';
+  if(hasCTL||hasFlag){
+    html+='<div class="det-sec"><div class="det-sec-title">&#9881; Installazione e flag</div>';
+    if(p.fornitura_ctl_int==='SI') html+='<div class="det-row"><span class="det-lbl">Fornitura CTL int.</span><span class="det-val">&#9989;</span></div>';
+    if(p.fornitura_ctl_bli==='SI') html+='<div class="det-row"><span class="det-lbl">Fornitura CTL blindata</span><span class="det-val">&#9989;</span></div>';
+    if(p.fornitura_ctl_rei==='SI') html+='<div class="det-row"><span class="det-lbl">Fornitura CTL REI</span><span class="det-val">&#9989;</span></div>';
+    if(p.install_ctl_int==='SI')   html+='<div class="det-row"><span class="det-lbl">Install. CTL int.</span><span class="det-val">&#9989;</span></div>';
+    if(p.install_ctl_bli==='SI')   html+='<div class="det-row"><span class="det-lbl">Install. CTL blindata</span><span class="det-val">&#9989;</span></div>';
+    if(p.install_ctl_rei==='SI')   html+='<div class="det-row"><span class="det-lbl">Install. CTL REI</span><span class="det-val">&#9989;</span></div>';
+    if(p.allargamento_telaio===true||p.allargamento_telaio==='SI'){
+      html+='<div class="det-row"><span class="det-lbl">Allargamento telaio</span><span class="det-val">&#9989;'+(p.allargamento_mm?' — '+p.allargamento_mm+' mm':'')+'</span></div>';
+    }
     if(p.rimozione==='SI'||p.rimozione===true) html+='<div class="det-row"><span class="det-lbl">Rimozione porta</span><span class="det-val">&#9989;</span></div>';
-    if(p.taglio_marmo===true) html+='<div class="det-row"><span class="det-lbl">Taglio piani marmo</span><span class="det-val">&#9989;</span></div>';
-    if(p.angolari_pvc===true) html+='<div class="det-row"><span class="det-lbl">Angolari PVC</span><span class="det-val">&#9989;</span></div>';
     html+='</div>';
   }
 
-  // NOTE
+  if(p.tipo_serratura||p.colore_serratura||p.colore_cerniere||p.maniglia_marca||p.vetri===true||p.mostrine===true){
+    html+='<div class="det-sec"><div class="det-sec-title">&#128273; Serratura e finiture</div>';
+    if(p.tipo_serratura)    html+='<div class="det-row"><span class="det-lbl">Tipo serratura</span><span class="det-val">'+esc(p.tipo_serratura)+'</span></div>';
+    if(p.colore_serratura)  html+='<div class="det-row"><span class="det-lbl">Colore serratura</span><span class="det-val">'+esc(p.colore_serratura)+'</span></div>';
+    if(p.colore_cerniere)   html+='<div class="det-row"><span class="det-lbl">Colore cerniere</span><span class="det-val">'+esc(p.colore_cerniere)+'</span></div>';
+    if(p.maniglia_marca)    html+='<div class="det-row"><span class="det-lbl">Maniglia marca</span><span class="det-val">'+esc(p.maniglia_marca)+'</span></div>';
+    if(p.maniglia_modello)  html+='<div class="det-row"><span class="det-lbl">Maniglia modello</span><span class="det-val">'+esc(p.maniglia_modello)+'</span></div>';
+    if(p.maniglia_colore_mat) html+='<div class="det-row"><span class="det-lbl">Maniglia colore/mat.</span><span class="det-val">'+esc(p.maniglia_colore_mat)+'</span></div>';
+    if(p.vetri===true)      html+='<div class="det-row"><span class="det-lbl">Vetri</span><span class="det-val">&#9989;</span></div>';
+    if(p.mostrine===true)   html+='<div class="det-row"><span class="det-lbl">Mostrine</span><span class="det-val">&#9989;</span></div>';
+    html+='</div>';
+  }
+
   if(p.note){
     html+='<div class="det-sec"><div class="det-sec-title">&#128221; Note</div>';
     html+='<div style="font-size:13px;color:var(--c-text);line-height:1.5;background:var(--c-bg);border-radius:8px;padding:10px 12px;">'+esc(p.note)+'</div>';
@@ -336,11 +336,27 @@ function closeSheet(){
 function nuovaPosizione(){
   window.location.href='pos-porte-edit.html?id_rilievo='+idRilievo;
 }
+
 var _currentPosId=null;
+
 function modificaPosizione(){
   if(!_currentPosId) return;
   closeSheet();
   window.location.href='pos-porte-edit.html?id_rilievo='+idRilievo+'&id='+_currentPosId;
+}
+
+function eliminaPosizione() {
+  if (!_currentPosId) return;
+  if (!confirm("Eliminare questa posizione? L'operazione non e reversibile da mobile.")) return;
+  var id = _currentPosId;
+  closeSheet();
+  API.writeRecord('update', 'posizioni_porte', {id: id, stato: 'disattivo'}, function(err) {
+    if (err) { alert('Errore eliminazione: ' + err); return; }
+    _posizioni = _posizioni.filter(function(p) { return p.id !== id; });
+    document.getElementById('rilNPosN').textContent = _posizioni.length;
+    renderPosizioni();
+    API.miniSync('posizioni_porte', function() {});
+  });
 }
 
 load();
