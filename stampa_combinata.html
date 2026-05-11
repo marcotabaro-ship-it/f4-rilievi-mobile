@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Stampa combinata &mdash; F4 Rilievi</title>
+  <style>
+    body { background: #f5f6fa; font-size: 12px; }
+    #modal-sel { position: fixed; inset: 0; z-index: 200; background: rgba(15,15,35,.55); display: flex; align-items: center; justify-content: center; }
+    .sel-box { background: #fff; border-radius: 14px; padding: 32px 36px; max-width: 440px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+    .sel-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .sel-logo .lb { border: 2px solid #e53e3e; padding: 3px 9px; font-size: 18px; font-weight: 900; color: #1a1a2e; }
+    .sel-logo .lt { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+    .sel-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+    .sel-sub { font-size: 12px; color: #6b7280; margin-bottom: 22px; }
+    .sel-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .sel-opt { display: flex; align-items: center; gap: 14px; border: 2px solid #e5e7eb; border-radius: 10px; padding: 12px 16px; cursor: pointer; transition: border-color .15s, background .15s; }
+    .sel-opt:hover { border-color: #c7d2fe; background: #f5f3ff; }
+    .sel-opt input[type=checkbox] { width: 18px; height: 18px; accent-color: #4f46e5; flex-shrink: 0; cursor: pointer; }
+    .sel-opt.checked { border-color: #4f46e5; background: #eef2ff; }
+    .sel-opt-ico { font-size: 20px; flex-shrink: 0; }
+    .sel-opt-text .sel-opt-name { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+    .sel-opt-text .sel-opt-desc { font-size: 11px; color: #6b7280; }
+    .sel-actions { display: flex; gap: 10px; }
+    .btn-avvia { flex: 1; background: #4f46e5; color: #fff; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-avvia:hover { background: #4338ca; }
+    .btn-annulla { background: #f3f4f6; color: #374151; border: none; border-radius: 8px; padding: 12px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-annulla:hover { background: #e5e7eb; }
+    #toolbar { background: #1a1a2e; color: #fff; padding: 10px 18px; display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+    #toolbar h1 { font-size: 14px; margin: 0; flex: 1; font-weight: 600; }
+    .btn-tb { border: none; border-radius: 6px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; color: #fff; }
+    .btn-tb-primary { background: #4f46e5; } .btn-tb-primary:hover { background: #4338ca; }
+    .btn-tb-neutral { background: #374151; } .btn-tb-neutral:hover { background: #1f2937; }
+    .btn-tb-sec { background: #6b7280; } .btn-tb-sec:hover { background: #4b5563; }
+    #wrap { max-width: 1100px; margin: 20px auto; padding: 0 14px 48px; }
+    #stato-msg { text-align: center; padding: 80px; color: #6b7280; font-size: 15px; }
+    .sezione { margin-bottom: 30px; }
+    .scheda-hdr { background: #fff; border: 2px solid #1a1a2e; border-radius: 8px; margin-bottom: 10px; overflow: hidden; page-break-inside: avoid; }
+    .sh-top { display: grid; grid-template-columns: 110px 1fr 220px; border-bottom: 2px solid #1a1a2e; }
+    .sh-logo { background: #1a1a2e; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; font-size: 10px; font-weight: 700; text-align: center; }
+    .sh-logo .lb2 { border: 2px solid #e53e3e; padding: 3px 8px; font-size: 16px; font-weight: 900; letter-spacing: -1px; margin-bottom: 3px; }
+    .sh-c { padding: 10px 14px; border-left: 2px solid #1a1a2e; border-right: 2px solid #1a1a2e; }
+    .sh-d { padding: 10px 12px; }
+    .sh-f { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; font-size: 11px; }
+    .sh-f label { font-weight: 700; color: #1a1a2e; font-size: 10px; min-width: 68px; white-space: nowrap; }
+    .sh-f span { color: #374151; border-bottom: 1px solid #d1d5db; flex: 1; min-height: 13px; }
+    .sh-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .sh-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+    .sh-badge.blue { background: #ede9fe; color: #4f46e5; }
+    .sh-badge.red { background: #fee2e2; color: #dc2626; }
+    .sh-badge.green { background: #d1fae5; color: #065f46; }
+    .sez-hdr { display: flex; align-items: center; gap: 12px; margin: 14px 0 10px; }
+    .sez-hdr-line { flex: 1; height: 2px; background: #e5e7eb; }
+    .sez-hdr-txt { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #4f46e5; white-space: nowrap; }
+    .strat-grid-c { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .strat-card-c { background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 7px; width: 140px; page-break-inside: avoid; }
+    .strat-card-c img { width: 100%; height: 70px; object-fit: contain; background: #f9f9f9; border: 1px solid #e5e7eb; border-radius: 3px; margin-bottom: 4px; }
+    .strat-card-c h4 { font-size: 10px; font-weight: 700; color: #1a1a2e; margin: 0 0 2px; }
+    .strat-card-c .sq { font-size: 9px; color: #6b7280; line-height: 1.4; }
+    .tbl-outer { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow-x: auto; margin-bottom: 10px; }
+    table.t-c { border-collapse: collapse; width: 100%; font-size: 11px; white-space: nowrap; }
+    table.t-c thead tr.th-g th { background: #374151; color: #a5b4fc; padding: 3px 5px; text-align: center; font-size: 9px; font-weight: 700; text-transform: uppercase; border-right: 1px solid #4b5563; }
+    table.t-c thead tr.th-m th { background: #1a1a2e; color: #fff; padding: 6px 6px; text-align: center; font-size: 10px; font-weight: 600; border-right: 1px solid #374151; }
+    table.t-c td { padding: 4px 6px; border-bottom: 1px solid #f0f0f6; border-right: 1px solid #f0f0f6; font-size: 10px; color: #374151; }
+    table.t-c tr:nth-child(even) td { background: #fafafe; }
+    table.t-c tr { page-break-inside: avoid; }
+    table.t-c td.num { font-weight: 700; color: #1a1a2e; font-family: monospace; background: #f0f0ff !important; text-align: center; }
+    table.t-c td.c { text-align: center; }
+    table.t-c td.tipo-cell { text-align: center; font-weight: 700; color: #4f46e5; }
+    table.t-c td.dim-c { text-align: center; }
+    .dm { font-weight: 700; font-size: 10px; }
+    .dc { font-size: 9px; color: #6b7280; font-style: italic; }
+    .chk { display: inline-block; width: 10px; height: 10px; border: 1.5px solid #9ca3af; border-radius: 2px; background: #fff; }
+    .chk.on { background: #e53e3e; border-color: #e53e3e; }
+    td.gsep { border-left: 2px solid #d1d5db; }
+    .badge-tipo { display: inline-block; padding: 1px 6px; border-radius: 10px; background: #E3F2FD; color: #1565C0; font-weight: 700; font-size: 10px; }
+    .leg-block { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; page-break-inside: avoid; }
+    .leg-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+    .leg-sec h4 { font-size: 9px; font-weight: 700; color: #4f46e5; margin: 0 0 3px; text-transform: uppercase; }
+    .leg-row { font-size: 9px; line-height: 1.4; }
+    .leg-row b { color: #e53e3e; margin-right: 2px; font-family: monospace; }
+    .acc-g { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; margin-bottom: 8px; page-break-inside: avoid; }
+    .acc-gh { background: #f5f7ff; border-bottom: 1px solid #e5e7eb; padding: 6px 12px; display: flex; align-items: center; gap: 10px; }
+    .acc-gimg { width: 46px; height: 32px; object-fit: contain; flex-shrink: 0; border: 1px solid #e5e7eb; border-radius: 3px; background: #fff; padding: 2px; }
+    .acc-gtit { font-size: 13px; font-weight: 700; color: #1a1a2e; flex: 1; }
+    .acc-gtot { font-size: 11px; font-weight: 700; color: #2E7D32; white-space: nowrap; }
+    .acc-gb { padding: 7px 12px; }
+    .acc-sub { margin-bottom: 6px; }
+    .acc-sub:last-child { margin-bottom: 0; }
+    .acc-sublbl { font-size: 10px; font-weight: 700; color: #6b7280; margin-bottom: 2px; }
+    .acc-row { display: flex; align-items: center; gap: 6px; }
+    .chip-mq { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; background: #E3F2FD; color: #1565C0; white-space: nowrap; }
+    .chip-n  { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; background: #FFF3E0; color: #E65100; white-space: nowrap; }
+    .chip-m  { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; background: #F3E5F5; color: #6A1B9A; white-space: nowrap; }
+    .acc-pl { flex: 1; font-size: 10px; font-weight: 600; color: #1a1a2e; font-family: monospace; background: #eef2ff; padding: 2px 8px; border-radius: 4px; }
+    .mat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 6px; }
+    .mat-c { border: 1px solid #e5e7eb; border-radius: 6px; padding: 7px; background: #fff; text-align: center; }
+    .mat-c .mn { font-size: 9px; color: #6b7280; margin-bottom: 3px; }
+    .mat-c .mv { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
+    .mat-c .mu { font-size: 8px; color: #6b7280; }
+    table.t-posa { width: 100%; border-collapse: collapse; font-size: 11px; }
+    table.t-posa thead th { background: #1a1a2e; color: #fff; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 600; white-space: nowrap; }
+    table.t-posa thead th.c { text-align: center; }
+    table.t-posa td { padding: 5px 8px; border-bottom: 1px solid #f0f0f6; color: #374151; }
+    table.t-posa td.c { text-align: center; }
+    .tr-sez td { background: #eef0f8; color: #3730a3; font-weight: 700; font-size: 9px; letter-spacing: .7px; text-transform: uppercase; padding: 3px 8px; border-top: 2px solid #e0e3f4; }
+    .tr-voce.zero-row td { opacity: .4; }
+    .tr-voce td.ore-f { text-align: center; font-weight: 700; color: #4f46e5; }
+    .tr-tot td { background: #1a1a2e; color: #fff; font-weight: 700; padding: 7px 8px; font-size: 11px; }
+    .tr-tot td.ore-f { text-align: center; color: #a5b4fc; font-size: 14px; }
+    .posa-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .sum-block { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; }
+    .sum-block h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #4f46e5; margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px solid #ede9fe; }
+    .sum-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; border-bottom: 1px solid #f9f9ff; }
+    .sum-row:last-child { border-bottom: none; }
+    .sum-row .lbl { color: #6b7280; }
+    .sum-row .val { font-weight: 700; color: #1a1a2e; text-align: right; }
+    .sum-row.tot { border-top: 2px solid #ede9fe; margin-top: 3px; padding-top: 5px; }
+    .sum-row.tot .val { color: #4f46e5; font-size: 13px; }
+    .ore-grid-c { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-top: 10px; }
+    .ore-card-c { text-align: center; padding: 10px; background: #f9fafe; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .ore-card-c .ov { font-size: 24px; font-weight: 700; color: #4f46e5; line-height: 1.1; }
+    .ore-card-c .ol { font-size: 9px; color: #6b7280; margin-top: 3px; text-transform: uppercase; letter-spacing: .3px; }
+    .tipo-grid-c { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    .tipo-chip-c { display: flex; align-items: center; gap: 4px; background: #f3f4f6; border-radius: 8px; padding: 3px 8px; font-size: 11px; }
+    .tipo-chip-c .sig { font-weight: 700; color: #1a1a2e; }
+    .tipo-chip-c .cnt { font-weight: 700; color: #4f46e5; }
+    .tipo-chip-c.zero { opacity: .35; }
+    @media print {
+      @page { size: A4 landscape; margin: 7mm; }
+      body { background: #fff; }
+      #modal-sel { display: none !important; }
+      #toolbar    { display: none !important; }
+      #wrap { margin: 0; padding: 0; max-width: none; }
+      .sezione-break { page-break-after: always; }
+      .scheda-hdr { border-radius: 0; margin-bottom: 4px; }
+      .sh-top { grid-template-columns: 90px 1fr 190px; }
+      .sh-logo .lb2 { font-size: 13px; }
+      .sh-f { font-size: 9px; margin-bottom: 2px; }
+      .sh-f label { font-size: 9px; }
+      .leg-block { padding: 5px 8px; border-radius: 0; }
+      .leg-grid { gap: 5px; }
+      .leg-sec h4 { font-size: 7px; }
+      .leg-row { font-size: 7px; }
+      .strat-card-c { width: 110px; padding: 5px; }
+      .strat-card-c img { height: 55px; }
+      .strat-card-c h4 { font-size: 8px; }
+      .strat-card-c .sq { font-size: 7px; }
+      .tbl-outer { border-radius: 0; overflow: visible; }
+      table.t-c { font-size: 8px; white-space: normal; }
+      table.t-c thead tr.th-g th { padding: 2px 3px; font-size: 7px; }
+      table.t-c thead tr.th-m th { padding: 3px 4px; font-size: 8px; }
+      table.t-c td { padding: 2px 4px; font-size: 8px; }
+      .dm { font-size: 8px; } .dc { font-size: 7px; }
+      .acc-g { border-radius: 0; margin-bottom: 5px; }
+      .acc-gh { padding: 4px 8px; background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .acc-gimg { width: 34px; height: 24px; }
+      .acc-gtit { font-size: .78rem; }
+      .acc-gb { padding: 5px 8px; }
+      .chip-mq,.chip-n,.chip-m { font-size: 8px; padding: 1px 5px; }
+      .acc-pl { font-size: 8px; }
+      .mat-c .mn { font-size: 7px; } .mat-c .mv { font-size: .85rem; } .mat-c .mu { font-size: 6px; }
+      table.t-posa { font-size: 8px; }
+      table.t-posa thead th { padding: 3px 5px; font-size: 7px; }
+      table.t-posa td { padding: 2px 5px; font-size: 8px; }
+      .tr-sez td { font-size: 7px; padding: 2px 5px; }
+      .tr-voce.zero-row { display: none !important; }
+      .ore-card-c .ov { font-size: 16px; }
+      .ore-card-c .ol { font-size: 7px; }
+      .sum-row { font-size: 9px; }
+      .tipo-chip-c { font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="modal-sel">
+  <div class="sel-box">
+    <div class="sel-logo"><div class="lb">[F4]</div><div class="lt">GRUPPO F4 &mdash; F4 Rilievi</div></div>
+    <div class="sel-title">&#128438; Stampa combinata</div>
+    <div class="sel-sub">Seleziona i report da includere nella stampa</div>
+    <div class="sel-options">
+      <label class="sel-opt checked" id="opt-rilievo">
+        <input type="checkbox" id="chk-rilievo" checked onchange="updOpt(this,'opt-rilievo')">
+        <span class="sel-opt-ico">&#128196;</span>
+        <span class="sel-opt-text">
+          <div class="sel-opt-name">Report Rilievo</div>
+          <div class="sel-opt-desc">Legenda, stratigrafie, tabella posizioni con dimensioni calcolate</div>
+        </span>
+      </label>
+      <label class="sel-opt checked" id="opt-acc">
+        <input type="checkbox" id="chk-acc" checked onchange="updOpt(this,'opt-acc')">
+        <span class="sel-opt-ico">&#128202;</span>
+        <span class="sel-opt-text">
+          <div class="sel-opt-name">Report Accessori</div>
+          <div class="sel-opt-desc">Accessori per tipo con quantit&agrave;, barre coprifili, materiali posa</div>
+        </span>
+      </label>
+      <label class="sel-opt checked" id="opt-posa">
+        <input type="checkbox" id="chk-posa" checked onchange="updOpt(this,'opt-posa')">
+        <span class="sel-opt-ico">&#9201;</span>
+        <span class="sel-opt-text">
+          <div class="sel-opt-name">Report Posa</div>
+          <div class="sel-opt-desc">Voci di posa con ore calcolate, riepilogo aree, ore totali</div>
+        </span>
+      </label>
+    </div>
+    <div class="sel-actions">
+      <button class="btn-annulla" onclick="history.back()">&#8592; Annulla</button>
+      <button class="btn-avvia" onclick="avvia()">&#128438; Genera e stampa</button>
+    </div>
+  </div>
+</div>
+
+<div id="toolbar" style="display:none">
+  <h1 id="tb-titolo">Stampa combinata</h1>
+  <button class="btn-tb btn-tb-sec" onclick="riaprModal()">&#9881;&#65039; Selezione</button>
+  <button class="btn-tb btn-tb-neutral" onclick="history.back()">&#8592; Indietro</button>
+  <button class="btn-tb btn-tb-primary" onclick="window.print()">&#128438; Stampa / PDF</button>
+</div>
+
+<div id="wrap">
+  <div id="stato-msg">Seleziona i report e clicca "Genera e stampa".</div>
+  <div id="out" style="display:none"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+var currentUser = Auth.requireLogin(); if (!currentUser) throw new Error('not logged');
+var idRilievo = (new URLSearchParams(window.location.search)).get('idRilievo') ||
+                (new URLSearchParams(window.location.search)).get('id');
+if (!idRilievo) history.back();
+
+var STRAT_IMG = (typeof APP_CONFIG!=='undefined'&&APP_CONFIG.STRAT_IMAGES)?APP_CONFIG.STRAT_IMAGES:{};
+var TIPO_DESC = {'I':'Ingresso','F':'Finestra apribile','PF':'Porta finestra','FF':'Finestra fissa','VF':'Vetrata fissa','S':'Scorrevole'};
+var TIPO_ORD  = ['I','F','PF','FF','VF','S'];
+var SCHERM_DESC = {'A':'Avvolgibile man.','AM':'Avv. meccanico','AE':'Avv. elettronico','AR':'Avv. radio','S':'Scuretto','TZ':'Tenda ZIP','TM':'Tenda manuale','CA':'Frangisole cavo','CT':'Frangisole catena'};
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function v(x){return(!x&&x!==0)?'':String(x);}
+function n2(x){return Math.round(x*100)/100;}
+function cUp(x){return Math.ceil(x);}
+function fmtH(x){if(!x&&x!==0)return'—';var r=Math.round(x*1000)/1000;return r.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')||'0';}
+
+var C={sfrido:50,pvcB:6000,legB:3500,aluB:6000,angLato:50,angB:6000,cassIngr:200,
+  sch:{'A':{h:150,sx:30,dx:30,min:1.5},'AM':{h:150,sx:30,dx:30,min:1.5},'AE':{h:150,sx:30,dx:30,min:1.5},'AR':{h:150,sx:30,dx:30,min:1.5},
+       'S':{h:0,sx:0,dx:0,min:0},'TZ':{h:100,sx:30,dx:30,min:0},'TM':{h:100,sx:30,dx:30,min:0},
+       'CA':{h:250,sx:30,dx:30,min:0},'CT':{h:350,sx:30,dx:30,min:0}},
+  zan:{'V':{h:50,sx:50,dx:50,min:1.5},'O':{h:50,sx:50,dx:50,min:2.0}}};
+
+function numPos(p){return p.numero_pos_alfa||p.numero_pos;}
+function parseQ(raw){try{var a=typeof raw==='string'?JSON.parse(raw):raw;if(Array.isArray(a))return a.filter(function(q){return q&&q.lettera;});if(typeof a==='object')return Object.keys(a).map(function(k){return{lettera:k,mm:a[k]};});}catch(e){}return[];}
+
+function calcTub(p,db){
+  var H=parseFloat(p.H_mm||p.h_mm)||0,L=parseFloat(p.L_mm||p.l_mm)||0;
+  var tf=(p.tipo_foro||'').toUpperCase(),ts=(p.tipo_serramento||'').toUpperCase();
+  if(!H||!L||!tf) return null;
+  var Lt=0,Ht=0,na=0,al=0;
+  var inclBasso=(ts==='F'||ts==='FF'),nH=inclBasso?2:1;
+  if(p.telaio_misto===true||p.telaio_misto==='true'){
+    function getRm(sigla){if(!sigla)return null;for(var i=0;i<db.length;i++){var d=db[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design&&d.variante_telaio===sigla)return d;}return null;}
+    var rA=getRm(p.variante_alto),rB=getRm(p.variante_basso),rS=getRm(p.variante_sx),rD=getRm(p.variante_dx);
+    var nA=rA?(parseFloat(rA.telaio_nascosto_mm)||0):0,aA=rA?(parseFloat(rA.aletta_mm)||0):0,aB=rB?(parseFloat(rB.aletta_mm)||0):0;
+    var nS=rS?(parseFloat(rS.telaio_nascosto_mm)||0):0,aS=rS?(parseFloat(rS.aletta_mm)||0):0;
+    var nD=rD?(parseFloat(rD.telaio_nascosto_mm)||0):0,aD=rD?(parseFloat(rD.aletta_mm)||0):0;
+    var tvA=rA?(parseFloat(rA.telaio_vista_mm)||0):0,tvS=rS?(parseFloat(rS.telaio_vista_mm)||0):0,tvD=rD?(parseFloat(rD.telaio_vista_mm)||0):0;
+    if(tf==='A'){Lt=L+nS+nD+aS+aD;Ht=H+nA+aA+(inclBasso?aB:0);}
+    else if(tf==='D'){Lt=L+aS+aD;Ht=H+aA+(inclBasso?aB:0);}
+    else if(tf==='P'){Lt=L-tvS-tvD+aS+aD;Ht=H-tvA+aA+(inclBasso?aB:0);}
+    na=(nA+nS+nD)/3;al=(aA+aB+aS+aD)/4;
+  } else {
+    var r=null;
+    for(var i=0;i<db.length;i++){var d=db[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design&&d.variante_telaio===p.variante_telaio){r=d;break;}}
+    if(!r){for(var i=0;i<db.length;i++){var d=db[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design){r=d;break;}}}
+    na=r?(parseFloat(r.telaio_nascosto_mm)||0):0;al=r?(parseFloat(r.aletta_mm)||0):0;
+    var tv=r?(parseFloat(r.telaio_vista_mm)||0):0;
+    if(tf==='A'){Lt=L+2*na+2*al;Ht=H+na+nH*al;}
+    else if(tf==='D'){Lt=L+2*al;Ht=H+nH*al;}
+    else if(tf==='P'){Lt=L-2*tv+2*al;Ht=H-tv+nH*al;}
+  }
+  return {Lt:Lt,Ht:Ht,na:na,al:al};
+}
+function lBarra(mat){var m=(mat||'').toUpperCase();if(m.indexOf('LEG')>=0)return C.legB;if(m.indexOf('ALU')>=0||m.indexOf('ALL')>=0)return C.aluB;return C.pvcB;}
+function svCop(ts,Lt,Ht,dim){var s=C.sfrido;return(ts==='F'||ts==='FF')?2*(Lt+2*dim+s)+2*(Ht+2*dim+s):1*(Lt+2*dim+s)+2*(Ht+1*dim+s);}
+function supSch(ts,cod,Lt,Ht,na,al){var c=C.sch[cod];if(!c)return 0;var nH=(ts==='F'||ts==='FF')?2:1;var La=Lt-2*al-2*na,Ha=Ht-nH*al-nH*na;return Math.max((La+c.sx+c.dx)*(Ha+c.h)/1e6,c.min);}
+function supZan(ts,cod,Lt,Ht,na,al){var c=C.zan[cod];if(!c)return 0;var nH=(ts==='F'||ts==='FF')?2:1;var La=Lt-2*al-2*na,Ha=Ht-nH*al-nH*na;var s=Math.max((La+c.sx+c.dx)*(Ha+c.h)/1e6,c.min);if(ts==='S'&&cod==='V')s/=2;return s;}
+function matM(ts,Lt,Ht){var s=C.sfrido;return((ts==='F'||ts==='FF')?2*(Lt+2*s)+2*(Ht+2*s):1*(Lt+2*s)+2*(Ht+2*s))/1000;}
+
+var DP={}, POS_SERR={}, POS_SERR_GRU={}, POS_CTL={};
+var POS_SERR_MIN=2.0, POS_CTL_MIN=1.0;
+var V2DP={'PROGETTAZIONE':'prog','GESTIONE ORDINI':'gord','INCONTRI IN CANTIERE':'incant','SCARICO E CARICO CTL':'scCtl','TRASPORTO CTL':'trCtl','SCARICO E CARICO SERR':'scSerr','TRASPORTO SERR':'trSerr','RIMOZIONE SERRAMENTI':'rimSerr','RIMOZIONE ACCESSORI':'rimAcc','SMALTIMENTO SERR':'smSerr','SMALTIMENTO ACC':'smAcc','ASSEMBLAGGIO CTL':'assCtl','ASSEMBLAGGIO TERMOCASSE':'assTerm','ASSEMBLAGGIO DINOX DA':'assDinDA','ASSEMBLAGGIO DINOX IM':'assDinIM','INSTALL ANGOLARI PVC':'angPvc','INSTALLAZIONE CTL':'instCtl','INSTALLAZIONE TERMOCASSE':'instTerm','INSTALL DINOX DA':'instDinDA','INSTALL DINOX IM':'instDinIM','TAGLIO PIANI MARMO':'marmo','REGISTRAZIONE COLLAUDO':'regColl','PULIZIA CANTIERE':'pulizia'};
+var INST_V2DP={'INST INGRESSI':'instI','INST FINESTRE':'instF','INST PORTE FINESTRE':'instPF','INST FINESTRE FISSE':'instFF','INST VETRATE FISSE':'instVF','INST SCORREVOLI':'instS'};
+var COD2DP={740:'instAvv',750:'instScur',760:'instTende',765:'instFrang',770:'instCass',775:'instZanz',780:'coprInt',785:'coprEst'};
+
+function buildTablesFromPosa(rows){
+  DP={}; POS_SERR={}; POS_SERR_GRU={}; POS_CTL={};
+  rows.forEach(function(r){
+    var vv=r.voce;
+    if(vv==='POSIZIONAMENTO CTL'&&r.piano!==null&&r.piano!==undefined){POS_CTL[String(r.piano)]=parseFloat(r.h_pos)||0.5;}
+    if(vv==='POSIZIONAMENTO SERR'&&r.piano!==null&&r.n_campi!==null){
+      var pk=String(r.piano);
+      if(!POS_SERR[pk])POS_SERR[pk]=[];POS_SERR[pk][r.n_campi-1]=parseFloat(r.h_pos)||0.5;
+      if(!POS_SERR_GRU[pk])POS_SERR_GRU[pk]=[];POS_SERR_GRU[pk][r.n_campi-1]=parseFloat(r.h_pos_gru!==null&&r.h_pos_gru!==undefined?r.h_pos_gru:r.h_pos)||0.5;
+    }
+    var dpKey=V2DP[vv];if(dpKey&&r.piano===null&&r.n_campi===null&&!r.sistema)DP[dpKey]=[parseFloat(r.h_pos)||0,r.min_cantiere!==null?parseFloat(r.min_cantiere):null];
+    var instKey=INST_V2DP[vv];if(instKey&&r.n_campi===1)DP[instKey]=[parseFloat(r.h_pos)||0,null];
+    var accKey=COD2DP[r.codice];if(accKey&&!DP[accKey])DP[accKey]=[parseFloat(r.h_pos)||0,r.min_cantiere!==null?parseFloat(r.min_cantiere):null];
+  });
+  var ctlMinR=rows.find(function(r){return r.voce==='POSIZIONAMENTO CTL'&&r.piano===(-1);});if(ctlMinR&&ctlMinR.min_cantiere)POS_CTL_MIN=parseFloat(ctlMinR.min_cantiere);
+  var serrMinR=rows.find(function(r){return r.voce==='POSIZIONAMENTO SERR'&&r.piano===(-1)&&r.n_campi===1;});if(serrMinR&&serrMinR.min_cantiere)POS_SERR_MIN=parseFloat(serrMinR.min_cantiere);
+}
+
+function cOre(n,dp){if(!dp||n<=0)return 0;var b=n*dp[0];return dp[1]?Math.max(b,dp[1]):b;}
+function pianoKey(p){var n=parseInt(p,10);if(isNaN(n))return'0';return String(Math.min(Math.max(n,-1),10));}
+function posSerrH(piano,nc){var key=pianoKey(piano);var lookup=POS_SERR[key];if(!lookup)return 0.5;return lookup[Math.min(Math.max((parseInt(nc)||1)-1,0),4)]||0.5;}
+function posCtlH(piano){return POS_CTL[pianoKey(piano)]||0.5;}
+
+function calcolaVoci(pos){
+  var nT=pos.length,nCL=0,nCT=0,nRim=0,nRA=0,nMar=0,nAng=0,nI=0,nF=0,nPF=0,nFF=0,nVF=0,nS=0;
+  var nAv=0,nSc=0,nTe=0,nFr=0,nCas=0,nZan=0,nCI=0,nCE=0,nSS=0,nSA=0,nDA=0,nIM=0;
+  var oPCtl=0,oPSerr=0;
+  pos.forEach(function(p){
+    var ctl=(p.controtelaio||'').toUpperCase();if(ctl==='L')nCL++;else if(ctl==='T')nCT++;
+    if(p.rimozione==='SI'||p.rimozione===true){nRim++;nSS++;}if(p.rimozione_accessori===true){nRA++;nSA++;}
+    if(p.taglio_marmo===true)nMar++;if(p.angolari_pvc===true)nAng++;
+    var ts=(p.tipo_serramento||'').toUpperCase();
+    if(!p.solo_accessori){if(ts==='I')nI++;else if(ts==='F')nF++;else if(ts==='PF')nPF++;else if(ts==='FF')nFF++;else if(ts==='VF')nVF++;else if(ts==='S')nS++;}
+    var sc=(p.schermatura||'').toUpperCase();if(sc==='A'||sc==='AM'||sc==='AE'||sc==='AR')nAv++;else if(sc==='S')nSc++;else if(sc==='TZ'||sc==='TM')nTe++;else if(sc==='CA'||sc==='CT')nFr++;
+    if(p.cassonetto)nCas++;if(p.zanzariera)nZan++;if(p.coprifilo_int_mat)nCI++;if(p.coprifilo_est_mat)nCE++;
+    var din=(p.dinoxill||'').toUpperCase();if(din==='DA')nDA++;else if(din==='I3'||din==='I4')nIM++;
+    if(ctl==='L'||ctl==='T')oPCtl+=posCtlH(p.piano);if(!p.solo_accessori)oPSerr+=posSerrH(p.piano,p.n_campi||1);
+  });
+  var nCtl=nCL+nCT;oPCtl=nCtl>0?Math.max(oPCtl,POS_CTL_MIN):0;oPSerr=nT>0?Math.max(oPSerr,POS_SERR_MIN):0;
+  var voci=[
+    {id:'prog',area:'UFFICIO TECNICO',serv:'Progettazione',n:nT,dp:DP.prog,tipo:'indir'},
+    {id:'gord',area:'UFFICIO TECNICO',serv:'Gestione ordini',n:nT,dp:DP.gord,tipo:'indir'},
+    {id:'incant',area:'UFFICIO TECNICO',serv:'Incontri in cantiere',n:nT,dp:DP.incant,tipo:'indir'},
+    {id:'scCtl',area:'MAGAZZINO',serv:'Scarico / carico CTL e termocasse',n:nCtl,dp:DP.scCtl,tipo:'indir'},
+    {id:'trCtl',area:'TRASPORTO',serv:'Trasporto CTL e termocasse',n:nCtl,dp:DP.trCtl,tipo:'indir'},
+    {id:'scSerr',area:'MAGAZZINO',serv:'Scarico / carico serramenti',n:nT,dp:DP.scSerr,tipo:'indir'},
+    {id:'trSerr',area:'TRASPORTO',serv:'Trasporto serramenti',n:nT,dp:DP.trSerr,tipo:'indir'},
+    {id:'posCtl',area:'POSIZIONAMENTO',serv:'Posizionamento CTL e termocasse',n:nCtl,dp:null,fixed:oPCtl,tipo:'dir'},
+    {id:'posSerr',area:'POSIZIONAMENTO',serv:'Posizionamento serramenti',n:nT,dp:null,fixed:oPSerr,tipo:'dir'},
+    {id:'rimSerr',area:'RIMOZIONE',serv:'Rimozione serramenti esistenti',n:nRim,dp:DP.rimSerr,tipo:'dir'},
+    {id:'rimAcc',area:'RIMOZIONE',serv:'Rimozione accessori esistenti',n:nRA,dp:DP.rimAcc,tipo:'dir'},
+    {id:'assCtl',area:'ASSEMBLAGGIO CTL',serv:'Assemblaggio controtelai',n:nCL,dp:DP.assCtl,tipo:'dir'},
+    {id:'assTerm',area:'ASSEMBLAGGIO CTL',serv:'Assemblaggio termocasse',n:nCT,dp:DP.assTerm,tipo:'dir'},
+    {id:'assDinDA',area:'ASSEMBLAGGIO DINOX',serv:'Assemblaggio Dinox davanzale',n:nDA,dp:DP.assDinDA,tipo:'dir'},
+    {id:'assDinIM',area:'ASSEMBLAGGIO DINOX',serv:'Assemblaggio Dinox imbotte',n:nIM,dp:DP.assDinIM,tipo:'dir'},
+    {id:'angPvc',area:'INSTALL. ANGOLARI PVC',serv:'Installazione angolari PVC',n:nAng,dp:DP.angPvc,tipo:'dir'},
+    {id:'instCtl',area:'INSTALL. CTL',serv:'Installazione controtelai',n:nCL,dp:DP.instCtl,tipo:'dir'},
+    {id:'instTerm',area:'INSTALL. CTL',serv:'Installazione termocasse',n:nCT,dp:DP.instTerm,tipo:'dir'},
+    {id:'instDinDA',area:'INSTALL. DINOX',serv:'Installazione Dinox davanzale',n:nDA,dp:DP.instDinDA,tipo:'dir'},
+    {id:'instDinIM',area:'INSTALL. DINOX',serv:'Installazione Dinox imbotte',n:nIM,dp:DP.instDinIM,tipo:'dir'},
+    {id:'marmo',area:'POSA',serv:'Taglio piani marmo',n:nMar,dp:DP.marmo,tipo:'dir'},
+    {id:'instI',area:'POSA',serv:'Installazione ingressi (I)',n:nI,dp:DP.instI,tipo:'dir'},
+    {id:'instF',area:'POSA',serv:'Installazione finestre (F)',n:nF,dp:DP.instF,tipo:'dir'},
+    {id:'instPF',area:'POSA',serv:'Installazione porte-finestre (PF)',n:nPF,dp:DP.instPF,tipo:'dir'},
+    {id:'instFF',area:'POSA',serv:'Installazione finestre fisse (FF)',n:nFF,dp:DP.instFF,tipo:'dir'},
+    {id:'instVF',area:'POSA',serv:'Installazione vetrate fisse (VF)',n:nVF,dp:DP.instVF,tipo:'dir'},
+    {id:'instS',area:'POSA',serv:'Installazione scorrevoli (S)',n:nS,dp:DP.instS,tipo:'dir'},
+    {id:'instAvv',area:'POSA',serv:'Installazione avvolgibili',n:nAv,dp:DP.instAvv,tipo:'dir'},
+    {id:'instScur',area:'POSA',serv:'Installazione scuretti',n:nSc,dp:DP.instScur,tipo:'dir'},
+    {id:'instTende',area:'POSA',serv:'Installazione tende (TZ/TM)',n:nTe,dp:DP.instTende,tipo:'dir'},
+    {id:'instFrang',area:'POSA',serv:'Installazione frangisole',n:nFr,dp:DP.instFrang,tipo:'dir'},
+    {id:'instCass',area:'POSA',serv:'Installazione cassonetti',n:nCas,dp:DP.instCass,tipo:'dir'},
+    {id:'instZanz',area:'POSA',serv:'Installazione zanzariere',n:nZan,dp:DP.instZanz,tipo:'dir'},
+    {id:'coprInt',area:'POSA',serv:'Installazione coprifili interni',n:nCI,dp:DP.coprInt,tipo:'dir'},
+    {id:'coprEst',area:'POSA',serv:'Installazione coprifili esterni',n:nCE,dp:DP.coprEst,tipo:'dir'},
+    {id:'regColl',area:'POSA',serv:'Registrazione e collaudo',n:nT,dp:DP.regColl,tipo:'dir'},
+    {id:'pulizia',area:'POSA',serv:'Pulizia cantiere',n:nT,dp:DP.pulizia,tipo:'dir'},
+    {id:'smSerr',area:'SMALTIMENTO',serv:'Smaltimento serramenti esistenti',n:nSS,dp:DP.smSerr,tipo:'dir'},
+    {id:'smAcc',area:'SMALTIMENTO',serv:'Smaltimento accessori esistenti',n:nSA,dp:DP.smAcc,tipo:'dir'}
+  ];
+  voci.forEach(function(vv){vv.oreCalc=vv.fixed!==undefined?vv.fixed:cOre(vv.n,vv.dp);});
+  return voci;
+}
+
+function loadAdj(){try{return JSON.parse(localStorage.getItem('f4_posa_adj_'+idRilievo))||{};}catch(e){return{};}}
+function loadAdjCap(capId){try{return JSON.parse(localStorage.getItem('f4_posa_adj_cap_'+idRilievo+'_'+capId))||{};}catch(e){return{};}}
+function loadMode(){return localStorage.getItem('f4_posa_mode_'+idRilievo)||'tot';}
+
+function updOpt(chk,optId){document.getElementById(optId).classList.toggle('checked',chk.checked);}
+function riaprModal(){document.getElementById('modal-sel').style.display='flex';document.getElementById('toolbar').style.display='none';document.getElementById('out').style.display='none';}
+function avvia(){
+  var wR=document.getElementById('chk-rilievo').checked;
+  var wA=document.getElementById('chk-acc').checked;
+  var wP=document.getElementById('chk-posa').checked;
+  if(!wR&&!wA&&!wP){alert('Seleziona almeno un report.');return;}
+  document.getElementById('modal-sel').style.display='none';
+  document.getElementById('toolbar').style.display='flex';
+  document.getElementById('stato-msg').style.display='';
+  document.getElementById('stato-msg').textContent='Caricamento dati\u2026';
+  loadAndRender(wR,wA,wP);
+}
+
+var SUPA_URL=APP_CONFIG.SUPABASE_URL,SUPA_KEY=APP_CONFIG.SUPABASE_ANON_KEY;
+function sfetch(path,cb,eb){
+  var x=new XMLHttpRequest();x.open('GET',SUPA_URL+'/rest/v1/'+path,true);
+  x.setRequestHeader('apikey',SUPA_KEY);x.setRequestHeader('Authorization','Bearer '+(Auth.getToken()||SUPA_KEY));
+  x.onload=function(){if(x.status>=200&&x.status<300){try{cb(JSON.parse(x.responseText));}catch(e){if(eb)eb(e);}}else{if(eb)eb('HTTP '+x.status);}};
+  x.onerror=function(){if(eb)eb('Rete');};x.send();
+}
+
+function loadAndRender(wR,wA,wP){
+  var D={ril:null,pos:null,strat:null,db:null,caps:null,posa:null};
+  var done=0,tot=6;
+  function chkD(){done++;if(done<tot)return;
+    buildTablesFromPosa(D.posa||[]);
+    document.getElementById('stato-msg').style.display='none';
+    var html=renderAll(D.ril,D.pos||[],D.strat||[],D.db||[],D.caps||[],wR,wA,wP);
+    var out=document.getElementById('out');out.innerHTML=html;out.style.display='';
+    document.getElementById('tb-titolo').textContent='Stampa '+esc(D.ril&&D.ril.codice_completo||'');
+    document.title='Stampa '+(D.ril&&D.ril.codice_completo||'');
+  }
+  sfetch('rilievi?id=eq.'+idRilievo+'&select=id,codice_completo,referente,data_rilievo,data_posa,intervento,gru,allarme,note,note_generali,note_commerciali,cantieri(nome_cantiere,tipo_via,indirizzo,comune,provincia,cap,clienti(nome,telefono,email))',
+    function(r){D.ril=r&&r[0]||{};chkD();},function(){D.ril={};chkD();});
+  sfetch('posizioni_serr?id_rilievo=eq.'+idRilievo+'&stato=eq.attivo&select=*&order=ordine.asc',
+    function(r){D.pos=r||[];chkD();},function(){D.pos=[];chkD();});
+  sfetch('stratigrafie?id_rilievo=eq.'+idRilievo+'&stato=eq.attivo&select=*&order=ordine.asc',
+    function(r){D.strat=r||[];chkD();},function(){D.strat=[];chkD();});
+  sfetch('db_serramento?stato=eq.attivo&select=materiale,descrizione,stile_design,variante_telaio,telaio_nascosto_mm,aletta_mm,telaio_vista_mm',
+    function(r){D.db=r||[];chkD();},function(){D.db=[];chkD();});
+  sfetch('capitoli_rilievo?id_rilievo=eq.'+idRilievo+'&stato=eq.attivo&select=*&order=ordine_inizio.asc',
+    function(r){D.caps=r||[];chkD();},function(){D.caps=[];chkD();});
+  sfetch('dati_comuni_posa?tipo=eq.SERR&stato=eq.attivo&select=*&order=codice.asc,piano.asc,n_campi.asc',
+    function(r){D.posa=r||[];chkD();},function(){D.posa=[];chkD();});
+}
+
+function renderAll(ril,pos,strat,db,caps,wR,wA,wP){
+  var cp=ril.cantieri||{},cli=cp.clienti||{};
+  var codice=ril.codice_completo||idRilievo;
+  var locStr=((cp.tipo_via||'')+' '+(cp.indirizzo||'')).trim();
+  var comuneStr=[cp.comune,cp.provincia?'('+cp.provincia+')':'',cp.cap].filter(Boolean).join(' ');
+
+  function mkHdr(sezione){
+    var nc=ril.note_commerciali||{};
+    var ncParts=[];
+    [['colore_avvol','Avvol'],['colore_scuretto','Scuretto'],['colore_tenda','Tenda'],['colore_frang','Frang'],['colore_zanzariera','Zanz'],['colore_dinox','Dinox'],['maniglia_marca','Man.marca'],['maniglia_modello','Man.mod']].forEach(function(f){if(nc[f[0]])ncParts.push(f[1]+': '+nc[f[0]]);});
+    var h='<div class="scheda-hdr"><div class="sh-top">';
+    h+='<div class="sh-logo"><div class="lb2">[F4]</div>GRUPPO F4<div style="font-size:8px;opacity:.7;margin-top:2px">'+esc(sezione)+'</div></div>';
+    h+='<div class="sh-c">';
+    h+='<div class="sh-f"><label>Riferimento:</label><span>'+esc(cli.nome?cli.nome+' \u2014 ':'')+esc(cp.nome_cantiere||'—')+'</span><span style="margin-left:8px;font-size:10px;font-weight:700;color:#4f46e5;background:#ede9fe;padding:1px 7px;border-radius:8px;flex:none">'+esc(codice)+'</span></div>';
+    h+='<div class="sh-f"><label>Indirizzo:</label><span>'+esc(locStr||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Comune:</label><span>'+esc(comuneStr||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Tel / e-mail:</label><span>'+esc([cli.telefono,cli.email].filter(Boolean).join(' \u2014 ')||'—')+'</span></div>';
+    h+='</div><div class="sh-d">';
+    h+='<div class="sh-f"><label>Intervento:</label><span>'+esc(ril.intervento||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Referente:</label><span>'+esc(ril.referente||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Data rilievo:</label><span>'+esc(ril.data_rilievo||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Data posa:</label><span>'+esc(ril.data_posa||'—')+'</span></div>';
+    h+='<div class="sh-badges">';
+    if(ril.gru==='SI'||ril.gru===true)h+='<span class="sh-badge blue">&#127959; GRU</span>';
+    if(ril.allarme===true)h+='<span class="sh-badge red">&#9888; ALLARME</span>';
+    h+='<span class="sh-badge green">'+pos.length+' pos.</span>';
+    h+='</div></div></div>';
+    if(ncParts.length)h+='<div style="padding:5px 12px;font-size:10px;background:#fafafe;border-top:1px solid #e5e7eb;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;"><span style="font-weight:700;color:#4f46e5;text-transform:uppercase;font-size:9px;">NOTE COMM.</span>'+ncParts.map(function(s){return'<span>'+esc(s)+'</span>';}).join('')+'</div>';
+    if(ril.note_generali)h+='<div style="padding:5px 12px;font-size:10px;background:#fffbeb;border-top:1px solid #f59e0b;"><strong style="color:#92400e;">&#128221; Note generali:</strong> <span style="color:#78350f;">'+esc(ril.note_generali)+'</span></div>';
+    h+='</div>';
+    return h;
+  }
+
+  function groupByCap(pcArr,capsArr){
+    var righe=[];
+    pcArr.forEach(function(p){var ord=(p.ordine!==undefined&&p.ordine!==null)?p.ordine:p.numero_pos;righe.push({tipo:'pos',ordine:ord,data:p});});
+    (capsArr||[]).forEach(function(cap){righe.push({tipo:'cap_inizio',ordine:cap.ordine_inizio,data:cap});righe.push({tipo:'cap_fine',ordine:cap.ordine_fine,data:cap});});
+    righe.sort(function(a,b){return a.ordine-b.ordine;});
+    var gruppi=[],capCorr=null,posCorr=[],posiFuori=[];
+    righe.forEach(function(r){
+      if(r.tipo==='cap_inizio'){capCorr=r.data;posCorr=[];}
+      else if(r.tipo==='cap_fine'){if(capCorr)gruppi.push({cap:capCorr,pos:posCorr.slice()});capCorr=null;posCorr=[];}
+      else{if(capCorr)posCorr.push(r.data);else posiFuori.push(r.data);}
+    });
+    if(posiFuori.length)gruppi.push({cap:{titolo:'Senza capitolo',id:'__fuori__'},pos:posiFuori});
+    return gruppi;
+  }
+
+  var posCalc=pos.map(function(p){
+    var tub;
+    if(p.solo_accessori){var _L=parseFloat(p.L_mm||p.l_mm)||0,_H=parseFloat(p.H_mm||p.h_mm)||0;tub=(_L&&_H)?{Lt:_L,Ht:_H,na:0,al:0}:null;}
+    else{tub=calcTub(p,db);}
+    var ts=(p.tipo_serramento||'').toUpperCase();
+    var _ss=0,_sz=0,_bci=0,_bce=0,_sch=0,_mp=0,_bg=0,_mu=0,_bv=0,_vi=0,_cassM=0;
+    if(tub){var Lt=tub.Lt,Ht=tub.Ht,na=tub.na,al=tub.al;
+      if(p.schermatura)_ss=supSch(ts,p.schermatura,Lt,Ht,na,al);
+      if(p.zanzariera) _sz=supZan(ts,p.zanzariera,Lt,Ht,na,al);
+      if(p.coprifilo_int_mat){var sv=svCop(ts,Lt,Ht,parseFloat(p.coprifilo_int_dim)||0);_bci=cUp(sv/lBarra(p.coprifilo_int_mat));}
+      if(p.coprifilo_est_mat){var sv2=svCop(ts,Lt,Ht,parseFloat(p.coprifilo_est_dim)||0);_bce=cUp(sv2/lBarra(p.coprifilo_est_mat));}
+      if(!p.solo_accessori){_sch=matM(ts,Lt,Ht);_bg=_sch;_mu=_sch;_bv=_sch;_mp=1;_vi=1;}
+      _cassM=(Lt+C.cassIngr+C.cassIngr)/1000;
+    }
+    return Object.assign({},p,{_t:tub,_ts:ts,_ss:_ss,_sz:_sz,_bci:_bci,_bce:_bce,_sch:_sch,_mp:_mp,_bg:_bg,_mu:_mu,_bv:_bv,_vi:_vi,_cassM:_cassM});
+  });
+
+  var sections=[];
+
+  // ── SEZIONE RILIEVO ──
+  if(wR){
+    var h='';
+    h+=mkHdr('Report Rilievo');
+    h+='<div class="leg-block"><div class="leg-grid">';
+    h+='<div class="leg-sec"><h4>Serramento</h4><div class="leg-row"><b>I</b>Ingresso</div><div class="leg-row"><b>F</b>Finestra</div><div class="leg-row"><b>PF</b>Porta Fin.</div><div class="leg-row"><b>FF</b>Fin.Fissa</div><div class="leg-row"><b>VF</b>Vetrata</div><div class="leg-row"><b>S</b>Scorrevole</div></div>';
+    h+='<div class="leg-sec"><h4>Materiale</h4><div class="leg-row"><b>A-</b>Alluminio</div><div class="leg-row"><b>P-</b>PVC</div><div class="leg-row"><b>PA</b>PVC-Alum.</div><div class="leg-row"><b>LA</b>Legno-Alum.</div><div class="leg-row"><b>L-</b>Legno</div><h4 style="margin-top:5px">Tipo foro</h4><div class="leg-row"><b>A</b>Architettonico</div><div class="leg-row"><b>D</b>Dim.telaio</div><div class="leg-row"><b>P</b>Posa in luce</div></div>';
+    h+='<div class="leg-sec"><h4>Telaio</h4><div class="leg-row"><b>NR</b>No Reveal</div><div class="leg-row"><b>CR</b>Counter R.</div><div class="leg-row"><b>HR</b>High R.</div><div class="leg-row"><b>IR</b>Interior R.</div><div class="leg-row"><b>ZR</b>Zero R.</div><div class="leg-row"><b>WR</b>Wide R.</div><div class="leg-row"><b>SR</b>Shallow R.</div><div class="leg-row"><b>DR</b>Deep R.</div></div>';
+    h+='<div class="leg-sec"><h4>Schermatura</h4><div class="leg-row"><b>A</b>Avvol.man.</div><div class="leg-row"><b>AM</b>Mecc.</div><div class="leg-row"><b>AE</b>Elettr.</div><div class="leg-row"><b>AR</b>Radio</div><div class="leg-row"><b>S</b>Scuretto</div><div class="leg-row"><b>TZ</b>Tenda ZIP</div><div class="leg-row"><b>TM</b>T.Manuale</div><div class="leg-row"><b>CA</b>Frang.cavo</div><div class="leg-row"><b>CT</b>Frang.catena</div></div>';
+    h+='<div class="leg-sec"><h4>Osc. / Vetro</h4><div class="leg-row"><b>V</b>Veneziana</div><div class="leg-row"><b>D</b>Duette</div><div class="leg-row"><b>P</b>Pliss\u00e8</div><h4 style="margin-top:5px">Vetro</h4><div class="leg-row"><b>D</b>Doppio</div><div class="leg-row"><b>T</b>Triplo</div><h4 style="margin-top:5px">CTL</h4><div class="leg-row"><b>L</b>Legno</div><div class="leg-row"><b>T</b>Termocassa</div></div>';
+    h+='<div class="leg-sec"><h4>Coprifili</h4><div class="leg-row"><b>P</b>PVC</div><div class="leg-row"><b>L</b>Legno</div><div class="leg-row"><b>A</b>Alluminio</div><h4 style="margin-top:5px">Cassonetto</h4><div class="leg-row"><b>P</b>PVC &nbsp;<b>L</b>Legno</div><h4 style="margin-top:5px">Dinox</h4><div class="leg-row"><b>DA</b>Davanzale</div><div class="leg-row"><b>I3</b>Imbotte 3L</div><div class="leg-row"><b>I4</b>Imbotte 4L</div></div>';
+    h+='<div class="leg-sec"><h4>Sensi</h4><div class="leg-row"><b>D</b>Destra</div><div class="leg-row"><b>S</b>Sinistra</div><div class="leg-row"><b>W</b>Vasistas</div><div class="leg-row"><b>F</b>Fisso</div><h4 style="margin-top:5px">Flag</h4><div class="leg-row"><span class="chk on"></span> = attivo</div><div class="leg-row"><span class="chk"></span> = assente</div><h4 style="margin-top:5px">Dim. calc.</h4><div class="leg-row" style="color:#6b7280;font-style:italic">Corsivo grigio = tubolarit\u00e0 calcolata</div></div>';
+    h+='</div></div>';
+    if(strat.length){
+      h+='<div class="strat-grid-c">';
+      strat.forEach(function(s){
+        var img=STRAT_IMG[s.immagine_ref]||STRAT_IMG['SERR_'+(s.immagine_ref||'')]||'';
+        var qs=parseQ(s.quote_json).map(function(q){return q.lettera+': '+q.mm+' mm';}).join(' | ');
+        h+='<div class="strat-card-c">';if(img)h+='<img src="'+esc(img)+'" alt="" onerror="this.style.display=\'none\'">';
+        h+='<h4>'+esc(s.nome)+'</h4>';if(qs)h+='<div class="sq">'+esc(qs)+'</div>';h+='</div>';
+      });
+      h+='</div>';
+    }
+    h+='<div class="tbl-outer"><table class="t-c"><thead>';
+    h+='<tr class="th-g"><th colspan="4">IDENTIFICAZIONE</th><th colspan="4" class="gsep">SERRAMENTO</th><th colspan="3" class="gsep">GEOMETRIA</th><th colspan="3" class="gsep">VETRO/OSC</th><th colspan="4" class="gsep">COPRIFILI</th><th colspan="4" class="gsep">ACCESSORI</th><th colspan="4" class="gsep">RIM./FLAG</th><th colspan="2" class="gsep">SENSI/STRAT.</th></tr>';
+    h+='<tr class="th-m"><th>N&deg;</th><th class="c">PIANO</th><th>AMBIENTE</th><th>TIPO</th>';
+    h+='<th class="gsep c">N.C.</th><th>MAT</th><th>SISTEMA</th><th>STL/TEL</th>';
+    h+='<th class="gsep c">FORO</th><th>L (mm)</th><th>H (mm)</th>';
+    h+='<th class="gsep c">VETRO</th><th class="c">OSC</th><th class="c">MECC</th>';
+    h+='<th class="gsep c">COPR.I</th><th class="c">dim</th><th class="c">COPR.E</th><th class="c">dim</th>';
+    h+='<th class="gsep c">CASS</th><th class="c">SCHERM</th><th class="c">ZANZ</th><th class="c">CTL</th>';
+    h+='<th class="gsep c">DIN</th><th class="c">ANG</th><th class="c">RimS</th><th class="c">RimA</th>';
+    h+='<th class="gsep c">MRM</th><th>SENSI/STRAT.</th>';
+    h+='</tr></thead><tbody>';
+    var righeRil=[];
+    posCalc.forEach(function(p){var ord=(p.ordine!==undefined&&p.ordine!==null)?p.ordine:p.numero_pos;righeRil.push({tipo:'pos',ordine:ord,data:p});});
+    (caps||[]).forEach(function(cap){righeRil.push({tipo:'cap_inizio',ordine:cap.ordine_inizio,data:cap});righeRil.push({tipo:'cap_fine',ordine:cap.ordine_fine,data:cap});});
+    righeRil.sort(function(a,b){return a.ordine-b.ordine;});
+    var capCorrR=null,posCapR=[];
+    righeRil.forEach(function(r){
+      if(r.tipo==='cap_inizio'){capCorrR=r.data;posCapR=[];h+='<tr style="background:#1a1a2e"><td colspan="30" style="color:#a5b4fc;font-weight:700;font-size:9px;padding:4px 8px;letter-spacing:1px;">\u2550\u2550 '+esc(r.data.titolo)+' \u2550\u2550</td></tr>';return;}
+      if(r.tipo==='cap_fine'){var nP=posCapR.length;h+='<tr style="background:#eef2ff"><td colspan="30" style="color:#3730a3;font-size:8px;font-weight:600;padding:3px 8px;">Subtotale \u2014 '+esc(capCorrR?capCorrR.titolo:'')+': <b>'+nP+'</b> pos.</td></tr>';h+='<tr style="background:#f5f5ff"><td colspan="30" style="color:#9ca3af;font-size:7.5px;padding:2px 8px;">\u2500\u2500 Fine: '+esc(r.data.titolo)+' \u2500\u2500</td></tr>';capCorrR=null;posCapR=[];return;}
+      var p=r.data;if(capCorrR)posCapR.push(p);
+      var piano=(p.piano!==undefined&&p.piano!==null)?('P'+(parseInt(p.piano)>=0?'+':'')+p.piano):'—';
+      var Lt=p._t?Math.round(p._t.Lt):null,Ht=p._t?Math.round(p._t.Ht):null;
+      h+='<tr>';
+      h+='<td class="num">'+esc(String(numPos(p)))+(p.solo_accessori?'<br><span style="font-size:7px;background:#fef3c7;color:#92400e;border-radius:3px;padding:0 3px;font-weight:700;">ACC</span>':'')+'</td><td class="c">'+piano+'</td><td style="white-space:normal;min-width:50px">'+esc(v(p.ambiente))+'</td><td class="tipo-cell">'+esc(v(p.tipo_serramento)||'ACC')+'</td>';
+      h+='<td class="c gsep">'+esc(v(p.n_campi))+'</td><td class="c">'+esc(v(p.materiale))+'</td><td style="min-width:40px">'+esc(v(p.sistema))+'</td><td class="c">'+esc(v(p.stile_design))+(p.variante_telaio?'/'+esc(v(p.variante_telaio)):'')+'</td>';
+      h+='<td class="c gsep">'+esc(v(p.tipo_foro))+'</td>';
+      h+='<td class="dim-c"><div class="dm">'+v(p.L_mm||p.l_mm||'—')+'</div>'+(Lt?'<div class="dc">('+Lt+')</div>':'')+'</td>';
+      h+='<td class="dim-c"><div class="dm">'+v(p.H_mm||p.h_mm||'—')+'</div>'+(Ht?'<div class="dc">('+Ht+')</div>':'')+'</td>';
+      h+='<td class="c gsep">'+esc(v(p.n_vetri))+'</td><td class="c">'+esc(v(p.oscurante_tipo))+'</td><td class="c">'+esc(v(p.oscurante_meccanismo))+'</td>';
+      h+='<td class="c gsep">'+esc(v(p.coprifilo_int_mat))+'</td><td class="c">'+esc(v(p.coprifilo_int_dim))+'</td><td class="c">'+esc(v(p.coprifilo_est_mat))+'</td><td class="c">'+esc(v(p.coprifilo_est_dim))+'</td>';
+      h+='<td class="c gsep">'+esc(v(p.cassonetto))+'</td><td class="c">'+esc(v(p.schermatura))+'</td><td class="c">'+esc(v(p.zanzariera))+'</td><td class="c">'+esc(v(p.controtelaio))+'</td>';
+      h+='<td class="c gsep">'+esc(v(p.dinoxill))+'</td>';
+      h+='<td class="c">'+(p.angolari_pvc?'<span class="chk on"></span>':'<span class="chk"></span>')+'</td>';
+      h+='<td class="c">'+(p.rimozione==='SI'||p.rimozione===true?'<span class="chk on"></span>':'<span class="chk"></span>')+'</td>';
+      h+='<td class="c">'+(p.rimozione_accessori?'<span class="chk on"></span>':'<span class="chk"></span>')+'</td>';
+      h+='<td class="c gsep">'+(p.taglio_marmo?'<span class="chk on"></span>':'<span class="chk"></span>')+'</td>';
+      h+='<td style="font-size:9px;white-space:normal;min-width:50px">'+esc(v(p.senso_apertura))+'</td>';
+      h+='</tr>';
+    });
+    h+='</tbody></table></div>';
+    sections.push(h);
+  }
+
+  // ── SEZIONE ACCESSORI ──
+  if(wA){
+    var h='';
+    h+=mkHdr('Report Accessori');
+
+    function mkG(tit,img,tot,subs){
+      var g='<div class="acc-g"><div class="acc-gh">';
+      if(img)g+='<img class="acc-gimg" src="'+esc(img)+'" alt="" onerror="this.style.display=\'none\'">';
+      else g+='<div style="width:46px;height:32px;flex-shrink:0;"></div>';
+      g+='<div class="acc-gtit">'+esc(tit)+'</div><div class="acc-gtot">'+tot+'</div></div><div class="acc-gb">';
+      subs.forEach(function(s){var ps=s.pos.map(function(x){return String(x);}).join(', ');g+='<div class="acc-sub">';if(subs.length>1)g+='<div class="acc-sublbl">'+s.l+'</div>';g+='<div class="acc-row">'+s.chips+'<div class="acc-pl">Pos: '+esc(ps)+'</div></div></div>';});
+      g+='</div></div>';return g;
+    }
+
+    if(caps&&caps.length){
+      var gruppiAcc=groupByCap(posCalc,caps);
+      gruppiAcc.forEach(function(g){
+        if(!g.pos.length)return;
+        h+='<div style="background:#1a1a2e;color:#a5b4fc;font-weight:700;font-size:.82rem;padding:6px 12px;margin:10px 0 6px;border-radius:5px;">\u2550\u2550 '+esc(g.cap.titolo)+' \u2550\u2550 <span style="font-size:.74rem;opacity:.7;">('+g.pos.length+' pos.)</span></div>';
+        h+=renderAccDettaglio(g.pos,mkG);
+        h+=renderAccSubtot(g.cap.titolo,g.pos);
+      });
+      h+='<div style="background:#064e3b;color:#a7f3d0;font-weight:700;font-size:.82rem;padding:6px 12px;margin:14px 0 6px;border-radius:5px;">\u2211 Totali complessivi</div>';
+    }
+    h+=renderAccDettaglio(posCalc,mkG);
+    sections.push(h);
+  }
+
+  function renderAccDettaglio(posCalc,mkG){
+    var h='';
+    var cim={};posCalc.forEach(function(p){if(!p.coprifilo_int_mat)return;var k=p.coprifilo_int_mat.toUpperCase()+'|'+(p.coprifilo_int_dim||'');if(!cim[k])cim[k]={mat:p.coprifilo_int_mat,dim:p.coprifilo_int_dim||'—',b:0,pos:[]};cim[k].b+=p._bci;cim[k].pos.push(numPos(p));});
+    if(Object.keys(cim).length){var tb=0;Object.values(cim).forEach(function(vv){tb+=vv.b;});h+=mkG('Coprifili interni','',tb+' barre TOT.',Object.values(cim).map(function(vv){return{l:vv.mat+' \u2014 '+vv.dim+' mm',chips:'<span class="chip-n">'+vv.b+' barre</span>',pos:vv.pos};}));}
+    var cem={};posCalc.forEach(function(p){if(!p.coprifilo_est_mat)return;var k=p.coprifilo_est_mat.toUpperCase()+'|'+(p.coprifilo_est_dim||'');if(!cem[k])cem[k]={mat:p.coprifilo_est_mat,dim:p.coprifilo_est_dim||'—',b:0,pos:[]};cem[k].b+=p._bce;cem[k].pos.push(numPos(p));});
+    if(Object.keys(cem).length){var tb2=0;Object.values(cem).forEach(function(vv){tb2+=vv.b;});h+=mkG('Coprifili esterni','',tb2+' barre TOT.',Object.values(cem).map(function(vv){return{l:vv.mat+' \u2014 '+vv.dim+' mm',chips:'<span class="chip-n">'+vv.b+' barre</span>',pos:vv.pos};}));}
+    var avm={};['A','AM','AE','AR'].forEach(function(k){posCalc.forEach(function(p){if(p.schermatura!==k)return;if(!avm[k])avm[k]={mq:0,n:0,pos:[]};avm[k].mq+=p._ss;avm[k].n++;avm[k].pos.push(numPos(p));});});
+    var avk=Object.keys(avm);if(avk.length){var tm=0,tn=0;avk.forEach(function(k){tm+=avm[k].mq;tn+=avm[k].n;});h+=mkG('Avvolgibile','img/Avvolgibile.jpeg',n2(tm)+' mq TOT. \u2014 '+tn+' pz',avk.map(function(k){var vv=avm[k];return{l:SCHERM_DESC[k]||k,chips:'<span class="chip-mq">'+n2(vv.mq)+' mq</span> <span class="chip-n">'+vv.n+' pz</span>',pos:vv.pos};}));}
+    var scp=posCalc.filter(function(p){return p.schermatura==='S';});
+    if(scp.length)h+=mkG('Scuretto','img/Scuretto.jpeg',scp.length+' pz',[{l:'Scuretto',chips:'<span class="chip-n">'+scp.length+' pz</span>',pos:scp.map(numPos)}]);
+    var tem={};['TZ','TM'].forEach(function(k){posCalc.forEach(function(p){if(p.schermatura!==k)return;if(!tem[k])tem[k]={n:0,pos:[]};tem[k].n++;tem[k].pos.push(numPos(p));});});
+    var tek=Object.keys(tem);if(tek.length){var tn2=0;tek.forEach(function(k){tn2+=tem[k].n;});h+=mkG('Tenda','img/Tenda_zip.jpeg',tn2+' pz TOT.',tek.map(function(k){var vv=tem[k];return{l:SCHERM_DESC[k]||k,chips:'<span class="chip-n">'+vv.n+' pz</span>',pos:vv.pos};}));}
+    var frm={};['CA','CT'].forEach(function(k){posCalc.forEach(function(p){if(p.schermatura!==k)return;if(!frm[k])frm[k]={n:0,pos:[]};frm[k].n++;frm[k].pos.push(numPos(p));});});
+    var frk=Object.keys(frm);if(frk.length){var fn=0;frk.forEach(function(k){fn+=frm[k].n;});h+=mkG('Frangisole','img/Frangisole.jpeg',fn+' pz TOT.',frk.map(function(k){var vv=frm[k];return{l:SCHERM_DESC[k]||k,chips:'<span class="chip-n">'+vv.n+' pz</span>',pos:vv.pos};}));}
+    var clm={};posCalc.forEach(function(p){if(p.controtelaio!=='L')return;var t=p.tipo_serramento||'?';if(!clm[t])clm[t]={n:0,pos:[]};clm[t].n++;clm[t].pos.push(numPos(p));});
+    if(Object.keys(clm).length){var cn=0;Object.values(clm).forEach(function(vv){cn+=vv.n;});var clk=TIPO_ORD.filter(function(t){return clm[t];});h+=mkG('Controtelaio legno','img/Controtelaio_legno.png',cn+' pz TOT.',clk.map(function(t){var vv=clm[t];return{l:TIPO_DESC[t]||t,chips:'<span class="chip-n">'+vv.n+' pz</span>',pos:vv.pos};}));}
+    var ctm={};posCalc.forEach(function(p){if(p.controtelaio!=='T')return;var t=p.tipo_serramento||'?';if(!ctm[t])ctm[t]={n:0,pos:[]};ctm[t].n++;ctm[t].pos.push(numPos(p));});
+    if(Object.keys(ctm).length){var tn3=0;Object.values(ctm).forEach(function(vv){tn3+=vv.n;});var ctk=TIPO_ORD.filter(function(t){return ctm[t];});h+=mkG('Termocassa','img/Termocassa.jpeg',tn3+' pz TOT.',ctk.map(function(t){var vv=ctm[t];return{l:TIPO_DESC[t]||t,chips:'<span class="chip-n">'+vv.n+' pz</span>',pos:vv.pos};}));}
+    var csm={};posCalc.forEach(function(p){if(!p.cassonetto)return;var k=p.cassonetto;if(!csm[k])csm[k]={m:0,pos:[]};csm[k].m+=p._cassM;csm[k].pos.push(numPos(p));});
+    if(Object.keys(csm).length){var tm2=0;Object.values(csm).forEach(function(vv){tm2+=vv.m;});var csd={'P':'PVC','L':'Legno'};h+=mkG('Cassonetto','img/Cassonetto_PVC.webp',n2(tm2)+' m TOT.',Object.keys(csm).map(function(k){var vv=csm[k];return{l:'Cassonetto '+(csd[k]||k),chips:'<span class="chip-m">'+n2(vv.m)+' m</span>',pos:vv.pos};}));}
+    var znm={};posCalc.forEach(function(p){if(!p.zanzariera)return;var k=p.zanzariera;if(!znm[k])znm[k]={mq:0,n:0,pos:[]};znm[k].mq+=p._sz;znm[k].n++;znm[k].pos.push(numPos(p));});
+    if(Object.keys(znm).length){var tm3=0;Object.values(znm).forEach(function(vv){tm3+=vv.mq;});var znd={'V':'Verticale','O':'Orizzontale'};h+=mkG('Zanzariera','img/Zanzariera.jpeg',n2(tm3)+' mq TOT.',Object.keys(znm).map(function(k){var vv=znm[k];return{l:znd[k]||k,chips:'<span class="chip-mq">'+n2(vv.mq)+' mq</span> <span class="chip-n">'+vv.n+' pz</span>',pos:vv.pos};}));}
+    var dim={};var dnord=['DA','I3','I4'];var dnd={'DA':'Davanzale','I3':'Imbotte 3 lati','I4':'Imbotte 4 lati'};
+    posCalc.forEach(function(p){if(!p.dinoxill)return;var k=p.dinoxill;if(!dim[k])dim[k]={n:0,pos:[]};dim[k].n++;dim[k].pos.push(numPos(p));});
+    if(Object.keys(dim).length){var dn=0;Object.values(dim).forEach(function(vv){dn+=vv.n;});var dik=dnord.filter(function(k){return dim[k];});h+=mkG('Dinoxill','',dn+' pz TOT.',dik.map(function(k){var vv=dim[k];return{l:dnd[k]||k,chips:'<span class="chip-n">'+vv.n+' pz</span>',pos:vv.pos};}));}
+    var agp=posCalc.filter(function(p){return p.angolari_pvc===true;});
+    if(agp.length){var ab=0;agp.forEach(function(p){if(p._t){var sv=svCop(p._ts,p._t.Lt,p._t.Ht,C.angLato);ab+=cUp(sv/C.angB);}});h+=mkG('Angolari PVC','',agp.length+' pos.',[{l:'Angolari PVC 50mm',chips:'<span class="chip-n">'+agp.length+' pos.</span> <span class="chip-n">'+ab+' barre</span>',pos:agp.map(numPos)}]);}
+    var rs=posCalc.filter(function(p){return p.rimozione==='SI'||p.rimozione===true;});
+    var ra=posCalc.filter(function(p){return p.rimozione_accessori===true;});
+    var mr=posCalc.filter(function(p){return p.taglio_marmo===true;});
+    if(rs.length||ra.length||mr.length){var sr=[];if(rs.length)sr.push({l:'Rimozione serramento',chips:'<span class="chip-n">'+rs.length+' pz</span>',pos:rs.map(numPos)});if(ra.length)sr.push({l:'Rimozione accessori',chips:'<span class="chip-n">'+ra.length+' pz</span>',pos:ra.map(numPos)});if(mr.length)sr.push({l:'Taglio marmo',chips:'<span class="chip-n">'+mr.length+' pz</span>',pos:mr.map(numPos)});h+=mkG('Rimozione / Taglio','',(rs.length+ra.length+mr.length)+' interventi',sr);}
+    var tS=0,tPol=0,tBG=0,tMu=0,tBV=0,tVi=0;posCalc.forEach(function(p){tS+=p._sch;tPol+=p._mp;tBG+=p._bg;tMu+=p._mu;tBV+=p._bv;tVi+=p._vi;});var tLin=n2(tS+tBG+tMu+tBV);
+    h+='<div class="acc-g"><div class="acc-gh"><img class="acc-gimg" src="img/Posa.jpeg" alt="" onerror="this.style.display=\'none\'"><div class="acc-gtit">Materiali di posa</div><div class="acc-gtot">Lineare: '+tLin+' m</div></div><div class="acc-gb"><div class="mat-grid">';
+    [{n:'Schiuma',v:n2(tS),u:'m'},{n:'MS Polimero',v:tPol,u:'flac.'},{n:'Nastro BG1',v:n2(tBG),u:'m'},{n:'Nastro Multi',v:n2(tMu),u:'m'},{n:'Bar.vapore',v:n2(tBV),u:'m'},{n:'Viti 1 kit',v:tVi,u:'kit'},{n:'Tot.lineare',v:tLin,u:'m'}].forEach(function(item){h+='<div class="mat-c"><div class="mn">'+item.n+'</div><div class="mv">'+item.v+'</div><div class="mu">'+item.u+'</div></div>';});
+    h+='</div></div></div>';
+    return h;
+  }
+
+  function renderAccSubtot(titolo,pc){
+    var nCI=0,nCE=0,nAvv=0,nScur=0,nCtlL=0,nCtlT=0,tLin=0;
+    pc.forEach(function(p){if(p._bci)nCI+=p._bci;if(p._bce)nCE+=p._bce;var sc=(p.schermatura||'').toUpperCase();if(sc==='A'||sc==='AM'||sc==='AE'||sc==='AR')nAvv++;else if(sc==='S')nScur++;if(p.controtelaio==='L')nCtlL++;else if(p.controtelaio==='T')nCtlT++;tLin+=p._sch+p._bg+p._mu+p._bv;});
+    var cs=function(vv,l){return vv?'<span style="background:#c7d2fe;color:#1e1b4b;border-radius:8px;padding:1px 7px;font-size:9px;font-weight:600;">'+l+': '+vv+'</span> ':'';};
+    return '<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;padding:6px 12px;margin:4px 0 14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'+
+      '<span style="font-weight:700;color:#3730a3;font-size:.78rem;">Subtotale '+esc(titolo)+'</span>'+
+      cs(nCI,'CopI')+cs(nCE,'CopE')+cs(nAvv,'Avv')+cs(nScur,'Scur')+cs(nCtlL,'CTL-L')+cs(nCtlT,'TC')+
+      '<span style="background:#c7d2fe;color:#1e1b4b;border-radius:8px;padding:1px 7px;font-size:9px;font-weight:600;">Posa: '+n2(tLin)+' m</span></div>';
+  }
+
+  // ── SEZIONE POSA ──
+  if(wP){
+    var h='';
+    h+=mkHdr('Report Posa');
+    var POSA_MODE=loadMode(), adj=loadAdj();
+    var ct={I:0,F:0,PF:0,FF:0,VF:0,S:0};
+    pos.forEach(function(p){var t=(p.tipo_serramento||'').toUpperCase();if(ct[t]!==undefined)ct[t]++;});
+    h+='<div class="tipo-grid-c"><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-right:4px;">Posizioni:</span>';
+    TIPO_ORD.forEach(function(s){var n=ct[s]||0;h+='<span class="tipo-chip-c'+(n===0?' zero':'')+'" title="'+(TIPO_DESC[s]||s)+'"><span class="sig">'+s+'</span><span class="cnt">'+n+'</span></span>';});
+    h+='</div>';
+
+    if(caps&&caps.length){
+      var gruppiPosa=groupByCap(posCalc,caps);
+      var totalVoceCalc={};
+      gruppiPosa.forEach(function(g){var vG=calcolaVoci(g.pos);vG.forEach(function(vo){totalVoceCalc[vo.id]=(totalVoceCalc[vo.id]||0)+vo.oreCalc;});});
+      gruppiPosa.forEach(function(g){
+        if(!g.pos.length)return;
+        var vG=calcolaVoci(g.pos),capId=g.cap.id||'__fuori__',adjCap=loadAdjCap(capId);
+        var tG=0,oDG=0,oIG=0;
+        vG.forEach(function(vo){
+          var fin;
+          if(POSA_MODE==='cap'){var m=parseFloat((adjCap[vo.id]||{}).minus)||0,pl=parseFloat((adjCap[vo.id]||{}).plus)||0;fin=Math.max(0,Math.round((vo.oreCalc-m+pl)*1000)/1000);}
+          else{var totV=totalVoceCalc[vo.id]||0,prop=totV>0?vo.oreCalc/totV:0;fin=Math.max(0,Math.round((vo.oreCalc-((adj[vo.id]||{}).minus||0)*prop+((adj[vo.id]||{}).plus||0)*prop)*1000)/1000);}
+          tG+=fin;if(vo.tipo==='dir')oDG+=fin;else oIG+=fin;
+        });
+        tG=Math.round(tG*1000)/1000;
+        h+='<div style="background:#1a1a2e;color:#a5b4fc;font-weight:700;font-size:.82rem;padding:6px 12px;margin:10px 0 6px;border-radius:5px;">\u2550\u2550 '+esc(g.cap.titolo)+' \u2550\u2550 <span style="opacity:.7;font-size:.74rem;">('+g.pos.length+' pos.)</span></div>';
+        var lA2='',tbG='';
+        vG.forEach(function(vo){
+          var fin;
+          if(POSA_MODE==='cap'){var m=parseFloat((adjCap[vo.id]||{}).minus)||0,pl=parseFloat((adjCap[vo.id]||{}).plus)||0;fin=Math.max(0,Math.round((vo.oreCalc-m+pl)*1000)/1000);}
+          else{var totV=totalVoceCalc[vo.id]||0,prop=totV>0?vo.oreCalc/totV:0;fin=Math.max(0,Math.round((vo.oreCalc-((adj[vo.id]||{}).minus||0)*prop+((adj[vo.id]||{}).plus||0)*prop)*1000)/1000);}
+          if(vo.n===0&&fin===0)return;
+          if(vo.area!==lA2){tbG+='<tr class="tr-sez"><td colspan="6">'+vo.area+'</td></tr>';lA2=vo.area;}
+          tbG+='<tr class="tr-voce"><td>'+vo.area+'</td><td>'+vo.serv+'</td><td class="c">'+(vo.n>0?vo.n:'—')+'</td><td class="c">'+(vo.dp?fmtH(vo.dp[0]):'—')+'</td><td class="c">'+((vo.dp&&vo.dp[1])?fmtH(vo.dp[1]):'—')+'</td><td class="ore-f">'+fmtH(fin)+'</td></tr>';
+        });
+        h+='<div class="tbl-outer"><table class="t-posa"><thead><tr><th style="width:20%">Area</th><th style="width:36%">Servizio</th><th class="c">N</th><th class="c">h/pos</th><th class="c">Min.cant.</th><th class="c">Ore</th></tr></thead><tbody>'+tbG+'</tbody><tfoot><tr class="tr-tot"><td colspan="5">TOTALE '+esc(g.cap.titolo)+'</td><td class="ore-f">'+fmtH(tG)+'</td></tr></tfoot></table></div>';
+        var giG=tG>0?Math.ceil(tG/16*10)/10:0;
+        h+='<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;padding:6px 12px;margin:4px 0 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.78rem;"><span style="font-weight:700;color:#3730a3;">Subtotale '+esc(g.cap.titolo)+'</span><span style="background:#c7d2fe;color:#1e1b4b;border-radius:8px;padding:1px 8px;font-weight:600;">Dir: '+fmtH(oDG)+'</span><span style="background:#c7d2fe;color:#1e1b4b;border-radius:8px;padding:1px 8px;font-weight:600;">Ind: '+fmtH(oIG)+'</span><span style="background:#c7d2fe;color:#1e1b4b;border-radius:8px;padding:1px 8px;font-weight:600;">Tot: '+fmtH(tG)+'</span><span style="background:#c7d2fe;color:#1e1b4b;border-radius:8px;padding:1px 8px;font-weight:600;">Giorni: '+giG+'</span></div>';
+      });
+      h+='<div style="background:#064e3b;color:#a7f3d0;font-weight:700;font-size:.82rem;padding:6px 12px;margin:14px 0 6px;border-radius:5px;">\u2211 Totali complessivi</div>';
+    }
+
+    var voci=calcolaVoci(pos);
+    var totCalc=0,totFin=0,areaMap={};
+    var tbH='',lastArea='';
+    var globaleFin={};
+    if(POSA_MODE==='cap'&&caps&&caps.length){
+      var gruppiPosaG=groupByCap(posCalc,caps);
+      gruppiPosaG.forEach(function(g){
+        if(!g.pos.length)return;
+        var capId=g.cap.id||'__fuori__',adjCap=loadAdjCap(capId),vG=calcolaVoci(g.pos);
+        vG.forEach(function(vo){var m=parseFloat((adjCap[vo.id]||{}).minus)||0,pl=parseFloat((adjCap[vo.id]||{}).plus)||0;var fin=Math.max(0,Math.round((vo.oreCalc-m+pl)*1000)/1000);globaleFin[vo.id]=(globaleFin[vo.id]||0)+fin;});
+      });
+    }
+    voci.forEach(function(vo){
+      if(vo.area!==lastArea){tbH+='<tr class="tr-sez"><td colspan="6">'+vo.area+'</td></tr>';lastArea=vo.area;}
+      var fin;
+      if(POSA_MODE==='cap'&&caps&&caps.length){fin=Math.round((globaleFin[vo.id]||0)*1000)/1000;}
+      else{var minus=parseFloat((adj[vo.id]||{}).minus)||0,plus=parseFloat((adj[vo.id]||{}).plus)||0;fin=Math.max(0,Math.round((vo.oreCalc-minus+plus)*1000)/1000);}
+      totCalc+=vo.oreCalc;totFin+=fin;
+      if(!areaMap[vo.area])areaMap[vo.area]={fin:0,tipo:vo.tipo};areaMap[vo.area].fin+=fin;
+      var isZero=vo.n===0&&vo.oreCalc===0&&fin===0;
+      tbH+='<tr class="tr-voce'+(isZero?' zero-row':'')+'"><td>'+vo.area+'</td><td>'+vo.serv+'</td><td class="c">'+(vo.n>0?String(vo.n):'—')+'</td><td class="c">'+(vo.dp?fmtH(vo.dp[0]):'—')+'</td><td class="c">'+((vo.dp&&vo.dp[1])?fmtH(vo.dp[1]):'—')+'</td><td class="ore-f">'+fmtH(fin)+'</td></tr>';
+    });
+    h+='<div class="tbl-outer"><table class="t-posa"><thead><tr><th style="width:20%">Area</th><th style="width:36%">Servizio</th><th class="c">N</th><th class="c">h/pos</th><th class="c">Min.cant.</th><th class="c">Ore</th></tr></thead><tbody>'+tbH+'</tbody><tfoot><tr class="tr-tot"><td colspan="5">TOTALE</td><td class="ore-f">'+fmtH(totFin)+'</td></tr></tfoot></table></div>';
+    var oreDir=0,oreInd=0,aHtml='';
+    Object.keys(areaMap).forEach(function(area){var d=areaMap[area];aHtml+='<div class="sum-row"><span class="lbl">'+area+'</span><span class="val">'+fmtH(d.fin)+'</span></div>';if(d.tipo==='dir')oreDir+=d.fin;else oreInd+=d.fin;});
+    aHtml+='<div class="sum-row tot"><span class="lbl">TOTALE</span><span class="val">'+fmtH(totFin)+'</span></div>';
+    var oreHtml='<div class="sum-row"><span class="lbl">Ore Dirette</span><span class="val">'+fmtH(oreDir)+'</span></div><div class="sum-row"><span class="lbl">Ore Indirette</span><span class="val">'+fmtH(oreInd)+'</span></div><div class="sum-row tot"><span class="lbl">Dirette+Indirette</span><span class="val">'+fmtH(oreDir+oreInd)+'</span></div><div class="sum-row tot"><span class="lbl">Ore Totali</span><span class="val">'+fmtH(totFin)+'</span></div>';
+    var orePrev=0;voci.forEach(function(vo){if(vo.id==='prog'){if(POSA_MODE==='cap'&&caps&&caps.length){orePrev=Math.round((globaleFin['prog']||0)*1000)/1000;}else{var m=parseFloat((adj[vo.id]||{}).minus)||0,pl=parseFloat((adj[vo.id]||{}).plus)||0;orePrev=Math.max(0,Math.round((vo.oreCalc-m+pl)*1000)/1000);}}});
+    h+='<div class="posa-bottom"><div class="sum-block"><h3>Riepilogo per area</h3>'+aHtml+'</div><div class="sum-block"><h3>Riepilogo ore</h3>'+oreHtml+'</div></div>';
+    h+='<div class="ore-grid-c">';
+    [{l:'Ore Dirette',v:fmtH(oreDir)},{l:'Ore Indirette',v:fmtH(oreInd)},{l:'Dirette+Indirette',v:fmtH(oreDir+oreInd)},{l:'Ore Totali',v:fmtH(totFin)},{l:'Ore Preventivo',v:fmtH(orePrev)}].forEach(function(item){h+='<div class="ore-card-c"><div class="ov">'+item.v+'</div><div class="ol">'+item.l+'</div></div>';});
+    h+='</div>';
+    sections.push(h);
+  }
+
+  return sections.map(function(s,i){var isLast=(i===sections.length-1);return '<div class="sezione'+(isLast?'':' sezione-break')+'">'+s+'</div>';}).join('');
+}
+</script>
+</body>
+</html>
