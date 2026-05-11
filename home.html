@@ -15,7 +15,6 @@
 
 <div class="offline-banner" id="offlineBanner">&#9889; Modalita offline — i dati verranno sincronizzati alla connessione</div>
 
-<!-- Banner sync 24h — visibile solo se l'ultima sync e' vecchia -->
 <div id="banner24h" style="display:none;background:var(--c-amber);color:#fff;padding:10px 16px;display:none;align-items:center;gap:10px;font-size:13px;font-weight:600;">
   <span style="flex:1;">&#9888; Dati non sincronizzati da oltre 24 ore</span>
   <button onclick="eseguiSync(false)" style="background:rgba(255,255,255,.25);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">Sincronizza ora</button>
@@ -28,11 +27,11 @@
   <div class="top-bar-actions">
     <div class="top-bar-online" id="onlineIndicator" title="Online"></div>
     <button class="top-bar-btn" onclick="eseguiSync(false)" title="Sincronizza">&#8635;</button>
+    <button class="top-bar-btn" onclick="window.location.href='guida.html'" title="Guida" style="font-size:16px;">&#10067;</button>
     <div class="top-bar-avatar" id="userAvatar">TM</div>
   </div>
 </div>
 
-<!-- Barra progresso sync silenziosa -->
 <div id="silentSyncBar" style="display:none;height:3px;background:var(--c-accent);position:fixed;top:56px;left:0;right:0;z-index:99;transition:width .3s;"></div>
 
 <div class="sidebar-tablet" id="sidebarTablet">
@@ -251,7 +250,6 @@ var _syncRunning = false;
   window.addEventListener('offline', function(){ updateOnlineStatus(); });
   loadLocalData();
 
-  // AUTO-SYNC CON JITTER
   if(API.isOnline()){
     autoSyncIfNeeded();
   }
@@ -261,15 +259,13 @@ var _syncRunning = false;
 
 function autoSyncIfNeeded(){
   var hours = API.hoursSinceLastSync();
-  // Banner 24h
   if(hours > 24){
     document.getElementById('banner24h').style.display='flex';
   }
-  // Auto-sync silenziosa con jitter (evita sync storm su 30 utenti)
   if(!_syncRunning){
-    var jitter = Math.floor(Math.random()*20000); // 0-20 secondi
+    var jitter = Math.floor(Math.random()*20000);
     setTimeout(function(){
-      if(API.isOnline() && !_syncRunning) eseguiSync(true); // true = silent
+      if(API.isOnline() && !_syncRunning) eseguiSync(true);
     }, jitter);
   }
 }
@@ -415,7 +411,6 @@ function eseguiSync(silent){
   closeAllSheets();
 
   if(silent){
-    // Sync silenziosa: solo barra sottile in topbar
     var bar=document.getElementById('silentSyncBar');
     bar.style.display=''; bar.style.width='10%';
     document.getElementById('syncStatusTitle').textContent='Sincronizzazione...';
@@ -433,7 +428,6 @@ function eseguiSync(silent){
       });
     });
   } else {
-    // Sync esplicita: sheet con progresso
     var progDiv=document.getElementById('syncSheetProgress');
     var contDiv=document.getElementById('syncSheetContent');
     var bar2=document.getElementById('syncBar');
