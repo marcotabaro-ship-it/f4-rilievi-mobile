@@ -229,3 +229,205 @@
       <div class="g-p">
         <span class="badge-ex badge-serr-ex">CTL-L</span> Controtelaio legno &nbsp;
         <span class="badge-ex badge-serr-ex">TC</span> Termocassa &nbsp;
+        <span class="badge-ex badge-org-ex">Cass</span> Cassonetto<br><br>
+        <span class="badge-ex badge-green-ex">Zanz</span> Zanzariera &nbsp;
+        <span class="badge-ex" style="background:#f3f4f6;color:#374151;">CopI</span> Coprifilo int. &nbsp;
+        <span class="badge-ex" style="background:#f3f4f6;color:#374151;">CopE</span> Coprifilo est.<br><br>
+        <span class="badge-ex badge-red-ex">Rim</span> Rimozione serramento &nbsp;
+        <span class="badge-ex badge-yel-ex">Mrm</span> Taglio marmo<br><br>
+        <span class="badge-ex" style="background:#ede9fe;color:#5b21b6;">DA</span> Dinoxill &nbsp;
+        <span class="badge-ex badge-yel-ex">ACC</span> Solo accessori
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. LEGENDA PORTE -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#128682;</span>
+      <span class="g-section-title">Legenda porte interne</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+
+      <div class="g-sub">Tipo porta</div>
+      <table class="g-table orange">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>INT</td><td>Porta interna standard</td></tr>
+        <tr><td>BLI</td><td>Porta blindata</td></tr>
+        <tr><td>REI</td><td>Porta REI (resistenza al fuoco)</td></tr>
+      </table>
+
+      <div class="g-sub">Tipo foro</div>
+      <table class="g-table orange">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>N</td><td>Netta passaggio — la misura coincide con la luce netta</td></tr>
+        <tr><td>P</td><td>Posa in luce — la misura viene calcolata aggiungendo gli offset del sistema</td></tr>
+      </table>
+
+      <div class="g-sub">Controtelaio porte</div>
+      <div class="g-p">Per ogni posizione puoi specificare separatamente la <strong>fornitura</strong> e l <strong>installazione</strong> del controtelaio, distinto per tipo porta: interno, blindato, REI. Ogni voce è un flag indipendente.</div>
+
+      <div class="g-sub">Badge nella lista porte</div>
+      <div class="g-p">
+        <span class="badge-ex badge-org-ex">CTL</span> Controtelaio presente &nbsp;
+        <span class="badge-ex badge-yel-ex">ALL</span> Allargamento telaio<br><br>
+        <span class="badge-ex badge-red-ex">Rim</span> Rimozione porta esistente
+      </div>
+
+      <div class="g-sub">Sopraluce</div>
+      <div class="g-p">Flag che indica la presenza di un sopraluce fisso sopra la porta. Influisce sul calcolo delle ore di posa nel report.</div>
+    </div>
+  </div>
+
+  <!-- 5. CREARE UN RILIEVO -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#128196;</span>
+      <span class="g-section-title">Creare un rilievo</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+      <div class="step-row"><div class="step-num">1</div><div class="step-text">Dalla <strong>Home</strong> o dalla pagina <strong>Cliente</strong>, tocca <strong>Nuovo rilievo serramenti</strong> o <strong>Nuovo rilievo porte</strong>.</div></div>
+      <div class="step-row"><div class="step-num">2</div><div class="step-text">Se arrivi dalla Home senza un cantiere preselezionato, scegli prima il <strong>cliente</strong> poi il <strong>cantiere</strong> dai menu a tendina.</div></div>
+      <div class="step-row"><div class="step-num">3</div><div class="step-text">Compila <strong>referente</strong>, <strong>tipo intervento</strong> e <strong>data rilievo</strong> (obbligatori). La data viene precompilata con oggi.</div></div>
+      <div class="step-row"><div class="step-num">4</div><div class="step-text">Controlla i <strong>dati cantiere per il report</strong>. Se mancano indirizzo o telefono, usa il pulsante Modifica dati cantiere per completarli — verranno salvati anche per i prossimi rilievi.</div></div>
+      <div class="step-row"><div class="step-num">5</div><div class="step-text">Tocca <strong>Crea rilievo</strong>. Verrai portato direttamente alla lista posizioni del nuovo rilievo.</div></div>
+
+      <div class="g-tip">&#128196; I dati del rilievo (referente, date, note) si possono modificare in qualsiasi momento con il tasto ✏️ in alto a destra dalla schermata rilievo.</div>
+    </div>
+  </div>
+
+  <!-- 6. AGGIUNGERE POSIZIONI -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#128295;</span>
+      <span class="g-section-title">Aggiungere e modificare posizioni</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+      <div class="g-sub">Nuova posizione</div>
+      <div class="step-row"><div class="step-num">1</div><div class="step-text">Dalla lista posizioni, tocca il pulsante <strong>+</strong> in basso a destra.</div></div>
+      <div class="step-row"><div class="step-num">2</div><div class="step-text">Compila i campi obbligatori: <strong>tipo serramento</strong>, <strong>tipo foro</strong>, <strong>L</strong> e <strong>H</strong> in millimetri, <strong>materiale</strong>, <strong>sistema</strong>.</div></div>
+      <div class="step-row"><div class="step-num">3</div><div class="step-text">La strip <strong>L &times; H ordine</strong> in cima al form si aggiorna in tempo reale mostrando le dimensioni calcolate.</div></div>
+      <div class="step-row"><div class="step-num">4</div><div class="step-text">Compila accessori, flag e note secondo necessità. Tocca <strong>Salva posizione</strong>.</div></div>
+
+      <div class="g-sub">Modificare una posizione</div>
+      <div class="g-p">Tocca la riga nella lista → si apre il pannello dettaglio → tocca ✏️ <strong>Modifica posizione</strong>. Il form si riapre precompilato con tutti i valori esistenti.</div>
+
+      <div class="g-sub">Eliminare una posizione</div>
+      <div class="g-p">Dal pannello dettaglio, tocca il bottone rosso 🗑 in basso a sinistra. Conferma nel popup. La posizione viene disattivata (non cancellata fisicamente) e scompare dalla lista.</div>
+
+      <div class="g-sub">Numero posizione</div>
+      <div class="g-p">Il numero viene assegnato automaticamente in sequenza. Puoi impostare un codice alfanumerico aggiuntivo (es. <strong>CAM01</strong>, <strong>SO-A</strong>) nel campo <em>N° posizione</em> — apparirà al posto del numero nella lista e nei report.</div>
+
+      <div class="g-sub">Solo accessori (serr.)</div>
+      <div class="g-p">Attivando il flag <strong>Solo accessori</strong> nel form serramento, i campi serramento/colori/sistema vengono nascosti. Utile per posizioni dove si installano solo accessori senza serramento.</div>
+    </div>
+  </div>
+
+  <!-- 7. CAPITOLI E STRATIGRAFIE -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#128218;</span>
+      <span class="g-section-title">Capitoli e stratigrafie</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+      <div class="g-sub">Capitoli</div>
+      <div class="g-p">I capitoli raggruppano le posizioni in sezioni (es. <em>Piano terra</em>, <em>Primo piano</em>, <em>Mansarda</em>). Ogni capitolo ha un titolo e un intervallo di posizioni (da–a).</div>
+      <div class="g-p">Apri la gestione capitoli con l icona 📚 in alto a destra. Usa + per aggiungere un capitolo, ✏️ per modificarlo, 🗑 per eliminarlo. <strong>Eliminare un capitolo non elimina le posizioni</strong>, solo il raggruppamento.</div>
+      <div class="g-tip">&#128218; I capitoli appaiono sia nella lista posizioni mobile che nel report desktop, con subtotali per ogni gruppo.</div>
+
+      <div class="g-sub">Stratigrafie (solo serramenti)</div>
+      <div class="g-p">Le stratigrafie descrivono la composizione della parete (es. <em>Muro portante 30cm</em>, <em>Parete leggera</em>). Ogni stratigrafia ha un nome, un immagine di riferimento e le quote in millimetri per ogni strato.</div>
+      <div class="g-p">Apri la gestione con l icona ☰ in alto a destra. Per ogni stratigrafia puoi aggiungere le quote lettera-valore (es. A: 150mm, B: 50mm) che appariranno nel report a fianco dell immagine.</div>
+      <div class="g-p">La stratigrafia <strong>default</strong> (contrassegnata con ⭐) appare per prima nel report. Di solito è quella più usata nel cantiere.</div>
+    </div>
+  </div>
+
+  <!-- 8. REPORT -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#128438;</span>
+      <span class="g-section-title">Report e stampe</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+      <div class="g-warn">&#9888; I report richiedono connessione internet — leggono i dati aggiornati direttamente dal server per garantire l accuratezza dei calcoli.</div>
+
+      <div class="g-sub">Report disponibili — serramenti</div>
+      <table class="g-table">
+        <tr><th>Report</th><th>Contenuto</th></tr>
+        <tr><td>Rilievo</td><td>Tabella posizioni con dimensioni calcolate, legenda, stratigrafie</td></tr>
+        <tr><td>Accessori</td><td>Conteggio accessori per tipo con quantità e posizioni di riferimento</td></tr>
+        <tr><td>Posa</td><td>Voci di posa con ore calcolate per tipo e piano</td></tr>
+        <tr><td>Stampa combinata</td><td>Uno o tutti i report uniti in un unico PDF stampabile</td></tr>
+      </table>
+
+      <div class="g-sub">Report disponibili — porte</div>
+      <table class="g-table orange">
+        <tr><th>Report</th><th>Contenuto</th></tr>
+        <tr><td>Rilievo porte</td><td>Tabella posizioni porte con sistema, fornitore e flag</td></tr>
+        <tr><td>Posa porte</td><td>Ore di posa per tipo porta e sistema</td></tr>
+        <tr><td>Stampa combinata</td><td>Entrambi i report uniti</td></tr>
+      </table>
+
+      <div class="g-sub">Come aprire un report</div>
+      <div class="g-p">I link ai report si trovano nella pagina <strong>Cliente</strong> accanto ad ogni rilievo. I report si aprono nel browser e si possono stampare o salvare come PDF con la funzione di stampa del dispositivo.</div>
+
+      <div class="g-tip">&#128204; Per una stampa ottimale usa un browser desktop. Da mobile la stampa funziona ma il layout orizzontale potrebbe essere ridotto.</div>
+    </div>
+  </div>
+
+  <!-- 9. PROBLEMI COMUNI -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#128736;</span>
+      <span class="g-section-title">Problemi comuni e soluzioni</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+
+      <div class="g-sub">La lista posizioni e vuota dopo la sync</div>
+      <div class="g-p">Esegui una sincronizzazione dalla Home. Se il problema persiste, chiudi e riapri l app.</div>
+
+      <div class="g-sub">Vedo un avviso di conflitto</div>
+      <div class="g-p">Un altro utente ha modificato la stessa posizione mentre lavoravi. Puoi scegliere di <strong>ricaricare</strong> i dati aggiornati dal server, oppure <strong>sovrascrivere</strong> con i tuoi dati locali.</div>
+
+      <div class="g-sub">Il comune non appare nell autocomplete</div>
+      <div class="g-p">L autocomplete comuni funziona offline solo dopo una sincronizzazione completa. Esegui una sync dalla Home, poi riprova. In alternativa inserisci il comune manualmente senza usare l autocomplete.</div>
+
+      <div class="g-sub">Il report non si apre</div>
+      <div class="g-p">Verifica di avere connessione internet. I report leggono i dati dal server e non funzionano offline.</div>
+
+      <div class="g-sub">Ho eliminato per errore una posizione</div>
+      <div class="g-p">L eliminazione da mobile imposta la posizione come disattiva ma non la cancella dal database. Contatta chi gestisce la web app desktop per ripristinarla.</div>
+
+      <div class="g-sub">I dati non si sincronizzano</div>
+      <div class="g-p">Controlla la connessione. Se sei online ma la sync non parte, prova a effettuare logout e login. Se il problema persiste, segnalalo all amministratore con il codice del rilievo coinvolto.</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script>
+if (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.VERSION) {
+  document.getElementById('heroVer').textContent = 'Versione ' + APP_CONFIG.VERSION;
+}
+
+function toggle(hdr) {
+  var arrow = hdr.querySelector('.g-section-arrow');
+  var body  = hdr.nextElementSibling;
+  var isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+}
+
+// Apri prima sezione di default
+var firstHdr = document.querySelector('.g-section-hdr');
+if (firstHdr) toggle(firstHdr);
+</script>
+</body>
+</html>
