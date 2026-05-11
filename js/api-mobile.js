@@ -231,7 +231,10 @@ var API = (function(){
     {name:'LK_VETRO',          path:'lk_vetro?stato=eq.attivo&select=*'},
     {name:'LK_N_CAMPI',        path:'lk_n_campi?stato=eq.attivo&select=*&order=n_campi.asc'},
     {name:'LK_TIPO_PORTA',     path:'lk_tipo_porta?stato=eq.attivo&select=*&order=sigla.asc'},
-    {name:'REGOLE_LATI',       path:'regole_lati?stato=eq.attivo&select=*'}
+    {name:'LK_REFERENTI',      path:'lk_referenti?stato=eq.attivo&select=*&order=nome_completo.asc'},
+    {name:'LK_INTERVENTO',     path:'lk_intervento?stato=eq.attivo&select=*&order=id.asc'},
+    {name:'REGOLE_LATI',       path:'regole_lati?stato=eq.attivo&select=*'},
+    {name:'LK_INDIRIZZO',      path:'lk_indirizzo?select=comune,provincia,cap&order=comune.asc'}
   ];
 
   function syncLookups(cb){
