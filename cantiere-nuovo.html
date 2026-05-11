@@ -263,16 +263,16 @@ function salva() {
   if (errs.length) { alert('Campi obbligatori:\n' + errs.join('\n')); return; }
 
   var data = {
-    id_cliente:        idCliente,
-    id_cantiere_padre: document.getElementById('fPadre').value || null,
-    nome_cantiere:     (document.getElementById('fNome').value || '').trim(),
-    tipo_via:          document.getElementById('fTipoVia').value || null,
-    indirizzo:         document.getElementById('fIndirizzo').value || null,
-    comune:            document.getElementById('fComune').value || null,
-    provincia:         document.getElementById('fProvincia').value || null,
-    cap:               document.getElementById('fCap').value || null,
-    note:              document.getElementById('fNote').value || null,
-    stato:             'attivo'
+    id_cliente:  idCliente,
+    id_parent:   document.getElementById('fPadre').value || null,   // FIX: era id_cantiere_padre
+    nome_cantiere: (document.getElementById('fNome').value || '').trim(),
+    tipo_via:    document.getElementById('fTipoVia').value || null,
+    indirizzo:   document.getElementById('fIndirizzo').value || null,
+    comune:      document.getElementById('fComune').value || null,
+    provincia:   document.getElementById('fProvincia').value || null,
+    cap:         document.getElementById('fCap').value || null,
+    note:        document.getElementById('fNote').value || null,
+    stato:       'attivo'
   };
 
   var btn = document.querySelector('button[onclick="salva()"]');
