@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Guida — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <style>
+    .g-section { background:var(--c-surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:10px; overflow:hidden; }
+    .g-section-hdr { display:flex; align-items:center; gap:10px; padding:13px 14px; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; }
+    .g-section-hdr:active { background:var(--c-bg); }
+    .g-section-ico { font-size:20px; flex-shrink:0; }
+    .g-section-title { font-size:14px; font-weight:700; color:var(--c-text); flex:1; }
+    .g-section-arrow { font-size:14px; color:var(--c-text-sec); transition:transform .2s; }
+    .g-section-arrow.open { transform:rotate(90deg); }
+    .g-section-body { display:none; padding:0 14px 14px; }
+    .g-section-body.open { display:block; }
+    .g-p { font-size:13px; color:var(--c-text); line-height:1.65; margin-bottom:10px; }
+    .g-p:last-child { margin-bottom:0; }
+    .g-tip { background:#eef2ff; border-left:3px solid var(--c-accent); border-radius:0 8px 8px 0; padding:8px 12px; font-size:12px; color:#3730a3; margin-bottom:10px; line-height:1.5; }
+    .g-warn { background:#fffbeb; border-left:3px solid #f59e0b; border-radius:0 8px 8px 0; padding:8px 12px; font-size:12px; color:#92400e; margin-bottom:10px; line-height:1.5; }
+    .g-table { width:100%; border-collapse:collapse; margin-bottom:10px; font-size:12px; }
+    .g-table th { background:var(--c-primary); color:#a5b4fc; padding:6px 8px; text-align:left; font-size:11px; font-weight:700; letter-spacing:.3px; }
+    .g-table td { padding:6px 8px; border-bottom:1px solid var(--c-border); vertical-align:top; color:var(--c-text); }
+    .g-table tr:last-child td { border-bottom:none; }
+    .g-table td:first-child { font-weight:700; color:var(--c-accent); font-family:monospace; font-size:13px; white-space:nowrap; }
+    .g-table.orange th { background:#7c2d12; color:#fed7aa; }
+    .g-table.orange td:first-child { color:var(--c-orange); }
+    .g-sub { font-size:11px; font-weight:700; color:var(--c-text-sec); text-transform:uppercase; letter-spacing:.4px; margin:12px 0 6px; padding-bottom:3px; border-bottom:1px solid var(--c-border); }
+    .step-row { display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
+    .step-num { width:26px; height:26px; border-radius:50%; background:var(--c-accent); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+    .step-text { font-size:13px; color:var(--c-text); line-height:1.5; flex:1; }
+    .step-text strong { color:var(--c-primary); }
+    .badge-ex { display:inline-block; padding:1px 7px; border-radius:8px; font-size:11px; font-weight:700; margin:1px; }
+    .badge-serr-ex  { background:#ede9fe; color:#5b21b6; }
+    .badge-green-ex { background:#d1fae5; color:#065f46; }
+    .badge-red-ex   { background:#fee2e2; color:#dc2626; }
+    .badge-org-ex   { background:#fff3e0; color:#E65100; }
+    .badge-yel-ex   { background:#fef3c7; color:#92400e; }
+    .hero { background:var(--c-primary); color:#fff; padding:16px 14px 12px; margin-bottom:12px; border-radius:var(--radius); }
+    .hero-title { font-size:18px; font-weight:700; margin-bottom:4px; }
+    .hero-sub { font-size:12px; opacity:.75; line-height:1.5; }
+    .hero-ver { font-size:10px; opacity:.5; margin-top:8px; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="top-bar-btn" onclick="history.back()">&#8592;</button>
+  <div style="flex:1;min-width:0;">
+    <div class="top-bar-title">Guida all utilizzo</div>
+    <div style="font-size:11px;opacity:.7;">F4 Rilievi Mobile</div>
+  </div>
+</div>
+
+<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 32px;">
+
+  <div class="hero">
+    <div class="hero-title">&#128218; F4 Rilievi</div>
+    <div class="hero-sub">App mobile per il rilevamento serramenti e porte interne. Funziona sia online che offline — i dati vengono sincronizzati automaticamente quando la rete torna disponibile.</div>
+    <div class="hero-ver" id="heroVer">Versione 2.1.0</div>
+  </div>
+
+  <!-- 1. COME FUNZIONA -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#128241;</span>
+      <span class="g-section-title">Come funziona l app</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+      <div class="g-sub">Struttura della navigazione</div>
+      <div class="step-row"><div class="step-num">1</div><div class="step-text"><strong>Home</strong> — panoramica rilievi recenti e stato sincronizzazione</div></div>
+      <div class="step-row"><div class="step-num">2</div><div class="step-text"><strong>Cliente</strong> — lista cantieri e rilievi del cliente</div></div>
+      <div class="step-row"><div class="step-num">3</div><div class="step-text"><strong>Rilievo serramenti</strong> — lista posizioni con filtri per tipo</div></div>
+      <div class="step-row"><div class="step-num">4</div><div class="step-text"><strong>Rilievo porte</strong> — lista posizioni porte interne</div></div>
+      <div class="step-row"><div class="step-num">5</div><div class="step-text"><strong>Posizione</strong> — form completo di inserimento e modifica</div></div>
+
+      <div class="g-sub">Icone nella barra in alto</div>
+      <div class="g-p">
+        Dalla schermata rilievo, le icone in alto a destra aprono:<br>
+        <strong>&#9776;</strong> Stratigrafie &nbsp;|&nbsp;
+        <strong>&#128218;</strong> Capitoli &nbsp;|&nbsp;
+        <strong>&#9998;</strong> Modifica dati rilievo
+      </div>
+
+      <div class="g-sub">Bottom sheet posizione</div>
+      <div class="g-p">Tocca una riga posizione per aprire il dettaglio. Dal pannello che appare in basso puoi vedere tutti i dati, modificare con ✏️ o eliminare con 🗑.</div>
+
+      <div class="g-tip">&#128161; Il pulsante + in basso a destra aggiunge una nuova posizione al rilievo corrente.</div>
+    </div>
+  </div>
+
+  <!-- 2. SYNC E OFFLINE -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#128257;</span>
+      <span class="g-section-title">Sincronizzazione e modalita offline</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+      <div class="g-sub">Come funziona la sync</div>
+      <div class="g-p">All avvio dell app viene scaricato tutto il database locale: clienti, cantieri, rilievi, posizioni, stratigrafie, capitoli, dati di sistema. Questo permette di lavorare anche senza rete.</div>
+
+      <div class="g-sub">Indicatore online / offline</div>
+      <div class="g-p">Il pallino in alto a destra nella barra del rilievo indica lo stato della connessione. Verde = online, grigio = offline.</div>
+
+      <div class="g-sub">Cosa funziona offline</div>
+      <div class="g-p">Consultazione di tutti i rilievi e posizioni, aggiunta e modifica posizioni, eliminazione posizioni, creazione capitoli e stratigrafie. Le operazioni vengono salvate in coda e inviate appena torna la connessione.</div>
+
+      <div class="g-sub">Cosa richiede la rete</div>
+      <div class="g-p">I report (stampa rilievo, accessori, posa) leggono direttamente dal server e richiedono connessione. La sincronizzazione iniziale alla prima apertura richiede rete.</div>
+
+      <div class="g-warn">&#9888; Se lavori offline e un altro utente modifica la stessa posizione nel frattempo, al salvataggio successivo vedrai un avviso di conflitto. Potrai ricaricare i dati aggiornati o sovrascrivere con i tuoi.</div>
+
+      <div class="g-sub">Forzare una sincronizzazione</div>
+      <div class="g-p">Dalla Home, usa il pulsante <strong>Sincronizza</strong> per forzare il riallineamento completo con il server.</div>
+    </div>
+  </div>
+
+  <!-- 3. LEGENDA SERRAMENTI -->
+  <div class="g-section">
+    <div class="g-section-hdr" onclick="toggle(this)">
+      <span class="g-section-ico">&#129695;</span>
+      <span class="g-section-title">Legenda serramenti</span>
+      <span class="g-section-arrow">&#8250;</span>
+    </div>
+    <div class="g-section-body">
+
+      <div class="g-sub">Tipo serramento</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>I</td><td>Ingresso</td></tr>
+        <tr><td>F</td><td>Finestra apribile</td></tr>
+        <tr><td>PF</td><td>Porta finestra</td></tr>
+        <tr><td>FF</td><td>Finestra fissa</td></tr>
+        <tr><td>VF</td><td>Vetrata fissa</td></tr>
+        <tr><td>S</td><td>Scorrevole</td></tr>
+        <tr><td>ACC</td><td>Solo accessori — nessun serramento, solo accessori da installare</td></tr>
+      </table>
+
+      <div class="g-sub">Materiale</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>A-</td><td>Alluminio</td></tr>
+        <tr><td>P-</td><td>PVC</td></tr>
+        <tr><td>PA</td><td>PVC-Alluminio</td></tr>
+        <tr><td>LA</td><td>Legno-Alluminio</td></tr>
+        <tr><td>L-</td><td>Legno</td></tr>
+      </table>
+
+      <div class="g-sub">Tipo foro</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>A</td><td>Architettonico — misura del foro grezzo nel muro</td></tr>
+        <tr><td>D</td><td>Dimensione telaio — misura esterna del telaio</td></tr>
+        <tr><td>P</td><td>Posa in luce — misura interna della luce finita</td></tr>
+      </table>
+
+      <div class="g-tip">&#128207; Le misure in corsivo arancione nella lista posizioni sono le <strong>dimensioni calcolate di ordine</strong> (tubolarità), ricavate automaticamente dalla misura inserita in base al tipo foro e al sistema scelto.</div>
+
+      <div class="g-sub">Variante telaio</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>NR</td><td>No Reveal</td></tr>
+        <tr><td>CR</td><td>Counter Reveal</td></tr>
+        <tr><td>HR</td><td>High Reveal</td></tr>
+        <tr><td>IR</td><td>Interior Reveal</td></tr>
+        <tr><td>ZR</td><td>Zero Reveal</td></tr>
+        <tr><td>WR</td><td>Wide Reveal</td></tr>
+        <tr><td>SR</td><td>Shallow Reveal</td></tr>
+        <tr><td>DR</td><td>Deep Reveal</td></tr>
+      </table>
+
+      <div class="g-sub">Telaio misto</div>
+      <div class="g-p">Se il serramento ha varianti diverse sui 4 lati (es. NR in alto, HR in basso), attiva il flag <strong>Telaio misto</strong> nel form e imposta la variante per ogni lato separatamente.</div>
+
+      <div class="g-sub">Schermatura</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>A</td><td>Avvolgibile manuale</td></tr>
+        <tr><td>AM</td><td>Avvolgibile meccanico</td></tr>
+        <tr><td>AE</td><td>Avvolgibile elettronico</td></tr>
+        <tr><td>AR</td><td>Avvolgibile radio</td></tr>
+        <tr><td>S</td><td>Scuretto</td></tr>
+        <tr><td>TZ</td><td>Tenda ZIP</td></tr>
+        <tr><td>TM</td><td>Tenda manuale</td></tr>
+        <tr><td>CA</td><td>Frangisole a cavo</td></tr>
+        <tr><td>CT</td><td>Frangisole a catena</td></tr>
+      </table>
+
+      <div class="g-sub">Dinoxill</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>DA</td><td>Davanzale</td></tr>
+        <tr><td>I3</td><td>Imbotte 3 lati</td></tr>
+        <tr><td>I4</td><td>Imbotte 4 lati</td></tr>
+      </table>
+
+      <div class="g-sub">Controtelaio</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>L</td><td>Controtelaio in legno</td></tr>
+        <tr><td>T</td><td>Termocassa</td></tr>
+      </table>
+
+      <div class="g-sub">Coprifili</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>P</td><td>PVC</td></tr>
+        <tr><td>L</td><td>Legno</td></tr>
+        <tr><td>A</td><td>Alluminio</td></tr>
+      </table>
+
+      <div class="g-sub">Sensi di apertura</div>
+      <table class="g-table">
+        <tr><th>Sigla</th><th>Descrizione</th></tr>
+        <tr><td>D</td><td>Destra</td></tr>
+        <tr><td>S</td><td>Sinistra</td></tr>
+        <tr><td>W</td><td>Vasistas</td></tr>
+        <tr><td>F</td><td>Fisso</td></tr>
+      </table>
+
+      <div class="g-sub">Badge nella lista posizioni</div>
+      <div class="g-p">
+        <span class="badge-ex badge-serr-ex">CTL-L</span> Controtelaio legno &nbsp;
+        <span class="badge-ex badge-serr-ex">TC</span> Termocassa &nbsp;
