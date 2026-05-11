@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Stratigrafie — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <style>
+    .strat-card { background:var(--c-surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:10px; overflow:hidden; }
+    .strat-card-hdr { background:var(--c-primary); color:#a5b4fc; padding:10px 14px; display:flex; align-items:center; gap:10px; }
+    .strat-name { font-size:14px; font-weight:700; color:#fff; flex:1; }
+    .strat-default-badge { background:#fcd34d; color:#1a1a2e; font-size:10px; font-weight:700; border-radius:8px; padding:2px 8px; flex-shrink:0; }
+    .strat-card-body { padding:10px 14px; display:flex; align-items:flex-start; gap:10px; }
+    .strat-img-thumb { width:64px; height:44px; object-fit:contain; border:1px solid var(--c-border); border-radius:6px; background:#f9f9f9; flex-shrink:0; }
+    .strat-img-empty { width:64px; height:44px; border:1px dashed var(--c-border); border-radius:6px; background:#f3f4f6; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--c-text-sec); text-align:center; }
+    .strat-info { flex:1; min-width:0; }
+    .strat-quotes { font-size:12px; color:var(--c-text-sec); line-height:1.8; }
+    .strat-actions { display:flex; gap:6px; align-self:center; flex-shrink:0; }
+    .btn-icon { width:36px; height:36px; border-radius:8px; border:none; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:inherit; }
+    .btn-edit { background:#eef2ff; color:#4f46e5; }
+    .btn-del  { background:#fee2e2; color:#dc2626; }
+    .empty-strat { text-align:center; padding:48px 24px; color:var(--c-text-sec); }
+    .empty-strat .ico { font-size:40px; margin-bottom:12px; }
+    .empty-strat .tit { font-size:15px; font-weight:700; color:var(--c-text); margin-bottom:6px; }
+    .empty-strat .sub { font-size:13px; }
+    .form-group-m { margin-bottom:14px; }
+    .form-group-m:last-child { margin-bottom:0; }
+    .form-label-m { display:block; font-size:11px; font-weight:600; color:var(--c-text-sec); margin-bottom:5px; text-transform:uppercase; letter-spacing:.3px; }
+    .form-ctrl { width:100%; border:2px solid var(--c-border); border-radius:10px; padding:11px 13px; font-size:15px; font-family:inherit; color:var(--c-text); background:var(--c-surface); outline:none; -webkit-appearance:none; box-sizing:border-box; }
+    .form-ctrl:focus { border-color:var(--c-accent); }
+    .chk-row { display:flex; align-items:center; gap:10px; padding:8px 0; cursor:pointer; margin-bottom:6px; }
+    .chk-row input[type=checkbox] { width:20px; height:20px; accent-color:var(--c-accent); flex-shrink:0; }
+    .chk-row label { font-size:14px; color:var(--c-text); cursor:pointer; flex:1; }
+    .quote-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .q-let { width:72px !important; flex-shrink:0; padding:9px 10px !important; font-size:15px !important; text-align:center; font-weight:700; }
+    .q-mm  { flex:1; padding:9px 10px !important; font-size:15px !important; }
+    .btn-remove-q { width:36px; height:44px; flex-shrink:0; background:#fee2e2; color:#dc2626; border:none; border-radius:8px; font-size:18px; cursor:pointer; font-family:inherit; }
+    .btn-add-quote { width:100%; padding:11px; background:#eef2ff; color:#4f46e5; border:2px dashed #c7d2fe; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:4px; }
+    .quote-hint { font-size:11px; color:var(--c-text-sec); margin-bottom:8px; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="top-bar-btn" onclick="history.back()">&#8592;</button>
+  <div style="flex:1;min-width:0;">
+    <div class="top-bar-title">Stratigrafie</div>
+    <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
+  </div>
+  <div class="top-bar-online" id="onlineIndicator"></div>
+  <div class="top-bar-avatar" id="userAvatar">TM</div>
+</div>
+
+<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 88px;" id="mainWrap">
+  <div id="listaStratigrafie">
+    <div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div>
+  </div>
+</div>
+
+<button class="btn-fab" id="fabNuovo" onclick="apriSheet(null)" title="Nuova stratigrafia" style="display:none;">&#43;</button>
+
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="bottom-sheet" id="sheetStrat">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="shTitle">Nuova stratigrafia</div>
+    <button class="sheet-close" onclick="closeSheet()">&#10005;</button>
+  </div>
+  <div class="sheet-body">
+
+    <div class="form-group-m">
+      <label class="form-label-m">Nome stratigrafia *</label>
+      <input class="form-ctrl" type="text" id="shNome" placeholder="es. Muro portante 30cm" maxlength="80"/>
+    </div>
+
+    <div class="form-group-m">
+      <label class="form-label-m">Immagine di riferimento</label>
+      <select class="form-ctrl" id="shImmagine">
+        <option value="">— Nessuna immagine —</option>
+      </select>
+    </div>
+
+    <div class="chk-row">
+      <input type="checkbox" id="shDefault"/>
+      <label for="shDefault">&#11088; Stratigrafia default (appare per prima nel report)</label>
+    </div>
+
+    <div class="form-group-m" style="margin-top:8px;">
+      <label class="form-label-m">Quote stratigrafiche</label>
+      <div class="quote-hint">Lettera = riferimento sull immagine (es. A, B, C) — mm = spessore strato</div>
+      <div id="quoteRows"></div>
+      <button class="btn-add-quote" onclick="addQuoteRow('','')">&#43; Aggiungi quota</button>
+    </div>
+
+  </div>
+  <div class="sheet-footer">
+    <button class="btn btn-primary btn-full" onclick="salvaStratigrafia()">&#128190; Salva stratigrafia</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-local.js"></script>
+<script src="js/api-mobile.js"></script>
+<script>
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+document.getElementById('userAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+document.getElementById('onlineIndicator').className = 'top-bar-online' + (API.isOnline() ? '' : ' offline');
+
+var idRilievo  = new URLSearchParams(window.location.search).get('id_rilievo');
+if (!idRilievo) { history.back(); }
+
+var _stratigrafie = [];
+var _editingId    = null;
+var SIMAGES       = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.STRAT_IMAGES) ? APP_CONFIG.STRAT_IMAGES : {};
+var SIMAGE_KEYS   = Object.keys(SIMAGES);
+
+// Popola select immagini da config
+(function() {
+  var sel = document.getElementById('shImmagine');
+  SIMAGE_KEYS.forEach(function(k) {
+    sel.appendChild(new Option(k, k));
+  });
+})();
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function parseQuote(raw) {
+  if (!raw) return [];
+  try {
+    var arr = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+    if (Array.isArray(arr)) return arr.filter(function(q){ return q && q.lettera; });
+    if (typeof arr === 'object' && !Array.isArray(arr)) {
+      return Object.keys(arr).map(function(k){ return {lettera:k, mm:arr[k]}; });
+    }
+  } catch(e) {}
+  return [];
+}
+
+// ── CARICAMENTO ──
+function load() {
+  DBLocal.getById('rilievi', idRilievo, function(ril) {
+    document.getElementById('tbSub').textContent = ril
+      ? (ril.codice_completo || ril.id.substring(0,8))
+      : '—';
+  });
+
+  DBLocal.getAll('stratigrafie', function(strats) {
+    _stratigrafie = strats
+      .filter(function(s) { return s.id_rilievo === idRilievo && s.stato === 'attivo'; })
+      .sort(function(a, b) { return (a.ordine || 0) - (b.ordine || 0); });
+    renderStratigrafie();
+    document.getElementById('fabNuovo').style.display = '';
+  });
+}
+
+// ── RENDER LISTA ──
+function renderStratigrafie() {
+  var container = document.getElementById('listaStratigrafie');
+
+  if (!_stratigrafie.length) {
+    container.innerHTML =
+      '<div class="empty-strat">' +
+        '<div class="ico">&#128200;</div>' +
+        '<div class="tit">Nessuna stratigrafia</div>' +
+        '<div class="sub">Usa + per aggiungere una stratigrafia e descrivere la composizione della parete.</div>' +
+      '</div>';
+    return;
+  }
+
+  var html = '';
+  _stratigrafie.forEach(function(s) {
+    var imgSrc = s.immagine_ref ? (SIMAGES[s.immagine_ref] || '') : '';
+    var quotes = parseQuote(s.quote_json);
+    var quoteStr = quotes.length
+      ? quotes.map(function(q){
+          return '<span style="font-size:12px;background:#eef2ff;color:#3730a3;border-radius:6px;padding:1px 6px;margin-right:4px;font-weight:600;">' +
+            esc(q.lettera) + ': ' + q.mm + ' mm</span>';
+        }).join(' ')
+      : '<em style="color:var(--c-text-sec);font-size:12px;">Nessuna quota</em>';
+
+    html +=
+      '<div class="strat-card">' +
+        '<div class="strat-card-hdr">' +
+          '<span class="strat-name">&#128200; ' + esc(s.nome) + '</span>' +
+          (s.is_default ? '<span class="strat-default-badge">&#11088; Default</span>' : '') +
+        '</div>' +
+        '<div class="strat-card-body">' +
+          (imgSrc
+            ? '<img class="strat-img-thumb" src="' + esc(imgSrc) + '" alt="' + esc(s.immagine_ref || '') + '" onerror="this.style.display=\'none\'">'
+            : '<div class="strat-img-empty">no img</div>') +
+          '<div class="strat-info">' +
+            (s.immagine_ref ? '<div style="font-size:11px;color:var(--c-text-sec);margin-bottom:5px;">Rif: ' + esc(s.immagine_ref) + '</div>' : '') +
+            '<div class="strat-quotes">' + quoteStr + '</div>' +
+          '</div>' +
+          '<div class="strat-actions">' +
+            '<button class="btn-icon btn-edit" onclick="apriSheet(\'' + s.id + '\')" title="Modifica">&#9998;</button>' +
+            '<button class="btn-icon btn-del"  onclick="eliminaStratigrafia(\'' + s.id + '\')" title="Elimina">&#128465;</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ── QUOTE ROWS ──
+function addQuoteRow(lettera, mm) {
+  var container = document.getElementById('quoteRows');
+  var row       = document.createElement('div');
+  row.className = 'quote-row';
+  var lettVal   = String(lettera || '').toUpperCase();
+  var mmVal     = (mm !== undefined && mm !== null && mm !== '') ? String(mm) : '';
+  row.innerHTML =
+    '<input class="form-ctrl q-let" type="text" maxlength="3" placeholder="A"' +
+      ' value="' + esc(lettVal) + '"' +
+      ' oninput="this.value=this.value.toUpperCase()">' +
+    '<input class="form-ctrl q-mm" type="number" inputmode="decimal" placeholder="mm" value="' + esc(mmVal) + '">' +
+    '<button class="btn-remove-q" onclick="this.parentNode.remove()" type="button">&#10005;</button>';
+  container.appendChild(row);
+}
+
+function raccogliQuote() {
+  var rows   = document.querySelectorAll('#quoteRows .quote-row');
+  var result = [];
+  rows.forEach(function(row) {
+    var lett  = (row.querySelector('.q-let').value || '').trim().toUpperCase();
+    var mmRaw = row.querySelector('.q-mm').value;
+    var mm    = mmRaw !== '' ? parseFloat(mmRaw) : null;
+    if (lett && mm !== null && !isNaN(mm)) {
+      result.push({lettera: lett, mm: mm});
+    }
+  });
+  return result;
+}
+
+// ── SHEET APRI / CHIUDI ──
+function apriSheet(idStrat) {
+  _editingId = idStrat;
+  document.getElementById('quoteRows').innerHTML = '';
+
+  if (idStrat) {
+    var s = _stratigrafie.find(function(x){ return x.id === idStrat; });
+    if (s) {
+      document.getElementById('shTitle').textContent   = 'Modifica stratigrafia';
+      document.getElementById('shNome').value          = s.nome || '';
+      document.getElementById('shImmagine').value      = s.immagine_ref || '';
+      document.getElementById('shDefault').checked     = !!(s.is_default);
+      parseQuote(s.quote_json).forEach(function(q){ addQuoteRow(q.lettera, q.mm); });
+    }
+  } else {
+    document.getElementById('shTitle').textContent = 'Nuova stratigrafia';
+    document.getElementById('shNome').value        = '';
+    document.getElementById('shImmagine').value    = '';
+    document.getElementById('shDefault').checked   = (_stratigrafie.length === 0);
+  }
+
+  document.getElementById('sheetOverlay').className = 'sheet-overlay visible';
+  document.getElementById('sheetStrat').className   = 'bottom-sheet open';
+  setTimeout(function(){ document.getElementById('shNome').focus(); }, 300);
+}
+
+function closeSheet() {
+  document.getElementById('sheetOverlay').className = 'sheet-overlay';
+  document.getElementById('sheetStrat').className   = 'bottom-sheet';
+  _editingId = null;
+}
+
+// ── SALVA ──
+function salvaStratigrafia() {
+  var nome = (document.getElementById('shNome').value || '').trim();
+  if (!nome) { alert('Inserisci un nome per la stratigrafia.'); return; }
+
+  var ordine;
+  if (_editingId) {
+    var existing = _stratigrafie.find(function(s){ return s.id === _editingId; });
+    ordine = existing ? (existing.ordine || 0) : 0;
+  } else {
+    ordine = _stratigrafie.length > 0
+      ? Math.max.apply(null, _stratigrafie.map(function(s){ return s.ordine || 0; })) + 10
+      : 0;
+  }
+
+  var data = {
+    id_rilievo:   idRilievo,
+    nome:         nome,
+    immagine_ref: document.getElementById('shImmagine').value || null,
+    is_default:   document.getElementById('shDefault').checked,
+    quote_json:   raccogliQuote(),
+    ordine:       ordine,
+    stato:        'attivo'
+  };
+
+  var op = _editingId ? 'update' : 'insert';
+  if (_editingId) data.id = _editingId;
+
+  var btn = document.querySelector('[onclick="salvaStratigrafia()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
+
+  API.writeRecord(op, 'stratigrafie', data, function(err, saved) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva stratigrafia'; }
+    if (err) { alert('Errore salvataggio:\n' + err); return; }
+
+    closeSheet();
+
+    if (op === 'insert' && saved) {
+      _stratigrafie.push(Object.assign({}, data, {id: saved.id}));
+    } else if (op === 'update') {
+      var idx = _stratigrafie.findIndex(function(s){ return s.id === _editingId; });
+      if (idx >= 0) _stratigrafie[idx] = Object.assign({}, _stratigrafie[idx], data);
+    }
+    _stratigrafie.sort(function(a, b){ return (a.ordine||0) - (b.ordine||0); });
+
+    renderStratigrafie();
+    API.miniSync('stratigrafie', function(){});
+  });
+}
+
+// ── ELIMINA ──
+function eliminaStratigrafia(id) {
+  if (!confirm('Eliminare questa stratigrafia?')) return;
+  API.writeRecord('update', 'stratigrafie', {id: id, stato: 'disattivo'}, function(err) {
+    if (err) { alert('Errore eliminazione:\n' + err); return; }
+    _stratigrafie = _stratigrafie.filter(function(s){ return s.id !== id; });
+    renderStratigrafie();
+    API.miniSync('stratigrafie', function(){});
+  });
+}
+
+load();
+</script>
+</body>
+</html>
