@@ -39,9 +39,11 @@
     <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
   </div>
   <div class="top-bar-actions">
-  <button class="top-bar-btn" onclick="apriModificaRilievo()" title="Modifica rilievo" style="font-size:16px;">&#9998;</button>
-  <div class="top-bar-online" id="onlineIndicator"></div>
-  <div class="top-bar-avatar" id="userAvatar">TM</div>
+    <button class="top-bar-btn" onclick="apriCapitoli()" title="Capitoli" style="font-size:15px;">&#128218;</button>
+    <button class="top-bar-btn" onclick="apriModificaRilievo()" title="Modifica rilievo" style="font-size:16px;">&#9998;</button>
+    <div class="top-bar-online" id="onlineIndicator"></div>
+    <div class="top-bar-avatar" id="userAvatar">TM</div>
+  </div>
 </div>
 
 <div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="mainWrap">
@@ -64,7 +66,9 @@
     <button class="filter-chip orange" onclick="setFiltro('REI',this)">REI</button>
   </div>
 
-  <div id="listaPosizioni" style="padding-bottom:24px;"><div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div></div>
+  <div id="listaPosizioni" style="padding-bottom:24px;">
+    <div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div>
+  </div>
 </div>
 
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
@@ -117,7 +121,10 @@ function v(x){ return (x===null||x===undefined)?'':String(x); }
 
 function load() {
   DBLocal.getById('rilievi', idRilievo, function(ril) {
-    if (!ril) { document.getElementById('listaPosizioni').innerHTML='<div class="empty-state"><div class="empty-ico">&#128682;</div><div class="empty-title">Rilievo non trovato</div><div class="empty-sub">Esegui una sincronizzazione</div></div>'; return; }
+    if (!ril) {
+      document.getElementById('listaPosizioni').innerHTML='<div class="empty-state"><div class="empty-ico">&#128682;</div><div class="empty-title">Rilievo non trovato</div><div class="empty-sub">Esegui una sincronizzazione</div></div>';
+      return;
+    }
     _rilievo = ril;
     document.title = (ril.codice_completo||'Rilievo Porte') + ' — F4 Rilievi';
     document.getElementById('tbCodice').textContent = ril.codice_completo || ril.id.substring(0,8);
@@ -277,18 +284,18 @@ function apriDettaglio(id) {
   html+='</div>';
 
   html+='<div class="det-sec"><div class="det-sec-title">&#128682; Porta</div>';
-  if(p.fornitore) html+='<div class="det-row"><span class="det-lbl">Fornitore</span><span class="det-val">'+esc(p.fornitore)+'</span></div>';
-  if(p.sistema)   html+='<div class="det-row"><span class="det-lbl">Sistema</span><span class="det-val">'+esc(p.sistema)+'</span></div>';
+  if(p.fornitore)  html+='<div class="det-row"><span class="det-lbl">Fornitore</span><span class="det-val">'+esc(p.fornitore)+'</span></div>';
+  if(p.sistema)    html+='<div class="det-row"><span class="det-lbl">Sistema</span><span class="det-val">'+esc(p.sistema)+'</span></div>';
   if(p.collezione) html+='<div class="det-row"><span class="det-lbl">Collezione</span><span class="det-val">'+esc(p.collezione)+'</span></div>';
-  if(p.modello)   html+='<div class="det-row"><span class="det-lbl">Modello</span><span class="det-val">'+esc(p.modello)+'</span></div>';
+  if(p.modello)    html+='<div class="det-row"><span class="det-lbl">Modello</span><span class="det-val">'+esc(p.modello)+'</span></div>';
   if(p.versione_porta) html+='<div class="det-row"><span class="det-lbl">Versione</span><span class="det-val">'+esc(p.versione_porta)+'</span></div>';
-  if(p.essenza)   html+='<div class="det-row"><span class="det-lbl">Essenza</span><span class="det-val">'+esc(p.essenza)+'</span></div>';
+  if(p.essenza)    html+='<div class="det-row"><span class="det-lbl">Essenza</span><span class="det-val">'+esc(p.essenza)+'</span></div>';
   if(p.verso_apertura) html+='<div class="det-row"><span class="det-lbl">Verso apertura</span><span class="det-val">'+esc(p.verso_apertura)+'</span></div>';
   if(p.sopraluce===true||p.sopraluce==='SI') html+='<div class="det-row"><span class="det-lbl">Sopraluce</span><span class="det-val">&#9989;</span></div>';
   html+='</div>';
 
-  var hasFlag=p.allargamento_telaio===true||p.allargamento_telaio==='SI'||p.rimozione==='SI'||p.rimozione===true;
   var hasCTL=p.fornitura_ctl_int==='SI'||p.install_ctl_int==='SI'||p.fornitura_ctl_bli==='SI'||p.install_ctl_bli==='SI'||p.fornitura_ctl_rei==='SI'||p.install_ctl_rei==='SI';
+  var hasFlag=p.allargamento_telaio===true||p.allargamento_telaio==='SI'||p.rimozione==='SI'||p.rimozione===true;
   if(hasCTL||hasFlag){
     html+='<div class="det-sec"><div class="det-sec-title">&#9881; Installazione e flag</div>';
     if(p.fornitura_ctl_int==='SI') html+='<div class="det-row"><span class="det-lbl">Fornitura CTL int.</span><span class="det-val">&#9989;</span></div>';
@@ -306,14 +313,14 @@ function apriDettaglio(id) {
 
   if(p.tipo_serratura||p.colore_serratura||p.colore_cerniere||p.maniglia_marca||p.vetri===true||p.mostrine===true){
     html+='<div class="det-sec"><div class="det-sec-title">&#128273; Serratura e finiture</div>';
-    if(p.tipo_serratura)    html+='<div class="det-row"><span class="det-lbl">Tipo serratura</span><span class="det-val">'+esc(p.tipo_serratura)+'</span></div>';
-    if(p.colore_serratura)  html+='<div class="det-row"><span class="det-lbl">Colore serratura</span><span class="det-val">'+esc(p.colore_serratura)+'</span></div>';
-    if(p.colore_cerniere)   html+='<div class="det-row"><span class="det-lbl">Colore cerniere</span><span class="det-val">'+esc(p.colore_cerniere)+'</span></div>';
-    if(p.maniglia_marca)    html+='<div class="det-row"><span class="det-lbl">Maniglia marca</span><span class="det-val">'+esc(p.maniglia_marca)+'</span></div>';
-    if(p.maniglia_modello)  html+='<div class="det-row"><span class="det-lbl">Maniglia modello</span><span class="det-val">'+esc(p.maniglia_modello)+'</span></div>';
+    if(p.tipo_serratura)   html+='<div class="det-row"><span class="det-lbl">Tipo serratura</span><span class="det-val">'+esc(p.tipo_serratura)+'</span></div>';
+    if(p.colore_serratura) html+='<div class="det-row"><span class="det-lbl">Colore serratura</span><span class="det-val">'+esc(p.colore_serratura)+'</span></div>';
+    if(p.colore_cerniere)  html+='<div class="det-row"><span class="det-lbl">Colore cerniere</span><span class="det-val">'+esc(p.colore_cerniere)+'</span></div>';
+    if(p.maniglia_marca)   html+='<div class="det-row"><span class="det-lbl">Maniglia marca</span><span class="det-val">'+esc(p.maniglia_marca)+'</span></div>';
+    if(p.maniglia_modello) html+='<div class="det-row"><span class="det-lbl">Maniglia modello</span><span class="det-val">'+esc(p.maniglia_modello)+'</span></div>';
     if(p.maniglia_colore_mat) html+='<div class="det-row"><span class="det-lbl">Maniglia colore/mat.</span><span class="det-val">'+esc(p.maniglia_colore_mat)+'</span></div>';
-    if(p.vetri===true)      html+='<div class="det-row"><span class="det-lbl">Vetri</span><span class="det-val">&#9989;</span></div>';
-    if(p.mostrine===true)   html+='<div class="det-row"><span class="det-lbl">Mostrine</span><span class="det-val">&#9989;</span></div>';
+    if(p.vetri===true)     html+='<div class="det-row"><span class="det-lbl">Vetri</span><span class="det-val">&#9989;</span></div>';
+    if(p.mostrine===true)  html+='<div class="det-row"><span class="det-lbl">Mostrine</span><span class="det-val">&#9989;</span></div>';
     html+='</div>';
   }
 
@@ -361,6 +368,10 @@ function eliminaPosizione() {
 
 function apriModificaRilievo() {
   window.location.href = 'rilievo-edit.html?id=' + idRilievo;
+}
+
+function apriCapitoli() {
+  window.location.href = 'capitoli.html?id_rilievo=' + idRilievo + '&tipo=PORTE';
 }
 
 load();
