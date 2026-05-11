@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Rilievo &mdash; F4 Rilievi</title>
+  <style>
+    body { background: #f5f6fa; font-family: 'Segoe UI', Arial, sans-serif; }
+    #toolbar { background: #1a1a2e; color: #fff; padding: 10px 18px; display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+    #toolbar h1 { font-size: 14px; margin: 0; flex: 1; font-weight: 600; }
+    .btn-tb { border: none; border-radius: 6px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; color: #fff; }
+    .btn-tb-primary { background: #4f46e5; }
+    .btn-tb-neutral { background: #374151; }
+    #wrap { max-width: 1100px; margin: 20px auto; padding: 0 14px 48px; }
+    #stato-msg { text-align: center; padding: 64px; color: #6b7280; font-size: 15px; }
+    #stato-msg.errore { color: #dc2626; }
+    .scheda-header { background: #fff; border: 2px solid #1a1a2e; border-radius: 8px; margin-bottom: 10px; overflow: hidden; page-break-inside: avoid; }
+    .sh-top { display: grid; grid-template-columns: 120px 1fr 220px; border-bottom: 2px solid #1a1a2e; }
+    .sh-logo { background: #1a1a2e; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; font-size: 11px; font-weight: 700; text-align: center; }
+    .sh-logo .logo-box { border: 2px solid #e53e3e; padding: 4px 8px; font-size: 18px; font-weight: 900; letter-spacing: -1px; margin-bottom: 4px; }
+    .sh-centro { padding: 10px 14px; border-left: 2px solid #1a1a2e; border-right: 2px solid #1a1a2e; }
+    .sh-destra { padding: 10px 12px; }
+    .sh-field { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; font-size: 11px; }
+    .sh-field label { font-weight: 700; color: #1a1a2e; white-space: nowrap; font-size: 10px; min-width: 65px; }
+    .sh-field span { color: #374151; border-bottom: 1px solid #d1d5db; flex: 1; min-height: 13px; }
+    .sh-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .sh-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+    .sh-badge.blue  { background: #ede9fe; color: #4f46e5; }
+    .sh-badge.red   { background: #fee2e2; color: #dc2626; }
+    .sh-badge.green { background: #d1fae5; color: #065f46; }
+    .nc-compact { padding: 6px 14px; font-size: 10px; background: #fafafe; border-top: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
+    .nc-compact-title { font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: .4px; margin-right: 4px; white-space: nowrap; }
+    .nc-item-compact { white-space: nowrap; }
+    .nc-item-compact span { font-weight: 600; color: #1a1a2e; }
+    .legenda-block { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 14px; margin-bottom: 10px; page-break-inside: avoid; }
+    .leg-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #1a1a2e; margin-bottom: 7px; padding-bottom: 4px; border-bottom: 2px solid #e5e7eb; }
+    .leg-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+    .leg-section h4 { font-size: 9px; font-weight: 700; color: #4f46e5; margin: 0 0 3px; text-transform: uppercase; }
+    .leg-row { font-size: 9px; line-height: 1.4; }
+    .leg-row b { color: #e53e3e; margin-right: 2px; font-family: monospace; }
+    .strat-section { margin-bottom: 10px; page-break-inside: avoid; }
+    .strat-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #1a1a2e; margin-bottom: 6px; }
+    .strat-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+    .strat-card { background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px; min-width: 150px; max-width: 200px; page-break-inside: avoid; }
+    .strat-card h4 { margin: 0 0 5px; font-size: 10px; color: #1a1a2e; font-weight: 700; }
+    .strat-card img { width: 100%; max-height: 80px; object-fit: contain; background: #f9f9f9; border: 1px solid #e5e7eb; border-radius: 3px; margin-bottom: 5px; }
+    .strat-no-img { height: 50px; background: #f3f4f6; border: 1px dashed #d1d5db; border-radius: 3px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #9ca3af; }
+    .strat-quote-tbl { font-size: 9px; border-collapse: collapse; }
+    .strat-quote-tbl td { padding: 1px 4px; }
+    .strat-quote-tbl td:first-child { color: #6b7280; }
+    .strat-quote-tbl td:last-child { font-weight: 600; }
+    .def-badge { font-size: 8px; background: #d1fae5; color: #065f46; padding: 1px 4px; border-radius: 5px; margin-left: 4px; }
+    .tr-cap-hdr td { background: #1a1a2e; color: #a5b4fc; font-weight: 700; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 5px 8px; border-top: 3px solid #4f46e5; page-break-after: avoid; }
+    .tr-cap-subtot td { background: #eef2ff; color: #3730a3; font-size: 8px; font-weight: 600; padding: 3px 8px; border-bottom: 2px solid #c7d2fe; page-break-before: avoid; }
+    .tr-cap-end td { background: #f5f5ff; color: #9ca3af; font-size: 7.5px; padding: 2px 8px; border-bottom: 1px solid #e5e7eb; }
+    .tr-no-cap td { background: #f9fafb; color: #6b7280; font-size: 8px; font-weight: 600; padding: 3px 8px; border-top: 2px solid #e5e7eb; }
+    .sez-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #1a1a2e; margin: 10px 0 5px; padding-bottom: 3px; border-bottom: 2px solid #ede9fe; }
+    .table-outer { overflow-x: auto; background: #fff; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 12px; }
+    table.t-ril { border-collapse: collapse; font-size: 11px; white-space: nowrap; width: 100%; }
+    table.t-ril thead tr.th-main th { background: #1a1a2e; color: #fff; padding: 7px 5px; text-align: center; font-weight: 700; font-size: 9px; letter-spacing: .3px; border-right: 1px solid #374151; }
+    table.t-ril thead tr.th-group th { background: #374151; color: #a5b4fc; padding: 3px 5px; text-align: center; font-weight: 600; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; border-right: 1px solid #4b5563; }
+    table.t-ril td { padding: 5px 5px; border-bottom: 1px solid #f0f0f6; border-right: 1px solid #f0f0f6; vertical-align: middle; font-size: 10px; color: #374151; }
+    table.t-ril tr:nth-child(even) td { background: #fafafe; }
+    table.t-ril td.c { text-align: center; }
+    table.t-ril td.num { text-align: center; font-weight: 700; color: #1a1a2e; background: #f0f0ff; }
+    table.t-ril td.tipo { text-align: center; font-weight: 700; color: #4f46e5; font-size: 11px; }
+    table.t-ril td.dim-cell { text-align: center; }
+    .dim-main { font-weight: 700; font-size: 10px; color: #1a1a2e; }
+    .dim-calc { font-size: 9px; color: #6b7280; font-style: italic; }
+    .chk { display: inline-block; width: 11px; height: 11px; border: 1.5px solid #9ca3af; border-radius: 2px; background: #fff; }
+    .chk.on { background: #e53e3e; border-color: #e53e3e; }
+    td.grp-sep { border-left: 2px solid #d1d5db; }
+    .strat-ref { font-size: 9px; color: #6b7280; font-style: italic; }
+    @media print {
+      @page { size: A4 landscape; margin: 7mm 7mm 7mm 7mm; }
+      body { background: #fff; }
+      #toolbar { display: none !important; }
+      #wrap { margin: 0; padding: 0; max-width: none; }
+      .scheda-header { page-break-inside: avoid !important; page-break-after: avoid; border-radius: 0; margin-bottom: 4px; }
+      .legenda-block  { page-break-inside: avoid !important; border-radius: 0; padding: 5px 8px; margin-bottom: 4px; }
+      .strat-section  { page-break-inside: avoid !important; margin-bottom: 4px; }
+      .strat-card     { page-break-inside: avoid !important; padding: 5px; min-width: 110px; max-width: 160px; }
+      .table-outer { overflow: visible; border-radius: 0; border: 1px solid #ccc; page-break-inside: auto; }
+      table.t-ril  { font-size: 7px; white-space: normal; }
+      table.t-ril thead { display: table-header-group; }
+      table.t-ril tr   { page-break-inside: avoid !important; }
+      table.t-ril thead tr.th-main th { padding: 3px 3px; font-size: 7px; }
+      table.t-ril thead tr.th-group th { padding: 2px 3px; font-size: 7px; }
+      table.t-ril td   { padding: 2px 3px; font-size: 7px; }
+      .dim-main { font-size: 7px; }
+      .dim-calc { font-size: 6px; }
+      .chk { width: 8px; height: 8px; border-width: 1px; }
+      .sh-logo .logo-box { font-size: 13px; }
+      .sh-field  { font-size: 9px; margin-bottom: 2px; }
+      .sh-field label { font-size: 9px; }
+      .nc-compact { font-size: 8px; padding: 4px 10px; }
+      .leg-grid   { grid-template-columns: repeat(7, 1fr); gap: 5px; }
+      .leg-section h4 { font-size: 7px; }
+      .leg-row    { font-size: 7px; }
+      .strat-card h4 { font-size: 8px; }
+      .strat-card img { max-height: 60px; }
+      .strat-quote-tbl { font-size: 7px; }
+      .tr-cap-hdr td { font-size: 9px; padding: 5px 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .tr-cap-subtot td { font-size: 8px; padding: 3px 8px; }
+      .tr-cap-end td { font-size: 7.5px; padding: 2px 8px; }
+      .tr-no-cap td { font-size: 8px; padding: 3px 8px; }
+      .sez-title { font-size: 8px; margin: 5px 0 3px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <h1 id="tb-titolo">Report Rilievo Serramenti</h1>
+  <button class="btn-tb btn-tb-neutral" onclick="history.back()">&#8592; Indietro</button>
+  <button class="btn-tb btn-tb-primary" onclick="window.print()">&#128438; Stampa A4 Landscape</button>
+</div>
+
+<div id="wrap">
+  <div id="stato-msg">Caricamento in corso&hellip;</div>
+  <div id="report-content" style="display:none">
+
+    <div class="scheda-header">
+      <div class="sh-top">
+        <div class="sh-logo">
+          <div class="logo-box">[F4]</div>
+          GRUPPO F4
+          <div style="font-size:9px;margin-top:3px;opacity:.8">F4 Rilievi</div>
+        </div>
+        <div class="sh-centro">
+          <div class="sh-field"><label>Riferimento:</label><span id="sh-rif"></span><span id="sh-badge" style="margin-left:8px;font-size:10px;font-weight:700;color:#4f46e5;background:#ede9fe;padding:1px 7px;border-radius:8px;flex:none"></span></div>
+          <div class="sh-field"><label>Indirizzo:</label><span id="sh-ind"></span></div>
+          <div class="sh-field"><label>Comune:</label><span id="sh-loc"></span></div>
+          <div class="sh-field"><label>Telefono:</label><span id="sh-tel"></span></div>
+          <div class="sh-field"><label>e-mail:</label><span id="sh-email"></span></div>
+        </div>
+        <div class="sh-destra">
+          <div class="sh-field"><label>Intervento:</label><span id="sh-int"></span></div>
+          <div class="sh-field"><label>Referente:</label><span id="sh-ref"></span></div>
+          <div class="sh-field"><label>Data rilievo:</label><span id="sh-data"></span></div>
+          <div class="sh-field"><label>Data posa:</label><span id="sh-posa"></span></div>
+          <div class="sh-badges">
+            <span id="sh-gru" class="sh-badge blue" style="display:none">&#127959; GRU</span>
+            <span id="sh-alarm" class="sh-badge red" style="display:none">&#9888; ALLARME</span>
+            <span id="sh-npos" class="sh-badge green">0 pos.</span>
+          </div>
+        </div>
+      </div>
+      <div class="nc-compact" id="sh-nc" style="display:none"></div>
+      <div id="sh-note-generali" style="display:none;background:#fffbeb;border-left:4px solid #f59e0b;padding:6px 10px;font-size:10px;margin-top:0;">
+        <strong style="color:#92400e;">&#128221; Note generali:</strong> <span class="ng-text" style="color:#78350f;"></span>
+      </div>
+    </div>
+
+    <div class="legenda-block">
+      <div class="leg-title">Legenda</div>
+      <div class="leg-grid">
+        <div class="leg-section"><h4>Serramento</h4><div class="leg-row"><b>I</b>Ingresso</div><div class="leg-row"><b>F</b>Finestra apribile</div><div class="leg-row"><b>PF</b>Porta Finestra</div><div class="leg-row"><b>FF</b>Finestra Fissa</div><div class="leg-row"><b>VF</b>Vetrata Fissa</div><div class="leg-row"><b>S</b>Scorrevole</div></div>
+        <div class="leg-section"><h4>Materiale</h4><div class="leg-row"><b>A-</b>Alluminio</div><div class="leg-row"><b>P-</b>PVC</div><div class="leg-row"><b>PA</b>PVC-Alluminio</div><div class="leg-row"><b>LA</b>Legno-Alluminio</div><div class="leg-row"><b>L-</b>Legno</div><h4 style="margin-top:5px">Tipo Foro</h4><div class="leg-row"><b>A</b>Architettonico</div><div class="leg-row"><b>D</b>Dim. telaio</div><div class="leg-row"><b>P</b>Posa in luce</div></div>
+        <div class="leg-section"><h4>Telaio (variante)</h4><div class="leg-row"><b>NR</b>No Reveal</div><div class="leg-row"><b>CR</b>Counter Reveal</div><div class="leg-row"><b>HR</b>High Reveal</div><div class="leg-row"><b>IR</b>Interior Reveal</div><div class="leg-row"><b>ZR</b>Zero Reveal</div><div class="leg-row"><b>WR</b>Wide Reveal</div><div class="leg-row"><b>SR</b>Shallow Reveal</div><div class="leg-row"><b>DR</b>Deep Reveal</div></div>
+        <div class="leg-section"><h4>Schermatura</h4><div class="leg-row"><b>A</b>Avvolgibile man.</div><div class="leg-row"><b>AM</b>A. Meccanico</div><div class="leg-row"><b>AE</b>A. Elettronico</div><div class="leg-row"><b>AR</b>A. Radio</div><div class="leg-row"><b>S</b>Scuretto</div><div class="leg-row"><b>TZ</b>Tenda ZIP</div><div class="leg-row"><b>TM</b>Tenda Manuale</div><div class="leg-row"><b>CA</b>Frangisole Cavo</div><div class="leg-row"><b>CT</b>Frangisole Catena</div></div>
+        <div class="leg-section"><h4>Osc. Integrato</h4><div class="leg-row"><b>V</b>Veneziana</div><div class="leg-row"><b>D</b>Duette</div><div class="leg-row"><b>P</b>Pliss&egrave;</div><h4 style="margin-top:5px">Mecc. Osc.</h4><div class="leg-row"><b>C</b>Catenella</div><div class="leg-row"><b>M</b>Motore</div><div class="leg-row"><b>F</b>Fotovoltaico</div><h4 style="margin-top:5px">Vetro</h4><div class="leg-row"><b>D</b>Doppio</div><div class="leg-row"><b>T</b>Triplo</div></div>
+        <div class="leg-section"><h4>Coprifili</h4><div class="leg-row"><b>P</b>PVC</div><div class="leg-row"><b>L</b>Legno</div><div class="leg-row"><b>A</b>Alluminio</div><h4 style="margin-top:5px">Cassonetto</h4><div class="leg-row"><b>P</b>PVC &nbsp;<b>L</b>Legno</div><h4 style="margin-top:5px">Controtelaio</h4><div class="leg-row"><b>L</b>Legno</div><div class="leg-row"><b>T</b>Termocassa</div><h4 style="margin-top:5px">Dinox</h4><div class="leg-row"><b>DA</b>Davanzale</div><div class="leg-row"><b>I3</b>Imbotte 3 lati</div><div class="leg-row"><b>I4</b>Imbotte 4 lati</div></div>
+        <div class="leg-section"><h4>Sensi apertura</h4><div class="leg-row"><b>D</b>Destra</div><div class="leg-row"><b>S</b>Sinistra</div><div class="leg-row"><b>W</b>Vasistas</div><div class="leg-row"><b>F</b>Fisso</div><h4 style="margin-top:5px">Dim. calcolate</h4><div class="leg-row" style="color:#6b7280;font-style:italic">Le misure in corsivo grigio sono le dimensioni calcolate (tubolarita) in base al tipo foro e al serramento.</div><h4 style="margin-top:5px">Flag</h4><div class="leg-row"><span class="chk on" style="display:inline-block"></span> = attivo</div><div class="leg-row"><span class="chk" style="display:inline-block"></span> = non presente</div></div>
+      </div>
+    </div>
+
+    <div class="strat-section" id="strat-section">
+      <div class="strat-title">Stratigrafie</div>
+      <div class="strat-grid" id="strat-grid">
+        <div style="color:#9ca3af;font-size:11px">Nessuna stratigrafia registrata.</div>
+      </div>
+    </div>
+
+    <div class="sez-title">Posizioni Serramenti</div>
+    <div class="table-outer">
+      <table class="t-ril">
+        <thead>
+          <tr class="th-group">
+            <th colspan="4">IDENTIFICAZIONE</th>
+            <th colspan="3" class="grp-sep">SERRAMENTO</th>
+            <th colspan="4" class="grp-sep">GEOMETRIA</th>
+            <th colspan="3" class="grp-sep">VETRO / OSC</th>
+            <th colspan="4" class="grp-sep">COPRIFILI</th>
+            <th colspan="4" class="grp-sep">ACCESSORI</th>
+            <th colspan="4" class="grp-sep">RIM. / FLAG</th>
+            <th colspan="2" class="grp-sep">SENSI</th>
+            <th class="grp-sep">STRAT.</th>
+          </tr>
+          <tr class="th-main">
+            <th>N&deg;</th><th>PIANO</th><th>AMBIENTE</th><th>TIPO</th>
+            <th class="grp-sep">N.C.</th><th>MAT</th><th>SISTEMA</th><th>STL/TEL</th>
+            <th class="grp-sep">FORO</th><th>L (mm)</th><th>H (mm)</th>
+            <th class="grp-sep">VETRO</th><th>OSC</th><th>MECC</th>
+            <th class="grp-sep">COPR.I</th><th>dim</th><th>COPR.E</th><th>dim</th>
+            <th class="grp-sep">CASS</th><th>SCHERM</th><th>ZANZ</th><th>CTL</th>
+            <th class="grp-sep">DINOX</th><th>ANG</th><th>RIM.S</th><th>RIM.A</th>
+            <th class="grp-sep">TAGLIO</th><th>SENSI</th><th class="grp-sep">STRAT.</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-ril"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+var SUPA_URL = APP_CONFIG.SUPABASE_URL;
+var SUPA_KEY = APP_CONFIG.SUPABASE_ANON_KEY;
+var ID_RILIEVO = null;
+var DB_SERR = [];
+
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+
+function setStato(msg, isErr) {
+  var el = document.getElementById('stato-msg');
+  el.textContent = msg; el.className = isErr ? 'errore' : ''; el.style.display = '';
+  document.getElementById('report-content').style.display = 'none';
+}
+function showReport() {
+  document.getElementById('stato-msg').style.display = 'none';
+  document.getElementById('report-content').style.display = '';
+}
+
+function doFetch(path, cb, eb) {
+  function run(tok) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', SUPA_URL + '/rest/v1/' + path, true);
+    xhr.setRequestHeader('apikey', SUPA_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + (tok || SUPA_KEY));
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+      if (xhr.status === 401) { if(eb) eb('401'); return; }
+      if (xhr.status >= 200 && xhr.status < 300) { try { cb(JSON.parse(xhr.responseText)); } catch(e) { if(eb) eb('Parse: '+e.message); } }
+      else if(eb) eb('HTTP '+xhr.status);
+    };
+    xhr.onerror = function() { if(eb) eb('Rete'); };
+    xhr.send();
+  }
+  run(Auth.getToken());
+}
+
+function esc(s) { if (!s && s !== 0) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function v(x) { return (!x && x !== 0) ? '' : String(x); }
+function chk(val) { return val ? '<span class="chk on"></span>' : '<span class="chk"></span>'; }
+
+function calcDim(p, dbSerr) {
+  var H = parseFloat(p.h_mm||p.H_mm)||0, L = parseFloat(p.l_mm||p.L_mm)||0;
+  var tf = (p.tipo_foro||'').toUpperCase(), ts = (p.tipo_serramento||'').toUpperCase();
+  if(p.solo_accessori){return{Ltub:Math.round(L),Htub:Math.round(H)};}
+  if (!H||!L||!tf) return {Ltub:0,Htub:0};
+  var Ltub=0, Htub=0;
+  var inclBasso=(ts==='F'||ts==='FF');
+  var nAlH=inclBasso?2:1;
+  if(p.telaio_misto===true||p.telaio_misto==='true'){
+    function getRM(sigla){if(!sigla)return null;for(var i=0;i<dbSerr.length;i++){var d=dbSerr[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design&&d.variante_telaio===sigla)return d;}return null;}
+    var rA=getRM(p.variante_alto),rB=getRM(p.variante_basso),rS=getRM(p.variante_sx),rD=getRM(p.variante_dx);
+    var nA=rA?(parseFloat(rA.telaio_nascosto_mm)||0):0;
+    var nS=rS?(parseFloat(rS.telaio_nascosto_mm)||0):0,nD=rD?(parseFloat(rD.telaio_nascosto_mm)||0):0;
+    var aA=rA?(parseFloat(rA.aletta_mm)||0):0,aB=rB?(parseFloat(rB.aletta_mm)||0):0;
+    var aS=rS?(parseFloat(rS.aletta_mm)||0):0,aD=rD?(parseFloat(rD.aletta_mm)||0):0;
+    var tvA=rA?(parseFloat(rA.telaio_vista_mm)||0):0;
+    var tvS=rS?(parseFloat(rS.telaio_vista_mm)||0):0,tvD=rD?(parseFloat(rD.telaio_vista_mm)||0):0;
+    if(tf==='A'){Ltub=L+nS+nD+aS+aD;Htub=H+nA+aA+(inclBasso?aB:0);}
+    else if(tf==='D'){Ltub=L+aS+aD;Htub=H+aA+(inclBasso?aB:0);}
+    else if(tf==='P'){Ltub=L-tvS-tvD+aS+aD;Htub=H-tvA+aA+(inclBasso?aB:0);}
+    return{Ltub:Math.round(Ltub),Htub:Math.round(Htub)};
+  }
+  var rec=null;
+  for(var i=0;i<dbSerr.length;i++){var d=dbSerr[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design&&d.variante_telaio===p.variante_telaio){rec=d;break;}}
+  if(!rec){for(var i=0;i<dbSerr.length;i++){var d=dbSerr[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design){rec=d;break;}}}
+  var nasc=rec?(parseFloat(rec.telaio_nascosto_mm)||0):0;
+  var alet=rec?(parseFloat(rec.aletta_mm)||0):0;
+  var tv=rec?(parseFloat(rec.telaio_vista_mm)||0):0;
+  if(tf==='A'){Ltub=L+2*nasc+2*alet;Htub=H+nasc+nAlH*alet;}
+  else if(tf==='D'){Ltub=L+2*alet;Htub=H+nAlH*alet;}
+  else if(tf==='P'){Ltub=L-2*tv+2*alet;Htub=H-tv+nAlH*alet;}
+  return{Ltub:Math.round(Ltub),Htub:Math.round(Htub)};
+}
+
+function parseQuoteJson(raw) {
+  if (!raw) return [];
+  try {
+    var arr = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+    if (Array.isArray(arr)) return arr;
+    if (typeof arr === 'object') { return Object.keys(arr).map(function(k) { return {lettera: k, mm: arr[k]}; }); }
+  } catch(e) {}
+  return [];
+}
+
+function renderStratigrafie(strats) {
+  if (!strats||!strats.length) return;
+  var grid = document.getElementById('strat-grid');
+  var SIMAGES = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.STRAT_IMAGES) ? APP_CONFIG.STRAT_IMAGES : {};
+  var html = '';
+  strats.forEach(function(s) {
+    var imgKey = s.immagine_ref || '';
+    var imgSrc = SIMAGES[imgKey] || '';
+    var quotes = parseQuoteJson(s.quote_json);
+    html += '<div class="strat-card">';
+    html += '<h4>' + esc(s.nome) + (s.is_default?'<span class="def-badge">Default</span>':'') + '</h4>';
+    if (imgSrc) html += '<img src="'+esc(imgSrc)+'" alt="'+esc(imgKey)+'" />';
+    else html += '<div class="strat-no-img">Nessuna immagine</div>';
+    if (quotes.length) {
+      html += '<table class="strat-quote-tbl"><tbody>';
+      quotes.forEach(function(q) { if (q.lettera && (q.mm || q.mm === 0)) { html += '<tr><td><b>' + esc(q.lettera) + '</b></td><td>' + esc(q.mm) + ' mm</td></tr>'; } });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+  });
+  grid.innerHTML = html;
+}
+
+function renderNC(nc) {
+  var fields = [
+    ['colore_avvol','Avvolgibile'],['colore_scuretto','Scuretto'],
+    ['colore_tenda','Tenda'],['colore_frang','Frangisole'],
+    ['colore_zanzariera','Zanzariera'],['colore_copri_int','Coprifili Int.'],
+    ['colore_copri_est','Coprifili Est.'],['colore_dinox','Dinox'],
+    ['maniglia_marca','Maniglia marca'],['maniglia_modello','Maniglia modello']
+  ];
+  var parts = [];
+  fields.forEach(function(f) { if (nc[f[0]]) parts.push('<span class="nc-item-compact">' + esc(f[1]) + ': <span>' + esc(nc[f[0]]) + '</span></span>'); });
+  if (!parts.length) return;
+  var el = document.getElementById('sh-nc');
+  el.innerHTML = '<span class="nc-compact-title">Note Commerciali</span>' + parts.join('');
+  el.style.display = '';
+}
+
+function renderPosizioni(posizioni, stratigrafie, capitoli) {
+  var tbody = document.getElementById('tbody-ril');
+  var NCOL = 30;
+  var stMap = {};
+  (stratigrafie||[]).forEach(function(s) { stMap[s.id||s.ID_stratigrafia] = s.nome; });
+
+  var righe = [];
+  (posizioni||[]).forEach(function(p) {
+    var ord = (p.ordine !== undefined && p.ordine !== null) ? p.ordine : p.numero_pos;
+    righe.push({tipo:'pos', ordine:ord, data:p});
+  });
+  (capitoli||[]).forEach(function(cap) {
+    righe.push({tipo:'cap_inizio', ordine:cap.ordine_inizio, data:cap});
+    righe.push({tipo:'cap_fine',   ordine:cap.ordine_fine,   data:cap});
+  });
+  righe.sort(function(a,b){ return a.ordine - b.ordine; });
+
+  function rowPos(p) {
+    var dim = calcDim(p, DB_SERR);
+    var lIns = v(p.l_mm||p.L_mm), hIns = v(p.h_mm||p.H_mm);
+    var lCalc = dim.Ltub ? String(dim.Ltub) : '';
+    var hCalc = dim.Htub ? String(dim.Htub) : '';
+    var piano = (p.piano!==undefined&&p.piano!==null) ? ('P'+(parseInt(p.piano)>=0?'+':'')+p.piano) : '—';
+    var numDisp = p.numero_pos_alfa || p.numero_pos;
+    var stId = p.id_stratigrafia_override || p.ID_stratigrafia_override || '';
+    var stNome = stId ? (stMap[stId] || '') : '';
+    var h = '<tr>';
+    h += '<td class="num">'  + esc(v(numDisp)) + (p.solo_accessori?'<br><span style="font-size:7px;background:#fef3c7;color:#92400e;border-radius:3px;padding:0 3px;font-weight:700;">ACC</span>':'') + '</td>';
+    h += '<td class="c">'   + piano + '</td>';
+    h += '<td style="white-space:normal;min-width:60px">' + esc(v(p.ambiente)) + '</td>';
+    h += '<td class="tipo">' + esc(v(p.tipo_serramento)||'ACC') + '</td>';
+    h += '<td class="c grp-sep">' + esc(v(p.n_campi)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.materiale)) + '</td>';
+    h += '<td style="min-width:45px">' + esc(v(p.sistema)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.stile_design)) + (p.telaio_misto ? '<br><span style="color:#4f46e5;font-size:8px;font-weight:700;">Su('+esc(v(p.variante_alto))+') Giu('+esc(v(p.variante_basso))+') Sx('+esc(v(p.variante_sx))+') Dx('+esc(v(p.variante_dx))+')</span>' : (p.variante_telaio?'/'+esc(v(p.variante_telaio)):'')) + '</td>';
+    h += '<td class="c grp-sep">' + esc(v(p.tipo_foro)) + '</td>';
+    h += '<td class="dim-cell"><div class="dim-main">'+lIns+'</div>'+(lCalc?'<div class="dim-calc">('+lCalc+')</div>':'')+'</td>';
+    h += '<td class="dim-cell"><div class="dim-main">'+hIns+'</div>'+(hCalc?'<div class="dim-calc">('+hCalc+')</div>':'')+'</td>';
+    h += '<td class="c grp-sep">' + esc(v(p.n_vetri)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.oscurante_tipo)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.oscurante_meccanismo)) + '</td>';
+    h += '<td class="c grp-sep">' + esc(v(p.coprifilo_int_mat)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.coprifilo_int_dim)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.coprifilo_est_mat)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.coprifilo_est_dim)) + '</td>';
+    h += '<td class="c grp-sep">' + esc(v(p.cassonetto)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.schermatura)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.zanzariera)) + '</td>';
+    h += '<td class="c">'   + esc(v(p.controtelaio)) + '</td>';
+    h += '<td class="c grp-sep">' + esc(v(p.dinoxill)) + (p.dinoxill && p.dinoxill_lati?'<br><span style="font-size:7px">'+esc(v(p.dinoxill_lati))+'L</span>':'') + '</td>';
+    h += '<td class="c">'   + chk(p.angolari_pvc) + '</td>';
+    h += '<td class="c">'   + chk(p.rimozione==='SI'||p.rimozione===true) + '</td>';
+    h += '<td class="c">'   + chk(p.rimozione_accessori) + '</td>';
+    h += '<td class="c grp-sep">' + chk(p.taglio_marmo) + '</td>';
+    h += '<td class="c" style="min-width:40px;font-size:9px">' + esc(v(p.senso_apertura)) + '</td>';
+    h += '<td class="c grp-sep strat-ref">' + esc(stNome) + '</td>';
+    h += '</tr>';
+    return h;
+  }
+
+  function rowSubtot(titolo, posCap) {
+    var nP=posCap.length, nCtlL=0, nCtlT=0, nAvv=0, nScur=0;
+    var nZanz=0, nCass=0, nCoprI=0, nCoprE=0, nRim=0;
+    posCap.forEach(function(p){
+      if(p.controtelaio==='L')nCtlL++; else if(p.controtelaio==='T')nCtlT++;
+      var sc=(p.schermatura||'').toUpperCase();
+      if(sc==='A'||sc==='AM'||sc==='AE'||sc==='AR')nAvv++; else if(sc==='S')nScur++;
+      if(p.zanzariera)nZanz++; if(p.cassonetto)nCass++;
+      if(p.coprifilo_int_mat)nCoprI++; if(p.coprifilo_est_mat)nCoprE++;
+      if(p.rimozione==='SI'||p.rimozione===true)nRim++;
+    });
+    var chips = '<b>'+nP+'</b> pos.';
+    if(nCtlL) chips += ' &nbsp;\u25AA CTL-L: <b>'+nCtlL+'</b>';
+    if(nCtlT) chips += ' &nbsp;\u25AA TC: <b>'+nCtlT+'</b>';
+    if(nAvv)  chips += ' &nbsp;\u25AA Avv: <b>'+nAvv+'</b>';
+    if(nScur) chips += ' &nbsp;\u25AA Scur: <b>'+nScur+'</b>';
+    if(nZanz) chips += ' &nbsp;\u25AA Zanz: <b>'+nZanz+'</b>';
+    if(nCass) chips += ' &nbsp;\u25AA Cass: <b>'+nCass+'</b>';
+    if(nCoprI)chips += ' &nbsp;\u25AA CopI: <b>'+nCoprI+'</b>';
+    if(nCoprE)chips += ' &nbsp;\u25AA CopE: <b>'+nCoprE+'</b>';
+    if(nRim)  chips += ' &nbsp;\u25AA Rim: <b>'+nRim+'</b>';
+    return '<tr class="tr-cap-subtot"><td colspan="'+NCOL+'">Subtotale \u2014 '+esc(titolo)+' &nbsp;\u2502 '+chips+'</td></tr>';
+  }
+
+  var html = '';
+  var capCorrente = null;
+  var posCap = [];
+  var posizioniFuoriCap = [];
+
+  righe.forEach(function(r) {
+    if (r.tipo === 'cap_inizio') {
+      if (posizioniFuoriCap.length) {
+        html += '<tr class="tr-no-cap"><td colspan="'+NCOL+'">Posizioni senza capitolo ('+posizioniFuoriCap.length+')</td></tr>';
+        posizioniFuoriCap.forEach(function(p){ html += rowPos(p); });
+        posizioniFuoriCap = [];
+      }
+      capCorrente = r.data; posCap = [];
+      html += '<tr class="tr-cap-hdr"><td colspan="'+NCOL+'">'+
+        '<span style="letter-spacing:3px;opacity:.5">\u2550\u2550\u2550</span> '+
+        esc(r.data.titolo)+
+        ' <span style="letter-spacing:3px;opacity:.5">\u2550\u2550\u2550</span>'+
+        '</td></tr>';
+    } else if (r.tipo === 'cap_fine') {
+      posCap.forEach(function(p){ html += rowPos(p); });
+      if (posCap.length) html += rowSubtot(capCorrente ? capCorrente.titolo : '', posCap);
+      html += '<tr class="tr-cap-end"><td colspan="'+NCOL+'">\u2500\u2500\u2500 Fine: '+esc(r.data.titolo)+' \u2500\u2500\u2500</td></tr>';
+      capCorrente = null; posCap = [];
+    } else {
+      if (capCorrente) posCap.push(r.data);
+      else posizioniFuoriCap.push(r.data);
+    }
+  });
+
+  if (posizioniFuoriCap.length) {
+    if ((capitoli||[]).length > 0) {
+      html += '<tr class="tr-no-cap"><td colspan="'+NCOL+'">Posizioni senza capitolo ('+posizioniFuoriCap.length+')</td></tr>';
+    }
+    posizioniFuoriCap.forEach(function(p){ html += rowPos(p); });
+  }
+
+  tbody.innerHTML = html || '<tr><td colspan="'+NCOL+'" style="text-align:center;padding:16px;color:#9ca3af">Nessuna posizione</td></tr>';
+}
+
+function caricaDati(idRil) {
+  var loaded = {ril:null, pos:null, strats:null, dc:null, db:null, caps:null};
+  var done = 0, tot = 6, errored = false;
+
+  function tryRender() {
+    done++;
+    if (done < tot || errored) return;
+
+    var r = loaded.ril;
+    var cant = r.cantieri || {};
+    var cli  = cant.clienti || {};
+    var codice = r.codice_completo || idRil;
+
+    DB_SERR = loaded.db || [];
+
+    var nomeCliente = cli.nome || '';
+    var nomeCant    = cant.nome_cantiere || '';
+    document.getElementById('tb-titolo').textContent = 'Rilievo ' + codice;
+    document.title = 'Rilievo ' + codice;
+    document.getElementById('sh-rif').textContent   = (nomeCliente ? nomeCliente + ' \u2014 ' : '') + nomeCant;
+    document.getElementById('sh-badge').textContent = codice;
+    var nPosReali = (loaded.pos||[]).length;
+    document.getElementById('sh-npos').textContent  = nPosReali + ' pos.';
+    document.getElementById('sh-data').textContent  = r.data_rilievo || '—';
+    document.getElementById('sh-posa').textContent  = r.data_posa    || '—';
+    document.getElementById('sh-int').textContent   = r.intervento   || '—';
+    document.getElementById('sh-ref').textContent   = r.referente    || '—';
+
+    var viaStr = ((cant.tipo_via||'') + ' ' + (cant.indirizzo||'')).trim();
+    document.getElementById('sh-ind').textContent    = viaStr || '—';
+    var locParts = [cant.comune||'', cant.provincia ? '('+cant.provincia+')' : '', cant.cap||''];
+    document.getElementById('sh-loc').textContent = locParts.filter(Boolean).join(' ') || '—';
+    document.getElementById('sh-tel').textContent    = cli.telefono  || '—';
+    document.getElementById('sh-email').textContent  = cli.email     || '—';
+
+    if (r.gru === 'SI' || r.gru === true) document.getElementById('sh-gru').style.display = '';
+    if (r.allarme === true) document.getElementById('sh-alarm').style.display = '';
+
+    if (r.note_generali) {
+      var ngEl = document.getElementById('sh-note-generali');
+      if (ngEl) { ngEl.style.display=''; ngEl.querySelector('.ng-text').textContent = r.note_generali; }
+    }
+
+    var nc = r.note_commerciali || {};
+    renderNC(nc);
+    renderStratigrafie(loaded.strats);
+    renderPosizioni(loaded.pos, loaded.strats, loaded.caps);
+    showReport();
+  }
+
+  doFetch(
+    'rilievi?id=eq.'+idRil+'&select=id,codice_completo,referente,data_rilievo,data_posa,intervento,gru,allarme,note,note_generali,note_commerciali,cantieri(nome_cantiere,tipo_via,indirizzo,comune,provincia,cap,clienti(nome,telefono,email))',
+    function(rows) { if (!rows.length) { errored=true; setStato('Rilievo non trovato.',true); return; } loaded.ril = rows[0]; tryRender(); },
+    function(e) { errored=true; setStato('Errore rilievo: '+e,true); }
+  );
+  doFetch('posizioni_serr?id_rilievo=eq.'+idRil+'&stato=eq.attivo&select=*&order=ordine.asc',
+    function(rows) { loaded.pos = rows||[]; tryRender(); },
+    function(e) { errored=true; setStato('Errore posizioni: '+e,true); }
+  );
+  doFetch('stratigrafie?id_rilievo=eq.'+idRil+'&stato=eq.attivo&select=*&order=ordine.asc',
+    function(rows) { loaded.strats = rows||[]; tryRender(); },
+    function() { loaded.strats=[]; tryRender(); }
+  );
+  doFetch('capitoli_rilievo?id_rilievo=eq.'+idRil+'&stato=eq.attivo&select=*&order=ordine_inizio.asc',
+    function(rows) { loaded.caps = rows||[]; tryRender(); },
+    function() { loaded.caps=[]; tryRender(); }
+  );
+  doFetch('dati_comuni_serr?stato=eq.attivo&select=id,valore_mm',
+    function(rows) { loaded.dc = rows||[]; tryRender(); },
+    function() { loaded.dc=[]; tryRender(); }
+  );
+  doFetch('db_serramento?stato=eq.attivo&select=materiale,descrizione,stile_design,variante_telaio,telaio_nascosto_mm,aletta_mm,telaio_vista_mm',
+    function(rows) { loaded.db = rows||[]; tryRender(); },
+    function() { loaded.db=[]; tryRender(); }
+  );
+}
+
+function init() {
+  var params = new URLSearchParams(window.location.search);
+  ID_RILIEVO = params.get('idRilievo') || params.get('id');
+  if (!ID_RILIEVO) { setStato('Parametro id mancante.',true); return; }
+  caricaDati(ID_RILIEVO);
+}
+
+init();
+</script>
+</body>
+</html>
