@@ -42,6 +42,7 @@
     <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
   </div>
   <div class="top-bar-actions">
+    <button class="top-bar-btn" onclick="apriStratigrafie()" title="Stratigrafie" style="font-size:15px;">&#9776;</button>
     <button class="top-bar-btn" onclick="apriCapitoli()" title="Capitoli" style="font-size:15px;">&#128218;</button>
     <button class="top-bar-btn" onclick="apriModificaRilievo()" title="Modifica rilievo" style="font-size:16px;">&#9998;</button>
     <div class="top-bar-online" id="onlineIndicator" title=""></div>
@@ -420,6 +421,10 @@ function apriModificaRilievo() {
 
 function apriCapitoli() {
   window.location.href = 'capitoli.html?id_rilievo=' + idRilievo + '&tipo=SERR';
+}
+
+function apriStratigrafie() {
+  window.location.href = 'stratigrafie.html?id_rilievo=' + idRilievo;
 }
 
 load();
