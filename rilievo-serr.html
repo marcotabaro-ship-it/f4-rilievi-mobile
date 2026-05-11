@@ -29,11 +29,6 @@
     .det-lbl  { color:var(--c-text-sec); font-size:12px; }
     .det-val  { font-weight:600; color:var(--c-text); text-align:right; max-width:60%; }
     .det-val.calc { color:var(--c-accent); font-style:italic; }
-    .chk-ico  { font-size:14px; }
-    .info-chip { display:inline-flex; align-items:center; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; margin:2px; }
-    .chip-serr  { background:#ede9fe; color:#5b21b6; }
-    .chip-acc   { background:#fef3c7; color:#92400e; }
-    .chip-geo   { background:#e0f2fe; color:#0369a1; }
     .btn-del-sheet { flex:0 0 auto; padding:14px 16px; background:#fee2e2; color:#dc2626; border:2px solid #fca5a5; border-radius:10px; font-size:18px; font-weight:700; cursor:pointer; font-family:inherit; line-height:1; }
     .btn-del-sheet:active { background:#fecaca; }
   </style>
@@ -47,9 +42,11 @@
     <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
   </div>
   <div class="top-bar-actions">
-  <button class="top-bar-btn" onclick="apriModificaRilievo()" title="Modifica rilievo" style="font-size:16px;">&#9998;</button>
-  <div class="top-bar-online" id="onlineIndicator" title=""></div>
-  <div class="top-bar-avatar" id="userAvatar">TM</div>
+    <button class="top-bar-btn" onclick="apriCapitoli()" title="Capitoli" style="font-size:15px;">&#128218;</button>
+    <button class="top-bar-btn" onclick="apriModificaRilievo()" title="Modifica rilievo" style="font-size:16px;">&#9998;</button>
+    <div class="top-bar-online" id="onlineIndicator" title=""></div>
+    <div class="top-bar-avatar" id="userAvatar">TM</div>
+  </div>
 </div>
 
 <div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="mainWrap">
@@ -76,7 +73,9 @@
     <button class="filter-chip" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;" onclick="setFiltro('ACC',this)">ACC</button>
   </div>
 
-  <div id="listaPosizioni" style="padding-bottom:24px;"><div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div></div>
+  <div id="listaPosizioni" style="padding-bottom:24px;">
+    <div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div>
+  </div>
 </div>
 
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
@@ -150,7 +149,10 @@ function v(x){ return (x===null||x===undefined)?'':String(x); }
 
 function load() {
   DBLocal.getById('rilievi', idRilievo, function(ril) {
-    if (!ril) { document.getElementById('listaPosizioni').innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Rilievo non trovato</div><div class="empty-sub">Esegui una sincronizzazione</div></div>'; return; }
+    if (!ril) {
+      document.getElementById('listaPosizioni').innerHTML='<div class="empty-state"><div class="empty-ico">&#128196;</div><div class="empty-title">Rilievo non trovato</div><div class="empty-sub">Esegui una sincronizzazione</div></div>';
+      return;
+    }
     _rilievo = ril;
     document.title = (ril.codice_completo||'Rilievo') + ' — F4 Rilievi';
     document.getElementById('tbCodice').textContent = ril.codice_completo || ril.id.substring(0,8);
@@ -250,6 +252,7 @@ function renderPosizioni() {
     if (capCorr) { posCapCorr.push(p); html += renderPosizioneRow(p); }
     else posiFuori.push(p);
   });
+
   if (posiFuori.length) {
     html += '<div class="card" style="border-radius:var(--radius);margin:0;">';
     posiFuori.forEach(function(p){ html += renderPosizioneRow(p); });
@@ -331,7 +334,7 @@ function apriDettaglio(id) {
     html += '<div class="det-row"><span class="det-lbl">Materiale</span><span class="det-val">'+esc(p.materiale||'—')+'</span></div>';
     html += '<div class="det-row"><span class="det-lbl">Sistema</span><span class="det-val">'+esc(p.sistema||'—')+'</span></div>';
     if (p.telaio_misto) {
-      html += '<div class="det-row"><span class="det-lbl">Stile / Variante</span><span class="det-val" style="font-size:11px;">Misto: Su('+esc(v(p.variante_alto))+') Giu('+esc(v(p.variante_basso))+') Sx('+esc(v(p.variante_sx))+') Dx('+esc(v(p.variante_dx))+')</span></div>';
+      html += '<div class="det-row"><span class="det-lbl">Variante misto</span><span class="det-val" style="font-size:11px;">Su('+esc(v(p.variante_alto))+') Giu('+esc(v(p.variante_basso))+') Sx('+esc(v(p.variante_sx))+') Dx('+esc(v(p.variante_dx))+')</span></div>';
     } else {
       if (p.stile_design) html += '<div class="det-row"><span class="det-lbl">Stile design</span><span class="det-val">'+esc(p.stile_design)+'</span></div>';
       if (p.variante_telaio) html += '<div class="det-row"><span class="det-lbl">Variante telaio</span><span class="det-val">'+esc(p.variante_telaio)+'</span></div>';
@@ -364,7 +367,7 @@ function apriDettaglio(id) {
     html += '<div class="det-sec"><div class="det-sec-title">&#9873; Rimozione e flag</div>';
     if (p.rimozione==='SI'||p.rimozione===true) html += '<div class="det-row"><span class="det-lbl">Rimozione serramento</span><span class="det-val">&#9989;</span></div>';
     if (p.rimozione_accessori===true) html += '<div class="det-row"><span class="det-lbl">Rimozione accessori</span><span class="det-val">&#9989;</span></div>';
-    if (p.taglio_marmo===true) html += '<div class="det-row"><span class="det-lbl">Taglio piani marmo</span><span class="det-val">&#9989;</span></div>';
+    if (p.taglio_marmo===true) html += '<div class="det-row"><span class="det-lbl">Taglio marmo</span><span class="det-val">&#9989;</span></div>';
     if (p.angolari_pvc===true) html += '<div class="det-row"><span class="det-lbl">Angolari PVC</span><span class="det-val">&#9989;</span></div>';
     html += '</div>';
   }
@@ -413,6 +416,10 @@ function eliminaPosizione() {
 
 function apriModificaRilievo() {
   window.location.href = 'rilievo-edit.html?id=' + idRilievo;
+}
+
+function apriCapitoli() {
+  window.location.href = 'capitoli.html?id_rilievo=' + idRilievo + '&tipo=SERR';
 }
 
 load();
