@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Capitoli — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <style>
+    .cap-card { background:var(--c-surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:10px; overflow:hidden; }
+    .cap-card-hdr { background:var(--c-primary); color:#a5b4fc; padding:10px 14px; display:flex; align-items:center; gap:10px; }
+    .cap-card-hdr.porte { background:#7c2d12; color:#fed7aa; }
+    .cap-title { font-size:14px; font-weight:700; color:#fff; flex:1; }
+    .cap-card-body { padding:10px 14px; display:flex; align-items:center; gap:8px; }
+    .cap-range { font-size:12px; color:var(--c-text-sec); flex:1; }
+    .cap-npos { font-size:11px; font-weight:700; background:#ede9fe; color:#4f46e5; border-radius:10px; padding:2px 8px; }
+    .cap-npos.porte { background:#fff3e0; color:#E65100; }
+    .btn-icon { width:36px; height:36px; border-radius:8px; border:none; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:inherit; }
+    .btn-edit { background:#eef2ff; color:#4f46e5; }
+    .btn-del  { background:#fee2e2; color:#dc2626; }
+    .empty-caps { text-align:center; padding:48px 24px; color:var(--c-text-sec); }
+    .empty-caps .ico { font-size:40px; margin-bottom:12px; }
+    .empty-caps .tit { font-size:15px; font-weight:700; color:var(--c-text); margin-bottom:6px; }
+    .empty-caps .sub { font-size:13px; }
+    .form-group-m { margin-bottom:14px; }
+    .form-group-m:last-child { margin-bottom:0; }
+    .form-label-m { display:block; font-size:11px; font-weight:600; color:var(--c-text-sec); margin-bottom:5px; text-transform:uppercase; letter-spacing:.3px; }
+    .form-ctrl { width:100%; border:2px solid var(--c-border); border-radius:10px; padding:11px 13px; font-size:15px; font-family:inherit; color:var(--c-text); background:var(--c-surface); outline:none; -webkit-appearance:none; box-sizing:border-box; }
+    .form-ctrl:focus { border-color:var(--c-accent); }
+    .sheet-hint { font-size:11px; color:var(--c-text-sec); margin-top:6px; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar" id="topBar">
+  <button class="top-bar-btn" onclick="history.back()">&#8592;</button>
+  <div style="flex:1;min-width:0;">
+    <div class="top-bar-title">Capitoli</div>
+    <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
+  </div>
+  <div class="top-bar-online" id="onlineIndicator"></div>
+  <div class="top-bar-avatar" id="userAvatar">TM</div>
+</div>
+
+<div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 88px;" id="mainWrap">
+  <div id="listaCapitoli">
+    <div class="loading-state"><div class="spinner"></div><p>Caricamento...</p></div>
+  </div>
+</div>
+
+<!-- FAB nuovo capitolo -->
+<button class="btn-fab" id="fabNuovo" onclick="apriSheet(null)" title="Nuovo capitolo" style="display:none;">&#43;</button>
+
+<!-- SHEET OVERLAY -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+
+<!-- BOTTOM SHEET: crea / modifica capitolo -->
+<div class="bottom-sheet" id="sheetCap">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="shTitle">Nuovo capitolo</div>
+    <button class="sheet-close" onclick="closeSheet()">&#10005;</button>
+  </div>
+  <div class="sheet-body">
+    <div class="form-group-m">
+      <label class="form-label-m">Titolo capitolo *</label>
+      <input class="form-ctrl" type="text" id="shTitolo" placeholder="es. Piano Terra" maxlength="80"/>
+    </div>
+    <div class="form-group-m">
+      <label class="form-label-m">Posizione iniziale *</label>
+      <select class="form-ctrl" id="shInizio"><option value="">— Seleziona —</option></select>
+      <div class="sheet-hint">Il capitolo inizia prima di questa posizione</div>
+    </div>
+    <div class="form-group-m">
+      <label class="form-label-m">Posizione finale *</label>
+      <select class="form-ctrl" id="shFine"><option value="">— Seleziona —</option></select>
+      <div class="sheet-hint">Il capitolo termina dopo questa posizione</div>
+    </div>
+  </div>
+  <div class="sheet-footer">
+    <button class="btn btn-primary btn-full" onclick="salvaCapitolo()">&#128190; Salva capitolo</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-local.js"></script>
+<script src="js/api-mobile.js"></script>
+<script>
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+document.getElementById('userAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
+document.getElementById('onlineIndicator').className = 'top-bar-online' + (API.isOnline() ? '' : ' offline');
+
+var params     = new URLSearchParams(window.location.search);
+var idRilievo  = params.get('id_rilievo');
+var tipoRil    = (params.get('tipo') || 'SERR').toUpperCase();
+if (!idRilievo) { history.back(); }
+
+var _capitoli  = [];
+var _posizioni = [];
+var _editingId = null;
+var _isPorte   = (tipoRil === 'PORTE');
+
+// Adatta colori per porte
+if (_isPorte) {
+  document.getElementById('topBar').style.background = '#7c2d12';
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── CARICAMENTO ──
+function load() {
+  DBLocal.getById('rilievi', idRilievo, function(ril) {
+    document.getElementById('tbSub').textContent = ril ? (ril.codice_completo || ril.id.substring(0,8)) : '—';
+  });
+
+  var storePosizioni = _isPorte ? 'posizioni_porte' : 'posizioni_serr';
+
+  DBLocal.getAll(storePosizioni, function(pos) {
+    _posizioni = pos
+      .filter(function(p) { return p.id_rilievo === idRilievo && p.stato === 'attivo'; })
+      .sort(function(a, b) {
+        var oa = (a.ordine !== null && a.ordine !== undefined) ? a.ordine : a.numero_pos;
+        var ob = (b.ordine !== null && b.ordine !== undefined) ? b.ordine : b.numero_pos;
+        return oa - ob;
+      });
+
+    DBLocal.getAll('capitoli_rilievo', function(caps) {
+      _capitoli = caps
+        .filter(function(c) { return c.id_rilievo === idRilievo && c.stato === 'attivo'; })
+        .sort(function(a, b) { return a.ordine_inizio - b.ordine_inizio; });
+
+      renderCapitoli();
+      document.getElementById('fabNuovo').style.display = '';
+    });
+  });
+}
+
+// ── RENDER LISTA ──
+function renderCapitoli() {
+  var container = document.getElementById('listaCapitoli');
+
+  if (!_capitoli.length) {
+    container.innerHTML =
+      '<div class="empty-caps">' +
+        '<div class="ico">&#128218;</div>' +
+        '<div class="tit">Nessun capitolo</div>' +
+        '<div class="sub">Usa + per aggiungere un capitolo e organizzare le posizioni in gruppi.</div>' +
+      '</div>';
+    return;
+  }
+
+  var html = '';
+  _capitoli.forEach(function(cap) {
+    var nPos = _posizioni.filter(function(p) {
+      var ord = (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
+      return ord >= cap.ordine_inizio && ord <= cap.ordine_fine;
+    }).length;
+
+    var posInizio = _posizioni.find(function(p) {
+      var ord = (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
+      return ord >= cap.ordine_inizio;
+    });
+    var posFine = _posizioni.slice().reverse().find(function(p) {
+      var ord = (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
+      return ord <= cap.ordine_fine;
+    });
+
+    var labelInizio = posInizio ? (posInizio.numero_pos_alfa || posInizio.numero_pos) : cap.ordine_inizio;
+    var labelFine   = posFine   ? (posFine.numero_pos_alfa   || posFine.numero_pos)   : cap.ordine_fine;
+
+    html += '<div class="cap-card">' +
+      '<div class="cap-card-hdr' + (_isPorte ? ' porte' : '') + '">' +
+        '<span class="cap-title">&#128218; ' + esc(cap.titolo) + '</span>' +
+      '</div>' +
+      '<div class="cap-card-body">' +
+        '<div class="cap-range">Da pos. <strong>' + esc(String(labelInizio)) + '</strong> a pos. <strong>' + esc(String(labelFine)) + '</strong></div>' +
+        '<span class="cap-npos' + (_isPorte ? ' porte' : '') + '">' + nPos + ' pos.</span>' +
+        '<button class="btn-icon btn-edit" onclick="apriSheet(\'' + cap.id + '\')" title="Modifica">&#9998;</button>' +
+        '<button class="btn-icon btn-del"  onclick="eliminaCapitolo(\'' + cap.id + '\')" title="Elimina">&#128465;</button>' +
+      '</div>' +
+    '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ── SHEET APRI / CHIUDI ──
+function apriSheet(idCap) {
+  _editingId = idCap;
+
+  // Popola select posizioni
+  var selI = document.getElementById('shInizio');
+  var selF = document.getElementById('shFine');
+  selI.innerHTML = '<option value="">— Seleziona —</option>';
+  selF.innerHTML = '<option value="">— Seleziona —</option>';
+
+  _posizioni.forEach(function(p) {
+    var ord   = (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
+    var label = 'Pos. ' + (p.numero_pos_alfa || p.numero_pos) + (p.ambiente ? ' — ' + p.ambiente : '');
+    selI.appendChild(new Option(label, ord));
+    selF.appendChild(new Option(label, ord));
+  });
+
+  if (idCap) {
+    var cap = _capitoli.find(function(c) { return c.id === idCap; });
+    if (cap) {
+      document.getElementById('shTitle').textContent   = 'Modifica capitolo';
+      document.getElementById('shTitolo').value        = cap.titolo || '';
+      selI.value = cap.ordine_inizio;
+      selF.value = cap.ordine_fine;
+    }
+  } else {
+    document.getElementById('shTitle').textContent = 'Nuovo capitolo';
+    document.getElementById('shTitolo').value      = '';
+    selI.value = '';
+    selF.value = '';
+  }
+
+  document.getElementById('sheetOverlay').className = 'sheet-overlay visible';
+  document.getElementById('sheetCap').className     = 'bottom-sheet open';
+  setTimeout(function() { document.getElementById('shTitolo').focus(); }, 300);
+}
+
+function closeSheet() {
+  document.getElementById('sheetOverlay').className = 'sheet-overlay';
+  document.getElementById('sheetCap').className     = 'bottom-sheet';
+  _editingId = null;
+}
+
+// ── SALVA CAPITOLO ──
+function salvaCapitolo() {
+  var titolo  = (document.getElementById('shTitolo').value || '').trim();
+  var ordIni  = document.getElementById('shInizio').value;
+  var ordFine = document.getElementById('shFine').value;
+
+  if (!titolo)  { alert('Inserisci un titolo per il capitolo.'); return; }
+  if (!ordIni)  { alert('Seleziona la posizione iniziale.'); return; }
+  if (!ordFine) { alert('Seleziona la posizione finale.'); return; }
+
+  ordIni  = parseFloat(ordIni);
+  ordFine = parseFloat(ordFine);
+
+  if (ordFine < ordIni) {
+    alert('La posizione finale deve essere uguale o successiva a quella iniziale.');
+    return;
+  }
+
+  var data = {
+    id_rilievo:    idRilievo,
+    titolo:        titolo,
+    ordine_inizio: ordIni,
+    ordine_fine:   ordFine,
+    stato:         'attivo'
+  };
+
+  var op = 'insert';
+  if (_editingId) {
+    data.id = _editingId;
+    op = 'update';
+  }
+
+  var btn = document.querySelector('[onclick="salvaCapitolo()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
+
+  API.writeRecord(op, 'capitoli_rilievo', data, function(err, saved) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva capitolo'; }
+    if (err) { alert('Errore salvataggio:\n' + err); return; }
+
+    closeSheet();
+
+    // Aggiorna lista locale senza reload
+    if (op === 'insert' && saved) {
+      _capitoli.push(Object.assign({}, data, {id: saved.id}));
+    } else if (op === 'update') {
+      var idx = _capitoli.findIndex(function(c) { return c.id === _editingId; });
+      if (idx >= 0) _capitoli[idx] = Object.assign({}, _capitoli[idx], data);
+    }
+    _capitoli.sort(function(a, b) { return a.ordine_inizio - b.ordine_inizio; });
+
+    renderCapitoli();
+    API.miniSync('capitoli_rilievo', function() {});
+  });
+}
+
+// ── ELIMINA CAPITOLO ──
+function eliminaCapitolo(id) {
+  if (!confirm('Eliminare questo capitolo? Le posizioni non vengono eliminate, solo il raggruppamento.')) return;
+
+  API.writeRecord('update', 'capitoli_rilievo', {id: id, stato: 'disattivo'}, function(err) {
+    if (err) { alert('Errore eliminazione:\n' + err); return; }
+    _capitoli = _capitoli.filter(function(c) { return c.id !== id; });
+    renderCapitoli();
+    API.miniSync('capitoli_rilievo', function() {});
+  });
+}
+
+load();
+</script>
+</body>
+</html>
