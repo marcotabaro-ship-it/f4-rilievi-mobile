@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Report Posa &mdash; F4 Rilievi</title>
+  <style>
+    body { background: #f5f6fa; }
+    #toolbar { background:#1a1a2e;color:#fff;padding:10px 18px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.25); }
+    #toolbar h1 { font-size:14px;margin:0;flex:1;font-weight:600; }
+    .btn-tb { border:none;border-radius:6px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;color:#fff; }
+    .btn-tb-primary { background:#4f46e5; } .btn-tb-primary:hover { background:#4338ca; }
+    .btn-tb-neutral { background:#374151; } .btn-tb-neutral:hover { background:#1f2937; }
+    .btn-tb-warn { background:#6b7280; } .btn-tb-warn:hover { background:#4b5563; }
+    #wrap { max-width:980px;margin:20px auto;padding:0 14px 48px; }
+    #stato-msg { text-align:center;padding:64px 20px;color:#6b7280;font-size:15px; }
+    #stato-msg.errore { color:#dc2626; }
+    .r-header { background:#fff;border-radius:10px;padding:16px 20px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .r-header-top { display:flex;align-items:baseline;gap:10px;margin-bottom:8px; }
+    .r-header-top h2 { margin:0;font-size:16px;color:#1a1a2e;font-weight:700; }
+    .r-badge { font-size:11px;background:#ede9fe;color:#4f46e5;padding:2px 8px;border-radius:10px;font-weight:600; }
+    .r-meta { display:flex;gap:20px;flex-wrap:wrap; }
+    .r-meta-item { font-size:12px;color:#6b7280; }
+    .r-meta-item strong { color:#1a1a2e; }
+    .tipo-grid { background:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
+    .tipo-chip { display:flex;align-items:center;gap:5px;background:#f3f4f6;border-radius:8px;padding:4px 10px;font-size:12px; }
+    .tipo-chip .sigla { font-weight:700;color:#1a1a2e; }
+    .tipo-chip .cnt { font-weight:700;color:#4f46e5; }
+    .tipo-chip.zero { opacity:.35; }
+    .tipo-lbl { font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-right:4px; }
+    .mode-panel { background:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:none; }
+    .mode-panel-title { font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px; }
+    .mode-btns { display:flex;gap:8px; }
+    .mode-hint { font-size:11px;color:#6b7280;margin-top:6px; }
+    .table-wrap { background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:hidden;margin-bottom:12px; }
+    table.t-posa { width:100%;border-collapse:collapse;font-size:12px; }
+    table.t-posa thead th { background:#1a1a2e;color:#fff;padding:9px 10px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap; }
+    table.t-posa thead th.c { text-align:center; }
+    table.t-posa td { padding:6px 10px;border-bottom:1px solid #f0f0f6;color:#374151; }
+    table.t-posa td.c { text-align:center; }
+    .tr-sez td { background:#eef0f8;color:#3730a3;font-weight:700;font-size:10px;letter-spacing:.7px;text-transform:uppercase;padding:4px 10px;border-top:2px solid #e0e3f4; }
+    .tr-voce:hover { background:#fafafe; }
+    .tr-voce.zero-row { opacity:.38; }
+    .tr-voce td.ore-calc { text-align:center;font-weight:600;color:#374151; }
+    .tr-voce td.ore-fin  { text-align:center;font-weight:700;color:#4f46e5; }
+    .adj-input { width:60px;text-align:center;border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:12px;color:#374151;background:#fff; }
+    .adj-input:focus { outline:none;border-color:#4f46e5; }
+    .adj-input:disabled { background:#f3f4f6;color:#9ca3af;cursor:not-allowed; }
+    .adj-minus { color:#dc2626; }
+    .adj-plus  { color:#16a34a; }
+    .adj-prop  { color:#9ca3af;font-size:10px;text-align:center; }
+    .tr-tot td { background:#1a1a2e;color:#fff;font-weight:700;padding:9px 10px;font-size:12px; }
+    .tr-tot td.c { text-align:center; }
+    .tr-tot td.ore-fin { text-align:center;color:#a5b4fc;font-size:15px; }
+    .summary-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px; }
+    .sum-block { background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .sum-block h3 { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#4f46e5;margin:0 0 10px;padding-bottom:5px;border-bottom:2px solid #ede9fe; }
+    .sum-row { display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;border-bottom:1px solid #f9f9ff; }
+    .sum-row:last-child { border-bottom:none; }
+    .sum-row .lbl { color:#6b7280; }
+    .sum-row .val { font-weight:700;color:#1a1a2e;min-width:48px;text-align:right; }
+    .sum-row.total { border-top:2px solid #ede9fe;margin-top:4px;padding-top:6px; }
+    .sum-row.total .lbl { color:#1a1a2e;font-weight:600; }
+    .sum-row.total .val { color:#4f46e5;font-size:14px; }
+    .ore-block { background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:12px; }
+    .ore-block h3 { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a1a2e;margin:0 0 12px;padding-bottom:5px;border-bottom:2px solid #ede9fe; }
+    .ore-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
+    .ore-card { text-align:center;padding:10px;background:#f9fafe;border-radius:8px;border:1px solid #e5e7eb; }
+    .ore-card .ore-val { font-size:26px;font-weight:700;color:#4f46e5;line-height:1.1; }
+    .ore-card .ore-lbl { font-size:10px;color:#6b7280;margin-top:3px;text-transform:uppercase;letter-spacing:.3px; }
+    .posatori-row { display:flex;gap:20px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid #f0f0f6;font-size:12px;color:#6b7280; }
+    .cap-posa-hdr { background:#1a1a2e;color:#a5b4fc;padding:8px 14px;margin:16px 0 8px;border-radius:8px;font-size:.88rem;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:10px; }
+    .cap-posa-hdr .cpn { background:#4f46e5;color:#fff;border-radius:4px;padding:1px 8px;font-size:.8rem; }
+    .cap-posa-subtot { background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:8px 14px;margin:6px 0 20px;font-size:.8rem;display:flex;gap:14px;flex-wrap:wrap;align-items:center; }
+    .cap-posa-subtot .cps-lbl { font-weight:700;color:#3730a3; }
+    .cap-posa-subtot .cps-v { background:#c7d2fe;color:#1e1b4b;border-radius:8px;padding:1px 9px;font-weight:600; }
+    .totali-globali-posa { background:#064e3b;color:#a7f3d0;padding:8px 14px;margin:20px 0 8px;border-radius:8px;font-size:.88rem;font-weight:700;letter-spacing:.5px; }
+    @media print {
+      @page { size:A4 portrait;margin:8mm; }
+      body { background:#fff; }
+      #toolbar { display:none !important; }
+      #wrap { margin:0;padding:0;max-width:none; }
+      .r-header,.tipo-grid,.table-wrap,.sum-block,.ore-block,.mode-panel { box-shadow:none;border:1px solid #ccc;border-radius:0;page-break-inside:avoid; }
+      table.t-posa { font-size:8px; }
+      table.t-posa thead th { padding:3px 6px;font-size:7px; }
+      table.t-posa td { padding:2px 6px; }
+      .tr-sez td { font-size:7px;padding:2px 6px; }
+      .tr-voce.zero-row { display:none !important; }
+      .adj-input { width:40px;font-size:7px;padding:1px 3px; }
+      .ore-grid { grid-template-columns:repeat(5,1fr);gap:6px; }
+      .ore-card { padding:5px; }
+      .ore-card .ore-val { font-size:16px; }
+      .ore-card .ore-lbl { font-size:8px; }
+    }
+  </style>
+</head>
+<body>
+<div id="toolbar">
+  <h1 id="tb-titolo">Report Posa Serramenti</h1>
+  <button class="btn-tb btn-tb-warn" onclick="resetAdj()">Reset aggiust.</button>
+  <button class="btn-tb btn-tb-neutral" onclick="history.back()">&#8592; Indietro</button>
+  <button class="btn-tb btn-tb-primary" onclick="window.print()">&#128438; Stampa / PDF</button>
+</div>
+<div id="wrap">
+  <div id="stato-msg">Caricamento dati in corso&hellip;</div>
+  <div id="report-content" style="display:none">
+    <div class="r-header">
+      <div class="r-header-top">
+        <h2 id="rh-titolo">Report Posa</h2>
+        <span class="r-badge" id="rh-badge">— pos.</span>
+      </div>
+      <div class="r-meta">
+        <div class="r-meta-item"><strong>Cliente:</strong> <span id="rh-cliente">—</span></div>
+        <div class="r-meta-item"><strong>Cantiere:</strong> <span id="rh-cantiere">—</span></div>
+        <div class="r-meta-item"><strong>Data rilievo:</strong> <span id="rh-data">—</span></div>
+        <div class="r-meta-item"><strong>Referente:</strong> <span id="rh-ref">—</span></div>
+        <div class="r-meta-item"><strong>GRU:</strong> <span id="rh-gru">No</span></div>
+      </div>
+    </div>
+    <div class="tipo-grid" id="tipo-grid"><span class="tipo-lbl">Posizioni:</span></div>
+    <div class="mode-panel" id="mode-panel">
+      <div class="mode-panel-title">&#9881;&#65039; Modalit&agrave; aggiustamenti</div>
+      <div class="mode-btns">
+        <button id="btn-mode-tot" class="btn btn-sm btn-primary" onclick="setMode('tot')">&#931; Sul totale</button>
+        <button id="btn-mode-cap" class="btn btn-sm btn-outline" onclick="setMode('cap')">&#128195; Per capitolo</button>
+      </div>
+      <div class="mode-hint" id="mode-hint"></div>
+    </div>
+    <div id="cap-posa-container"></div>
+    <div id="titolo-globale-posa" style="display:none;" class="totali-globali-posa">&#8721; Totali complessivi &mdash; tutti i capitoli</div>
+    <div class="table-wrap">
+      <table class="t-posa">
+        <thead>
+          <tr>
+            <th style="width:20%">Area</th>
+            <th style="width:32%">Servizio</th>
+            <th class="c" style="width:6%">N</th>
+            <th class="c" style="width:7%">h/pos</th>
+            <th class="c" style="width:7%">Min cant.</th>
+            <th class="c" style="width:8%">Ore calc.</th>
+            <th class="c" style="width:7%">&minus; Ore</th>
+            <th class="c" style="width:7%">+ Ore</th>
+            <th class="c" style="width:8%">Ore fin.</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-posa"></tbody>
+        <tfoot id="tfoot-posa"></tfoot>
+      </table>
+    </div>
+    <div class="summary-grid">
+      <div class="sum-block"><h3>Riepilogo per Area</h3><div id="sum-area"></div></div>
+      <div class="sum-block"><h3>Riepilogo Ore</h3><div id="sum-ore"></div></div>
+    </div>
+    <div class="ore-block">
+      <h3>Totali e Preventivo</h3>
+      <div class="ore-grid">
+        <div class="ore-card"><div class="ore-val" id="card-dirette">—</div><div class="ore-lbl">Ore Dirette</div></div>
+        <div class="ore-card"><div class="ore-val" id="card-indirette">—</div><div class="ore-lbl">Ore Indirette</div></div>
+        <div class="ore-card"><div class="ore-val" id="card-di">—</div><div class="ore-lbl">Dirette + Indirette</div></div>
+        <div class="ore-card"><div class="ore-val" id="card-totali">—</div><div class="ore-lbl">Ore Totali</div></div>
+        <div class="ore-card"><div class="ore-val" id="card-prev">—</div><div class="ore-lbl">Ore Preventivo</div><div style="font-size:9px;color:#9ca3af;margin-top:3px;">(ore calcolate)</div></div>
+      </div>
+      <div class="posatori-row" id="posatori-row">
+        <span>N&#176; Posatori: <strong>2</strong></span>
+        <span>h/giorno: <strong>8h</strong></span>
+        <span>Ore/giorno (2 pers.): <strong>16h</strong></span>
+        <span>Giorni stimati: <strong id="giorni-stim">—</strong></span>
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px">Note</label>
+      <textarea id="note-posa" rows="3"
+        style="width:100%;margin-top:4px;border:1px solid #d1d5db;border-radius:6px;padding:8px 10px;font-size:13px;color:#374151;resize:vertical;box-sizing:border-box"
+        placeholder="Inserisci note per questo report posa..."
+        onchange="onNoteChange(this.value)"></textarea>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+var SUPA_URL = APP_CONFIG.SUPABASE_URL, SUPA_KEY = APP_CONFIG.SUPABASE_ANON_KEY;
+var currentUser = Auth.requireLogin(); if (!currentUser) throw new Error('not logged');
+var ID_RILIEVO = null, ADJ_LS_KEY = '', PREV_LS_KEY = '';
+var VOCI_GLOBALI = [], USE_GRU = false;
+var POSA_MODE = 'tot';
+var GRUPPI_POSA = [];
+
+var DP = {}, POS_SERR = {}, POS_SERR_GRU = {}, POS_CTL = {};
+var POS_SERR_MIN = 2.0, POS_CTL_MIN = 1.0;
+var V2DP = {'PROGETTAZIONE':'prog','GESTIONE ORDINI':'gord','INCONTRI IN CANTIERE':'incant','SCARICO E CARICO CTL':'scCtl','TRASPORTO CTL':'trCtl','SCARICO E CARICO SERR':'scSerr','TRASPORTO SERR':'trSerr','RIMOZIONE SERRAMENTI':'rimSerr','RIMOZIONE ACCESSORI':'rimAcc','SMALTIMENTO SERR':'smSerr','SMALTIMENTO ACC':'smAcc','ASSEMBLAGGIO CTL':'assCtl','ASSEMBLAGGIO TERMOCASSE':'assTerm','ASSEMBLAGGIO DINOX DA':'assDinDA','ASSEMBLAGGIO DINOX IM':'assDinIM','INSTALL ANGOLARI PVC':'angPvc','INSTALLAZIONE CTL':'instCtl','INSTALLAZIONE TERMOCASSE':'instTerm','INSTALL DINOX DA':'instDinDA','INSTALL DINOX IM':'instDinIM','TAGLIO PIANI MARMO':'marmo','REGISTRAZIONE COLLAUDO':'regColl','PULIZIA CANTIERE':'pulizia'};
+var INST_V2DP = {'INST INGRESSI':'instI','INST FINESTRE':'instF','INST PORTE FINESTRE':'instPF','INST FINESTRE FISSE':'instFF','INST VETRATE FISSE':'instVF','INST SCORREVOLI':'instS'};
+var COD2DP = {740:'instAvv',750:'instScur',760:'instTende',765:'instFrang',770:'instCass',775:'instZanz',780:'coprInt',785:'coprEst'};
+
+function buildTablesFromPosa(rows) {
+  DP={}; POS_SERR={}; POS_SERR_GRU={}; POS_CTL={};
+  rows.forEach(function(r) {
+    var v=r.voce;
+    if(v==='POSIZIONAMENTO CTL'&&r.piano!==null&&r.piano!==undefined){POS_CTL[String(r.piano)]=parseFloat(r.h_pos)||0.5;}
+    if(v==='POSIZIONAMENTO SERR'&&r.piano!==null&&r.n_campi!==null){var pk=String(r.piano);if(!POS_SERR[pk])POS_SERR[pk]=[];POS_SERR[pk][r.n_campi-1]=parseFloat(r.h_pos)||0.5;if(!POS_SERR_GRU[pk])POS_SERR_GRU[pk]=[];POS_SERR_GRU[pk][r.n_campi-1]=parseFloat(r.h_pos_gru!==null&&r.h_pos_gru!==undefined?r.h_pos_gru:r.h_pos)||0.5;}
+    var dpKey=V2DP[v];if(dpKey&&r.piano===null&&r.n_campi===null&&!r.sistema)DP[dpKey]=[parseFloat(r.h_pos)||0,r.min_cantiere!==null?parseFloat(r.min_cantiere):null];
+    var instKey=INST_V2DP[v];if(instKey&&r.n_campi===1)DP[instKey]=[parseFloat(r.h_pos)||0,null];
+    var accKey=COD2DP[r.codice];if(accKey&&!DP[accKey])DP[accKey]=[parseFloat(r.h_pos)||0,r.min_cantiere!==null?parseFloat(r.min_cantiere):null];
+  });
+  var ctlMinR=rows.find(function(r){return r.voce==='POSIZIONAMENTO CTL'&&r.piano===(-1);});if(ctlMinR&&ctlMinR.min_cantiere)POS_CTL_MIN=parseFloat(ctlMinR.min_cantiere);
+  var serrMinR=rows.find(function(r){return r.voce==='POSIZIONAMENTO SERR'&&r.piano===(-1)&&r.n_campi===1;});if(serrMinR&&serrMinR.min_cantiere)POS_SERR_MIN=parseFloat(serrMinR.min_cantiere);
+}
+
+function calcOre(n,dp){if(!dp||n<=0)return 0;var b=n*dp[0];return dp[1]?Math.max(b,dp[1]):b;}
+function fmtH(v){if(v===null||v===undefined||isNaN(v))return'—';var r=Math.round(v*1000)/1000;return r.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')||'0';}
+function getPianoKey(piano){var p=parseInt(piano,10);if(isNaN(p))return'0';if(p<-1)return'-1';if(p>10)return'10';return String(p);}
+function posSerrH(piano,nCampi,useGru){var key=getPianoKey(piano),p=parseInt(piano,10);var tbl=(useGru&&p>=1)?POS_SERR_GRU:POS_SERR;var lookup=tbl[key]||POS_SERR[key];if(!lookup)return 0.5;var idx=Math.min(Math.max((parseInt(nCampi,10)||1)-1,0),4);return lookup[idx]||0.5;}
+function posCtlH(piano){return POS_CTL[getPianoKey(piano)]||0.5;}
+
+function calcolaVoci(posizioni,useGru){
+  var nTot=posizioni.length,nCL=0,nCT=0,nRim=0,nRA=0,nMar=0,nAng=0,nI=0,nF=0,nPF=0,nFF=0,nVF=0,nS=0,nAv=0,nSc=0,nTe=0,nFr=0,nCas=0,nZan=0,nCI=0,nCE=0,nSS=0,nSA=0,nDA=0,nIM=0,oPCtl=0,oPSerr=0;
+  posizioni.forEach(function(p){
+    var ctl=(p.controtelaio||'').toUpperCase();if(ctl==='L')nCL++;else if(ctl==='T')nCT++;
+    if(p.rimozione==='SI'||p.rimozione===true){nRim++;nSS++;}
+    if(p.rimozione_accessori===true){nRA++;nSA++;}
+    if(p.taglio_marmo===true)nMar++;if(p.angolari_pvc===true)nAng++;
+    var ts=(p.tipo_serramento||'').toUpperCase();if(!p.solo_accessori){if(ts==='I')nI++;else if(ts==='F')nF++;else if(ts==='PF')nPF++;else if(ts==='FF')nFF++;else if(ts==='VF')nVF++;else if(ts==='S')nS++;}
+    var sc=(p.schermatura||'').toUpperCase();if(sc==='A'||sc==='AM'||sc==='AE'||sc==='AR')nAv++;else if(sc==='S')nSc++;else if(sc==='TZ'||sc==='TM')nTe++;else if(sc==='CA'||sc==='CT')nFr++;
+    if(p.cassonetto)nCas++;if(p.zanzariera)nZan++;if(p.coprifilo_int_mat)nCI++;if(p.coprifilo_est_mat)nCE++;
+    var din=(p.dinoxill||'').toUpperCase();if(din==='DA')nDA++;else if(din==='I3'||din==='I4')nIM++;
+    if(ctl==='L'||ctl==='T')oPCtl+=posCtlH(p.piano);
+    if(!p.solo_accessori)oPSerr+=posSerrH(p.piano,p.n_campi||1,useGru);
+  });
+  var nCtl=nCL+nCT;
+  oPCtl=nCtl>0?Math.max(oPCtl,POS_CTL_MIN):0;oPSerr=nTot>0?Math.max(oPSerr,POS_SERR_MIN):0;
+  var voci=[
+    {id:'prog',area:'UFFICIO TECNICO',serv:'Progettazione',n:nTot,dp:DP.prog,tipo:'indir'},
+    {id:'gord',area:'UFFICIO TECNICO',serv:'Gestione ordini',n:nTot,dp:DP.gord,tipo:'indir'},
+    {id:'incant',area:'UFFICIO TECNICO',serv:'Incontri in cantiere',n:nTot,dp:DP.incant,tipo:'indir'},
+    {id:'scCtl',area:'MAGAZZINO',serv:'Scarico / carico CTL e termocasse',n:nCtl,dp:DP.scCtl,tipo:'indir'},
+    {id:'trCtl',area:'TRASPORTO',serv:'Trasporto CTL e termocasse',n:nCtl,dp:DP.trCtl,tipo:'indir'},
+    {id:'scSerr',area:'MAGAZZINO',serv:'Scarico / carico serramenti',n:nTot,dp:DP.scSerr,tipo:'indir'},
+    {id:'trSerr',area:'TRASPORTO',serv:'Trasporto serramenti',n:nTot,dp:DP.trSerr,tipo:'indir'},
+    {id:'posCtl',area:'POSIZIONAMENTO',serv:'Posizionamento CTL e termocasse',n:nCtl,dp:null,fixed:oPCtl,tipo:'dir'},
+    {id:'posSerr',area:'POSIZIONAMENTO',serv:'Posizionamento serramenti',n:nTot,dp:null,fixed:oPSerr,tipo:'dir'},
+    {id:'rimSerr',area:'RIMOZIONE',serv:'Rimozione serramenti esistenti',n:nRim,dp:DP.rimSerr,tipo:'dir'},
+    {id:'rimAcc',area:'RIMOZIONE',serv:'Rimozione accessori esistenti',n:nRA,dp:DP.rimAcc,tipo:'dir'},
+    {id:'assCtl',area:'ASSEMBLAGGIO CTL E TERMOCASSE',serv:'Assemblaggio controtelai',n:nCL,dp:DP.assCtl,tipo:'dir'},
+    {id:'assTerm',area:'ASSEMBLAGGIO CTL E TERMOCASSE',serv:'Assemblaggio termocasse',n:nCT,dp:DP.assTerm,tipo:'dir'},
+    {id:'assDinDA',area:'ASSEMBLAGGIO DINOX DAVANZALE',serv:'Assemblaggio Dinox davanzale',n:nDA,dp:DP.assDinDA,tipo:'dir'},
+    {id:'assDinIM',area:'ASSEMBLAGGIO DINOX IMBOTTE',serv:'Assemblaggio Dinox imbotte',n:nIM,dp:DP.assDinIM,tipo:'dir'},
+    {id:'angPvc',area:'INSTALLAZIONE ANGOLARI PVC',serv:'Installazione angolari PVC',n:nAng,dp:DP.angPvc,tipo:'dir'},
+    {id:'instCtl',area:'INSTALL. CTL E TERMOCASSE',serv:'Installazione controtelai',n:nCL,dp:DP.instCtl,tipo:'dir'},
+    {id:'instTerm',area:'INSTALL. CTL E TERMOCASSE',serv:'Installazione termocasse',n:nCT,dp:DP.instTerm,tipo:'dir'},
+    {id:'instDinDA',area:'INSTALL. DINOX DAVANZALE',serv:'Installazione Dinox davanzale',n:nDA,dp:DP.instDinDA,tipo:'dir'},
+    {id:'instDinIM',area:'INSTALL. DINOX IMBOTTE',serv:'Installazione Dinox imbotte',n:nIM,dp:DP.instDinIM,tipo:'dir'},
+    {id:'marmo',area:'POSA',serv:'Taglio piani marmo',n:nMar,dp:DP.marmo,tipo:'dir'},
+    {id:'instI',area:'POSA',serv:'Installazione ingressi (I)',n:nI,dp:DP.instI,tipo:'dir'},
+    {id:'instF',area:'POSA',serv:'Installazione finestre (F)',n:nF,dp:DP.instF,tipo:'dir'},
+    {id:'instPF',area:'POSA',serv:'Installazione porte-finestre (PF)',n:nPF,dp:DP.instPF,tipo:'dir'},
+    {id:'instFF',area:'POSA',serv:'Installazione finestre fisse (FF)',n:nFF,dp:DP.instFF,tipo:'dir'},
+    {id:'instVF',area:'POSA',serv:'Installazione vetrate fisse (VF)',n:nVF,dp:DP.instVF,tipo:'dir'},
+    {id:'instS',area:'POSA',serv:'Installazione scorrevoli (S)',n:nS,dp:DP.instS,tipo:'dir'},
+    {id:'instAvv',area:'POSA',serv:'Installazione avvolgibili',n:nAv,dp:DP.instAvv,tipo:'dir'},
+    {id:'instScur',area:'POSA',serv:'Installazione scuretti',n:nSc,dp:DP.instScur,tipo:'dir'},
+    {id:'instTende',area:'POSA',serv:'Installazione tende (TZ/TM)',n:nTe,dp:DP.instTende,tipo:'dir'},
+    {id:'instFrang',area:'POSA',serv:'Installazione frangisole (CA/CT)',n:nFr,dp:DP.instFrang,tipo:'dir'},
+    {id:'instCass',area:'POSA',serv:'Installazione cassonetti',n:nCas,dp:DP.instCass,tipo:'dir'},
+    {id:'instZanz',area:'POSA',serv:'Installazione zanzariere',n:nZan,dp:DP.instZanz,tipo:'dir'},
+    {id:'coprInt',area:'POSA',serv:'Installazione coprifili interni',n:nCI,dp:DP.coprInt,tipo:'dir'},
+    {id:'coprEst',area:'POSA',serv:'Installazione coprifili esterni',n:nCE,dp:DP.coprEst,tipo:'dir'},
+    {id:'regColl',area:'POSA',serv:'Registrazione e collaudo',n:nTot,dp:DP.regColl,tipo:'dir'},
+    {id:'pulizia',area:'POSA',serv:'Pulizia cantiere',n:nTot,dp:DP.pulizia,tipo:'dir'},
+    {id:'smSerr',area:'SMALTIMENTO',serv:'Smaltimento serramenti esistenti',n:nSS,dp:DP.smSerr,tipo:'dir'},
+    {id:'smAcc',area:'SMALTIMENTO',serv:'Smaltimento accessori esistenti',n:nSA,dp:DP.smAcc,tipo:'dir'}
+  ];
+  voci.forEach(function(v){v.oreCalc=(v.fixed!==undefined)?v.fixed:calcOre(v.n,v.dp);});
+  return voci;
+}
+
+function loadAdj(){try{return JSON.parse(localStorage.getItem(ADJ_LS_KEY))||{};}catch(e){return{};}}
+function saveAdj(adj){try{localStorage.setItem(ADJ_LS_KEY,JSON.stringify(adj));}catch(e){}}
+function loadAdjCap(capId){try{return JSON.parse(localStorage.getItem('f4_posa_adj_cap_'+ID_RILIEVO+'_'+capId))||{};}catch(e){return{};}}
+function saveAdjCap(capId,adj){try{localStorage.setItem('f4_posa_adj_cap_'+ID_RILIEVO+'_'+capId,JSON.stringify(adj));}catch(e){}}
+function clearAllCapAdj(){GRUPPI_POSA.forEach(function(g){localStorage.removeItem('f4_posa_adj_cap_'+ID_RILIEVO+'_'+(g.cap.id||'__fuori__'));});}
+function loadMode(){return localStorage.getItem('f4_posa_mode_'+ID_RILIEVO)||'tot';}
+function saveMode(m){localStorage.setItem('f4_posa_mode_'+ID_RILIEVO,m);}
+function loadNote(){try{return localStorage.getItem(PREV_LS_KEY+'_note')||'';}catch(e){return'';}}
+function onNoteChange(val){try{localStorage.setItem(PREV_LS_KEY+'_note',val);}catch(e){}}
+
+function setMode(mode) {
+  if(mode===POSA_MODE) return;
+  var other=mode==='cap'?'tot':'cap';
+  var hasAdj=false;
+  if(other==='tot'){var a=loadAdj();hasAdj=Object.keys(a).some(function(k){var d=a[k];return(d.minus||0)+(d.plus||0)>0;});}
+  else{GRUPPI_POSA.forEach(function(g){var a=loadAdjCap(g.cap.id||'__fuori__');if(Object.keys(a).some(function(k){var d=a[k];return(d.minus||0)+(d.plus||0)>0;}))hasAdj=true;});}
+  if(hasAdj&&!confirm('Cambiare modalit\u00e0 eliminer\u00e0 gli aggiustamenti della modalit\u00e0 precedente. Continuare?'))return;
+  if(other==='tot')saveAdj({});else clearAllCapAdj();
+  POSA_MODE=mode; saveMode(mode);
+  updateModeUI();
+  refreshRender();
+}
+
+function updateModeUI() {
+  var btnTot=document.getElementById('btn-mode-tot'),btnCap=document.getElementById('btn-mode-cap'),hint=document.getElementById('mode-hint');
+  if(!btnTot)return;
+  if(POSA_MODE==='tot'){btnTot.className='btn btn-sm btn-primary';btnCap.className='btn btn-sm btn-outline';hint.textContent='Aggiustamenti globali: i capitoli mostrano la ripartizione proporzionale.';}
+  else{btnTot.className='btn btn-sm btn-outline';btnCap.className='btn btn-sm btn-primary';hint.textContent='Aggiustamenti per capitolo: il totale somma automaticamente i capitoli.';}
+}
+
+function onAdjChange(el) {
+  var id=el.getAttribute('data-id'),type=el.getAttribute('data-type');
+  var val=Math.max(0,parseFloat(el.value)||0);el.value=val||'';
+  var adj=loadAdj();if(!adj[id])adj[id]={};adj[id][type]=val;saveAdj(adj);
+  refreshRender();
+}
+
+function onAdjCapChange(el) {
+  var id=el.getAttribute('data-id'),capId=el.getAttribute('data-capid'),type=el.getAttribute('data-type');
+  var val=Math.max(0,parseFloat(el.value)||0);el.value=val||'';
+  var adj=loadAdjCap(capId);if(!adj[id])adj[id]={};adj[id][type]=val;saveAdjCap(capId,adj);
+  refreshRender();
+}
+
+function resetAdj() {
+  if(!confirm('Eliminare tutti gli aggiustamenti manuali?'))return;
+  if(POSA_MODE==='cap')clearAllCapAdj();else saveAdj({});
+  refreshRender();
+}
+
+function refreshRender() {
+  renderAll(VOCI_GLOBALI,loadAdj());
+  if(GRUPPI_POSA.length)renderCapitoliPosaFromGruppi();
+}
+
+function renderAll(voci, adj) {
+  var tbody=document.getElementById('tbody-posa'),tfoot=document.getElementById('tfoot-posa');
+  var html='',lastArea='',totCalc=0,totFin=0,areaMap={};
+
+  var totalVoceCalc={};
+  if(POSA_MODE==='tot'&&GRUPPI_POSA.length){
+    GRUPPI_POSA.forEach(function(g){g.voci.forEach(function(v){totalVoceCalc[v.id]=(totalVoceCalc[v.id]||0)+v.oreCalc;});});
+  }
+
+  voci.forEach(function(v) {
+    if(v.area!==lastArea){html+='<tr class="tr-sez"><td colspan="9">'+v.area+'</td></tr>';lastArea=v.area;}
+    var minus=0,plus=0,oreFin;
+    if(POSA_MODE==='cap'&&GRUPPI_POSA.length){
+      oreFin=0;
+      GRUPPI_POSA.forEach(function(g){
+        var capId=g.cap.id||'__fuori__',adjC=loadAdjCap(capId);
+        var capVoce=g.voci.find(function(x){return x.id===v.id;});
+        if(capVoce){var m=parseFloat((adjC[v.id]||{}).minus)||0,pl=parseFloat((adjC[v.id]||{}).plus)||0;oreFin+=Math.max(0,capVoce.oreCalc-m+pl);}
+      });
+      oreFin=Math.round(oreFin*1000)/1000;
+    } else {
+      minus=parseFloat((adj[v.id]||{}).minus)||0;
+      plus =parseFloat((adj[v.id]||{}).plus )||0;
+      oreFin=Math.max(0,Math.round((v.oreCalc-minus+plus)*1000)/1000);
+    }
+    totCalc+=v.oreCalc;totFin+=oreFin;
+    if(!areaMap[v.area])areaMap[v.area]={calc:0,fin:0,tipo:v.tipo};
+    areaMap[v.area].calc+=v.oreCalc;areaMap[v.area].fin+=oreFin;
+    var isZero=v.n===0&&v.oreCalc===0;
+    html+='<tr class="tr-voce'+(isZero?' zero-row':'')+'" data-id="'+v.id+'">';
+    html+='<td>'+v.area+'</td><td>'+v.serv+'</td>';
+    html+='<td class="c">'+(v.n>0?String(v.n):'—')+'</td>';
+    html+='<td class="c">'+(v.dp?fmtH(v.dp[0]):'—')+'</td>';
+    html+='<td class="c">'+((v.dp&&v.dp[1])?fmtH(v.dp[1]):'—')+'</td>';
+    html+='<td class="ore-calc">'+fmtH(v.oreCalc)+'</td>';
+    if(POSA_MODE==='cap'&&GRUPPI_POSA.length){
+      html+='<td class="c adj-prop" title="Modificabile nei capitoli">—</td>';
+      html+='<td class="c adj-prop" title="Modificabile nei capitoli">—</td>';
+    } else {
+      var msVal=minus>0?minus:'',plVal=plus>0?plus:'';
+      html+='<td class="c adj-minus"><input class="adj-input" type="number" min="0" step="0.5" value="'+msVal+'" data-id="'+v.id+'" data-type="minus" onchange="onAdjChange(this)"/></td>';
+      html+='<td class="c adj-plus"><input class="adj-input" type="number" min="0" step="0.5" value="'+plVal+'" data-id="'+v.id+'" data-type="plus" onchange="onAdjChange(this)"/></td>';
+    }
+    html+='<td class="ore-fin">'+fmtH(oreFin)+'</td></tr>';
+  });
+
+  tbody.innerHTML=html;
+  tfoot.innerHTML='<tr class="tr-tot"><td colspan="5">TOTALE</td><td class="c">'+fmtH(totCalc)+'</td><td class="c"></td><td class="c"></td><td class="ore-fin">'+fmtH(totFin)+'</td></tr>';
+
+  var oreProgFin=0;
+  voci.forEach(function(v){
+    if(v.id==='prog'){
+      if(POSA_MODE==='cap'&&GRUPPI_POSA.length){
+        oreProgFin=0;
+        GRUPPI_POSA.forEach(function(g){var capVoce=g.voci.find(function(x){return x.id==='prog';});if(capVoce){var adjC=loadAdjCap(g.cap.id||'__fuori__');var m=parseFloat((adjC['prog']||{}).minus)||0,pl=parseFloat((adjC['prog']||{}).plus)||0;oreProgFin+=Math.max(0,capVoce.oreCalc-m+pl);}});
+        oreProgFin=Math.round(oreProgFin*1000)/1000;
+      } else {
+        var m=parseFloat((adj[v.id]||{}).minus)||0,pl=parseFloat((adj[v.id]||{}).plus)||0;
+        oreProgFin=Math.max(0,Math.round((v.oreCalc-m+pl)*1000)/1000);
+      }
+    }
+  });
+  renderSummary(areaMap,totFin,oreProgFin);
+}
+
+function renderSummary(areaMap, totFin, orePrev) {
+  var htmlArea='',oreDirette=0,oreIndirette=0;
+  Object.keys(areaMap).forEach(function(area){var d=areaMap[area];htmlArea+='<div class="sum-row"><span class="lbl">'+area+'</span><span class="val">'+fmtH(d.fin)+'</span></div>';if(d.tipo==='dir')oreDirette+=d.fin;else oreIndirette+=d.fin;});
+  htmlArea+='<div class="sum-row total"><span class="lbl">TOTALE</span><span class="val">'+fmtH(totFin)+'</span></div>';
+  document.getElementById('sum-area').innerHTML=htmlArea;
+  var di=oreDirette+oreIndirette;
+  document.getElementById('sum-ore').innerHTML='<div class="sum-row"><span class="lbl">Ore Dirette</span><span class="val">'+fmtH(oreDirette)+'</span></div><div class="sum-row"><span class="lbl">Ore Indirette</span><span class="val">'+fmtH(oreIndirette)+'</span></div><div class="sum-row total"><span class="lbl">Dirette + Indirette</span><span class="val">'+fmtH(di)+'</span></div><div class="sum-row total"><span class="lbl">Ore Totali</span><span class="val">'+fmtH(totFin)+'</span></div>';
+  document.getElementById('card-dirette').textContent=fmtH(oreDirette);
+  document.getElementById('card-indirette').textContent=fmtH(oreIndirette);
+  document.getElementById('card-di').textContent=fmtH(di);
+  document.getElementById('card-totali').textContent=fmtH(totFin);
+  document.getElementById('card-prev').textContent=fmtH(orePrev);
+  var giorni=totFin>0?Math.ceil(totFin/16*10)/10:0;
+  document.getElementById('giorni-stim').textContent=fmtH(giorni);
+}
+
+function renderCapitoliPosa(tuttePos, caps, adj) {
+  var righe=[];
+  tuttePos.forEach(function(p){var ord=(p.ordine!==undefined&&p.ordine!==null)?p.ordine:p.numero_pos;righe.push({tipo:'pos',ordine:ord,data:p});});
+  (caps||[]).forEach(function(cap){righe.push({tipo:'cap_inizio',ordine:cap.ordine_inizio,data:cap});righe.push({tipo:'cap_fine',ordine:cap.ordine_fine,data:cap});});
+  righe.sort(function(a,b){return a.ordine-b.ordine;});
+  var gruppi=[],capCorr=null,posCorr=[],posiFuori=[];
+  righe.forEach(function(r){
+    if(r.tipo==='cap_inizio'){capCorr=r.data;posCorr=[];}
+    else if(r.tipo==='cap_fine'){if(capCorr)gruppi.push({cap:capCorr,pos:posCorr.slice()});capCorr=null;posCorr=[];}
+    else{if(capCorr)posCorr.push(r.data);else posiFuori.push(r.data);}
+  });
+  if(posiFuori.length)gruppi.push({cap:{titolo:'Senza capitolo',id:'__fuori__'},pos:posiFuori});
+  GRUPPI_POSA=gruppi.map(function(g){return{cap:g.cap,pos:g.pos,voci:calcolaVoci(g.pos,USE_GRU)};});
+  renderCapitoliPosaFromGruppi();
+}
+
+function renderCapitoliPosaFromGruppi() {
+  var container=document.getElementById('cap-posa-container');
+  if(!container||!GRUPPI_POSA.length){if(container)container.innerHTML='';return;}
+  var totalVoceCalc={};
+  GRUPPI_POSA.forEach(function(g){g.voci.forEach(function(v){totalVoceCalc[v.id]=(totalVoceCalc[v.id]||0)+v.oreCalc;});});
+  var adjGlobal=loadAdj();
+  var html='<div class="totali-globali-posa">&#128293; Dettaglio per capitolo'+(POSA_MODE==='cap'?' &mdash; <span style="font-size:.8rem;opacity:.8;">aggiustamenti per capitolo attivi</span>':' &mdash; <span style="font-size:.8rem;opacity:.8;">ripartizione proporzionale</span>')+'</div>';
+
+  GRUPPI_POSA.forEach(function(g) {
+    if(!g.pos.length)return;
+    var capId=g.cap.id||'__fuori__';
+    var adjCap=loadAdjCap(capId);
+    var tG=0,oDG=0,oIG=0;
+    g.voci.forEach(function(v){
+      var fin;
+      if(POSA_MODE==='cap'){var m=parseFloat((adjCap[v.id]||{}).minus)||0,pl=parseFloat((adjCap[v.id]||{}).plus)||0;fin=Math.max(0,Math.round((v.oreCalc-m+pl)*1000)/1000);}
+      else{var totV=totalVoceCalc[v.id]||0;var prop=totV>0?v.oreCalc/totV:0;var mProp=((adjGlobal[v.id]||{}).minus||0)*prop,plProp=((adjGlobal[v.id]||{}).plus||0)*prop;fin=Math.max(0,Math.round((v.oreCalc-mProp+plProp)*1000)/1000);}
+      tG+=fin;if(v.tipo==='dir')oDG+=fin;else oIG+=fin;
+    });
+    tG=Math.round(tG*1000)/1000;
+    html+='<div class="cap-posa-hdr"><span class="cpn">'+g.pos.length+' pos.</span>\u2550\u2550 '+g.cap.titolo+' \u2550\u2550</div>';
+    var tbH='',lA='';
+    g.voci.forEach(function(v){
+      if(v.n===0&&v.oreCalc===0)return;
+      if(v.area!==lA){tbH+='<tr class="tr-sez"><td colspan="9">'+v.area+'</td></tr>';lA=v.area;}
+      var fin;
+      if(POSA_MODE==='cap'){
+        var m=parseFloat((adjCap[v.id]||{}).minus)||0,pl=parseFloat((adjCap[v.id]||{}).plus)||0;
+        fin=Math.max(0,Math.round((v.oreCalc-m+pl)*1000)/1000);
+        var msVal=m>0?m:'',plVal=pl>0?pl:'';
+        tbH+='<tr class="tr-voce"><td>'+v.area+'</td><td>'+v.serv+'</td>'+
+          '<td class="c">'+(v.n>0?v.n:'—')+'</td>'+
+          '<td class="c">'+(v.dp?fmtH(v.dp[0]):'—')+'</td>'+
+          '<td class="c">'+((v.dp&&v.dp[1])?fmtH(v.dp[1]):'—')+'</td>'+
+          '<td class="ore-calc">'+fmtH(v.oreCalc)+'</td>'+
+          '<td class="c adj-minus"><input class="adj-input" type="number" min="0" step="0.5" value="'+msVal+'" data-id="'+v.id+'" data-capid="'+capId+'" data-type="minus" onchange="onAdjCapChange(this)"/></td>'+
+          '<td class="c adj-plus"><input class="adj-input" type="number" min="0" step="0.5" value="'+plVal+'" data-id="'+v.id+'" data-capid="'+capId+'" data-type="plus" onchange="onAdjCapChange(this)"/></td>'+
+          '<td class="ore-fin">'+fmtH(fin)+'</td></tr>';
+      } else {
+        var totV=totalVoceCalc[v.id]||0,prop=totV>0?v.oreCalc/totV:0;
+        var mProp=Math.round(((adjGlobal[v.id]||{}).minus||0)*prop*1000)/1000;
+        var plProp=Math.round(((adjGlobal[v.id]||{}).plus||0)*prop*1000)/1000;
+        fin=Math.max(0,Math.round((v.oreCalc-mProp+plProp)*1000)/1000);
+        var hasProp=mProp>0||plProp>0;
+        tbH+='<tr class="tr-voce"><td>'+v.area+'</td><td>'+v.serv+'</td>'+
+          '<td class="c">'+(v.n>0?v.n:'—')+'</td>'+
+          '<td class="c">'+(v.dp?fmtH(v.dp[0]):'—')+'</td>'+
+          '<td class="c">'+((v.dp&&v.dp[1])?fmtH(v.dp[1]):'—')+'</td>'+
+          '<td class="ore-calc">'+fmtH(v.oreCalc)+'</td>'+
+          '<td class="adj-prop">'+(hasProp?'\u2248'+fmtH(mProp):'—')+'</td>'+
+          '<td class="adj-prop">'+(hasProp?'\u2248'+fmtH(plProp):'—')+'</td>'+
+          '<td class="ore-fin">'+fmtH(fin)+'</td></tr>';
+      }
+    });
+    html+='<div class="table-wrap"><table class="t-posa" style="font-size:11px;"><thead><tr>'+
+      '<th style="width:22%">Area</th><th style="width:34%">Servizio</th>'+
+      '<th class="c">N</th><th class="c">h/pos</th><th class="c">Min.</th>'+
+      '<th class="c">Ore calc.</th>'+
+      (POSA_MODE==='cap'?'<th class="c adj-minus">&minus; Ore</th><th class="c adj-plus">+ Ore</th>':'<th class="c adj-prop" style="color:#9ca3af">&minus; prop.</th><th class="c adj-prop" style="color:#9ca3af">+ prop.</th>')+
+      '<th class="c">Ore fin.</th>'+
+      '</tr></thead><tbody>'+tbH+'</tbody>'+
+      '<tfoot><tr class="tr-tot"><td colspan="8">TOTALE '+g.cap.titolo+'</td><td class="ore-fin">'+fmtH(tG)+'</td></tr></tfoot>'+
+      '</table></div>';
+    var giorni=tG>0?Math.ceil(tG/16*10)/10:0;
+    html+='<div class="cap-posa-subtot"><span class="cps-lbl">'+g.cap.titolo+'</span><span class="cps-v">Dir: '+fmtH(oDG)+'</span><span class="cps-v">Ind: '+fmtH(oIG)+'</span><span class="cps-v">Tot: '+fmtH(tG)+'</span><span class="cps-v">Giorni: '+giorni+'</span></div>';
+  });
+  container.innerHTML=html;
+}
+
+function doFetch(path,callback,errback){
+  function tryReq(token){
+    var xhr=new XMLHttpRequest();xhr.open('GET',SUPA_URL+'/rest/v1/'+path,true);
+    xhr.setRequestHeader('apikey',SUPA_KEY);xhr.setRequestHeader('Authorization','Bearer '+(token||SUPA_KEY));xhr.setRequestHeader('Content-Type','application/json');
+    xhr.onload=function(){if(xhr.status>=200&&xhr.status<300){try{callback(JSON.parse(xhr.responseText));}catch(e){if(errback)errback('JSON: '+e.message);}}else{if(errback)errback('HTTP '+xhr.status);}};
+    xhr.onerror=function(){if(errback)errback('Network error');};xhr.send();
+  }tryReq(Auth.getToken());
+}
+
+function setStato(msg,isErr){var el=document.getElementById('stato-msg');el.textContent=msg;el.className=isErr?'errore':'';el.style.display='';document.getElementById('report-content').style.display='none';}
+function showReport(){document.getElementById('stato-msg').style.display='none';document.getElementById('report-content').style.display='';}
+
+function renderTipoGrid(posizioni){
+  var cnt={I:0,F:0,PF:0,FF:0,VF:0,S:0};posizioni.forEach(function(p){var t=(p.tipo_serramento||'').toUpperCase();if(cnt[t]!==undefined)cnt[t]++;});
+  var TIPI=[{s:'I',l:'Ingressi'},{s:'F',l:'Finestre'},{s:'PF',l:'P.Finestre'},{s:'FF',l:'Fin.Fisse'},{s:'VF',l:'Vetrate'},{s:'S',l:'Scorrevoli'}];
+  var html='<span class="tipo-lbl">Posizioni per tipo:</span>';
+  TIPI.forEach(function(t){var n=cnt[t.s]||0;html+='<span class="tipo-chip'+(n===0?' zero':'')+'" title="'+t.l+'"><span class="sigla">'+t.s+'</span><span class="cnt">'+n+'</span></span>';});
+  document.getElementById('tipo-grid').innerHTML=html;
+}
+
+function init() {
+  var params=new URLSearchParams(window.location.search);
+  ID_RILIEVO=params.get('idRilievo')||params.get('id');
+  if(!ID_RILIEVO){setStato('Parametro id mancante.',true);return;}
+  ADJ_LS_KEY='f4_posa_adj_'+ID_RILIEVO;
+  PREV_LS_KEY='f4_posa_prev_'+ID_RILIEVO;
+  POSA_MODE=loadMode();
+
+  var loaded={ril:null,pos:null,caps:null,posa:null};var errored=false;
+  var done=0,tot=4;
+
+  function tryRender(){
+    done++;
+    if(done<tot||errored)return;
+    buildTablesFromPosa(loaded.posa);
+    var r=loaded.ril,pos=loaded.pos,caps=loaded.caps;
+    USE_GRU=(r.gru===true||r.gru==='SI');
+    var cant=r.cantieri||{},cli=(cant.clienti&&cant.clienti.nome)?cant.clienti.nome:'—';
+    var codice=r.codice_completo||ID_RILIEVO;
+    document.getElementById('rh-titolo').textContent='Report Posa \u2014 '+codice;
+    document.getElementById('rh-badge').textContent=pos.length+' pos.';
+    document.getElementById('rh-cliente').textContent=cli;
+    document.getElementById('rh-cantiere').textContent=cant.nome_cantiere||'—';
+    document.getElementById('rh-data').textContent=r.data_rilievo||'—';
+    document.getElementById('rh-ref').textContent=r.referente||'—';
+    document.getElementById('rh-gru').textContent=USE_GRU?'Si':'No';
+    document.getElementById('tb-titolo').textContent='Posa \u2014 '+codice;
+    document.title='Posa '+codice;
+    renderTipoGrid(pos);
+    VOCI_GLOBALI=calcolaVoci(pos,USE_GRU);
+    var hasCaps=caps&&caps.length>0;
+    if(hasCaps){
+      document.getElementById('mode-panel').style.display='block';
+      updateModeUI();
+      renderCapitoliPosa(pos,caps,loadAdj());
+      document.getElementById('titolo-globale-posa').style.display='';
+    }
+    renderAll(VOCI_GLOBALI,loadAdj());
+    var notaEl=document.getElementById('note-posa');if(notaEl)notaEl.value=loadNote();
+    showReport();
+  }
+
+  doFetch('rilievi?id=eq.'+ID_RILIEVO+'&select=id,codice_completo,referente,data_rilievo,gru,cantieri(nome_cantiere,clienti(nome))',
+    function(rows){if(!rows.length){errored=true;setStato('Rilievo non trovato.',true);return;}loaded.ril=rows[0];tryRender();},
+    function(e){errored=true;setStato('Errore rilievo: '+e,true);});
+  doFetch('posizioni_serr?id_rilievo=eq.'+ID_RILIEVO+'&stato=eq.attivo&select=*&order=ordine.asc',
+    function(rows){loaded.pos=rows||[];tryRender();},
+    function(e){errored=true;setStato('Errore posizioni: '+e,true);});
+  doFetch('capitoli_rilievo?id_rilievo=eq.'+ID_RILIEVO+'&stato=eq.attivo&select=*&order=ordine_inizio.asc',
+    function(rows){loaded.caps=rows||[];tryRender();},
+    function(){loaded.caps=[];tryRender();});
+  doFetch('dati_comuni_posa?tipo=eq.SERR&stato=eq.attivo&select=*&order=codice.asc,piano.asc,n_campi.asc',
+    function(rows){loaded.posa=rows||[];tryRender();},
+    function(){loaded.posa=[];tryRender();});
+}
+init();
+</script>
+</body>
+</html>
