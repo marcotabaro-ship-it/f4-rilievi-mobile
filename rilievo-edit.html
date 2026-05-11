@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>Modifica rilievo — F4 Rilievi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/mobile.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <style>
+    .fsec { background:var(--c-surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:12px; overflow:hidden; }
+    .fsec-hdr { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; padding:8px 14px; }
+    .fsec-hdr.blue   { background:var(--c-primary); color:#a5b4fc; }
+    .fsec-hdr.orange { background:#7c2d12; color:#fed7aa; }
+    .fsec-body { padding:14px; }
+    .form-row-2m { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .form-group-m { margin-bottom:12px; }
+    .form-group-m:last-child { margin-bottom:0; }
+    .form-label-m { display:block; font-size:11px; font-weight:600; color:var(--c-text-sec); margin-bottom:5px; text-transform:uppercase; letter-spacing:.3px; }
+    .form-ctrl { width:100%; border:2px solid var(--c-border); border-radius:10px; padding:11px 13px; font-size:15px; font-family:inherit; color:var(--c-text); background:var(--c-surface); outline:none; -webkit-appearance:none; transition:border-color .15s; box-sizing:border-box; }
+    .form-ctrl:focus { border-color:var(--c-accent); }
+    .chk-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--c-border); cursor:pointer; }
+    .chk-row:last-child { border-bottom:none; }
+    .chk-row input[type=checkbox] { width:20px; height:20px; accent-color:var(--c-accent); flex-shrink:0; }
+    .chk-row label { font-size:14px; color:var(--c-text); cursor:pointer; flex:1; }
+    .info-banner { border-radius:10px; padding:10px 14px; margin-bottom:12px; font-size:13px; font-weight:600; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar" id="topBar">
+  <button class="top-bar-btn" onclick="confirmBack()">&#8592;</button>
+  <div style="flex:1;min-width:0;">
+    <div class="top-bar-title">Modifica rilievo</div>
+    <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="tbSub">—</div>
+  </div>
+  <button class="top-bar-btn" id="btnSalva"
+    style="background:var(--c-accent);border-radius:8px;width:auto;padding:0 14px;font-size:13px;font-weight:700;"
+    onclick="salva()">&#128190; Salva</button>
+</div>
+
+<div style="position:fixed;top:56px;bottom:72px;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 8px;">
+
+  <div class="info-banner" id="infoBanner" style="background:#eef2ff;color:#3730a3;">
+    &#128196; Caricamento...
+  </div>
+
+  <!-- DATI RILIEVO -->
+  <div class="fsec" id="formBox" style="display:none;">
+    <div class="fsec-hdr blue">&#128203; DATI RILIEVO</div>
+    <div class="fsec-body">
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Referente</label>
+          <select class="form-ctrl" id="fReferente" onchange="markDirty()">
+            <option value="">— Seleziona —</option>
+          </select>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Tipo intervento</label>
+          <select class="form-ctrl" id="fIntervento" onchange="markDirty()">
+            <option value="">— Seleziona —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Data rilievo</label>
+          <input class="form-ctrl" type="date" id="fData" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Data posa prevista</label>
+          <input class="form-ctrl" type="date" id="fPosa" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div id="grpGru" style="display:none;">
+        <div class="chk-row">
+          <input type="checkbox" id="fGru" onchange="markDirty()"/>
+          <label for="fGru">&#127959; Utilizzo gru / autoscala sul cantiere</label>
+        </div>
+      </div>
+      <div class="chk-row">
+        <input type="checkbox" id="fAllarme" onchange="markDirty()"/>
+        <label for="fAllarme">&#9888; Allarme presente in cantiere</label>
+      </div>
+      <div class="form-group-m" style="margin-top:12px;">
+        <label class="form-label-m">Note generali</label>
+        <textarea class="form-ctrl" id="fNoteGenerali" rows="3" placeholder="Visibili nel report..." onchange="markDirty()"></textarea>
+      </div>
+      <div class="form-group-m">
+        <label class="form-label-m">Note interne</label>
+        <textarea class="form-ctrl" id="fNote" rows="2" onchange="markDirty()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTE COMMERCIALI — solo rilievi SERR -->
+  <div class="fsec" id="secNoteComm" style="display:none;">
+    <div class="fsec-hdr blue">&#127912; NOTE COMMERCIALI</div>
+    <div class="fsec-body">
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Colore avvolgibile</label>
+          <input class="form-ctrl" type="text" id="ncAvvol" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Colore scuretto</label>
+          <input class="form-ctrl" type="text" id="ncScuretto" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Colore tenda</label>
+          <input class="form-ctrl" type="text" id="ncTenda" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Colore frangisole</label>
+          <input class="form-ctrl" type="text" id="ncFrang" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Colore zanzariera</label>
+          <input class="form-ctrl" type="text" id="ncZanz" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Colore Dinox</label>
+          <input class="form-ctrl" type="text" id="ncDinox" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Coprifili int.</label>
+          <input class="form-ctrl" type="text" id="ncCopriInt" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Coprifili est.</label>
+          <input class="form-ctrl" type="text" id="ncCopriEst" onchange="markDirty()"/>
+        </div>
+      </div>
+      <div class="form-row-2m">
+        <div class="form-group-m">
+          <label class="form-label-m">Maniglia — marca</label>
+          <input class="form-ctrl" type="text" id="ncManiMarca" onchange="markDirty()"/>
+        </div>
+        <div class="form-group-m">
+          <label class="form-label-m">Maniglia — modello</label>
+          <input class="form-ctrl" type="text" id="ncManiMod" onchange="markDirty()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #e5e7eb;padding:12px 16px;display:flex;gap:10px;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.1);">
+  <button onclick="confirmBack()" style="padding:14px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">&#8592;</button>
+  <button onclick="salva()" style="flex:1;padding:14px;background:var(--c-accent);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">&#128190; Salva modifiche</button>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-local.js"></script>
+<script src="js/api-mobile.js"></script>
+<script>
+var currentUser = Auth.requireLogin();
+if (!currentUser) throw new Error('not logged');
+
+var idRilievo = new URLSearchParams(window.location.search).get('id');
+if (!idRilievo) { history.back(); }
+
+var _rec = {}, _dirty = false, _isPorte = false;
+
+function markDirty() { _dirty = true; }
+
+function gv(id) {
+  var el = document.getElementById(id);
+  return el ? (el.value.trim() || null) : null;
+}
+function gb(id) {
+  var el = document.getElementById(id);
+  return el ? el.checked : false;
+}
+function sv(id, val) {
+  var el = document.getElementById(id);
+  if (!el || val === null || val === undefined) return;
+  el.value = String(val);
+}
+function sc(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.checked = !!(val === true || val === 'true' || val === 'SI');
+}
+function addOpt(selId, label, val, selected) {
+  var sel = document.getElementById(selId);
+  if (!sel) return;
+  var o = new Option(label, val || label);
+  if (selected) o.selected = true;
+  sel.appendChild(o);
+}
+
+function load() {
+  // Carica lookup in parallelo
+  DBLocal.getLookup('LK_REFERENTI', function(rows) {
+    (rows || []).forEach(function(r) {
+      var label = r.nome_completo || r.nome || r.sigla || '';
+      addOpt('fReferente', label, label);
+    });
+    afterLookup();
+  });
+
+  DBLocal.getLookup('LK_INTERVENTO', function(rows) {
+    (rows || []).forEach(function(r) {
+      var label = r.descrizione || r.sigla || '';
+      addOpt('fIntervento', label, label);
+    });
+    afterLookup();
+  });
+}
+
+var _lookupDone = 0;
+function afterLookup() {
+  _lookupDone++;
+  if (_lookupDone < 2) return;
+  // Entrambe le lookup pronte: carica rilievo
+  DBLocal.getById('rilievi', idRilievo, function(ril) {
+    if (!ril) {
+      document.getElementById('infoBanner').textContent = 'Rilievo non trovato. Esegui una sincronizzazione.';
+      return;
+    }
+    _rec = ril;
+    _isPorte = (ril.tipo || '').toUpperCase() === 'PORTE';
+
+    // Adatta colore top bar per porte
+    if (_isPorte) {
+      document.getElementById('topBar').style.background = '#7c2d12';
+      document.getElementById('btnSalva').style.background = 'var(--c-orange)';
+    }
+
+    document.getElementById('tbSub').textContent = ril.codice_completo || ril.id.substring(0, 8);
+    document.title = 'Modifica ' + (ril.codice_completo || 'rilievo') + ' — F4 Rilievi';
+
+    // Sezioni specifiche per SERR
+    if (!_isPorte) {
+      document.getElementById('grpGru').style.display = 'block';
+      document.getElementById('secNoteComm').style.display = 'block';
+      // Adatta colori fsec-hdr per porte (non serve, default blue)
+    }
+
+    // Popola form valori base
+    sv('fData',         ril.data_rilievo  || '');
+    sv('fPosa',         ril.data_posa     || '');
+    sv('fNoteGenerali', ril.note_generali || '');
+    sv('fNote',         ril.note          || '');
+    sc('fGru',    ril.gru === 'SI' || ril.gru === true);
+    sc('fAllarme', ril.allarme === true);
+
+    // Select: imposta dopo che le option sono nel DOM
+    sv('fReferente',  ril.referente  || '');
+    sv('fIntervento', ril.intervento || '');
+
+    // Note commerciali (JSONB da Supabase, arriva come oggetto)
+    var nc = ril.note_commerciali || {};
+    if (typeof nc === 'string') { try { nc = JSON.parse(nc); } catch(e) { nc = {}; } }
+    sv('ncAvvol',    nc.colore_avvol      || '');
+    sv('ncScuretto', nc.colore_scuretto   || '');
+    sv('ncTenda',    nc.colore_tenda      || '');
+    sv('ncFrang',    nc.colore_frang      || '');
+    sv('ncZanz',     nc.colore_zanzariera || '');
+    sv('ncDinox',    nc.colore_dinox      || '');
+    sv('ncCopriInt', nc.colore_copri_int  || '');
+    sv('ncCopriEst', nc.colore_copri_est  || '');
+    sv('ncManiMarca', nc.maniglia_marca   || '');
+    sv('ncManiMod',  nc.maniglia_modello  || '');
+
+    // Mostra form, nascondi banner
+    document.getElementById('infoBanner').style.display = 'none';
+    document.getElementById('formBox').style.display = 'block';
+
+    _dirty = false;
+  });
+}
+
+function raccogliDati() {
+  var data = Object.assign({}, _rec, {
+    referente:     gv('fReferente'),
+    intervento:    gv('fIntervento'),
+    data_rilievo:  gv('fData'),
+    data_posa:     gv('fPosa'),
+    allarme:       gb('fAllarme'),
+    note_generali: gv('fNoteGenerali'),
+    note:          gv('fNote')
+  });
+
+  if (!_isPorte) {
+    data.gru = gb('fGru') ? 'SI' : 'NO';
+    data.note_commerciali = {
+      colore_avvol:      document.getElementById('ncAvvol').value    || '',
+      colore_scuretto:   document.getElementById('ncScuretto').value || '',
+      colore_tenda:      document.getElementById('ncTenda').value    || '',
+      colore_frang:      document.getElementById('ncFrang').value    || '',
+      colore_zanzariera: document.getElementById('ncZanz').value     || '',
+      colore_dinox:      document.getElementById('ncDinox').value    || '',
+      colore_copri_int:  document.getElementById('ncCopriInt').value || '',
+      colore_copri_est:  document.getElementById('ncCopriEst').value || '',
+      maniglia_marca:    document.getElementById('ncManiMarca').value || '',
+      maniglia_modello:  document.getElementById('ncManiMod').value  || ''
+    };
+  }
+
+  return data;
+}
+
+function salva() {
+  if (!_rec.id) return;
+  var data = raccogliDati();
+  var btns = document.querySelectorAll('[onclick="salva()"]');
+  btns.forEach(function(b) { b.disabled = true; b.textContent = 'Salvataggio...'; });
+
+  API.writeRecord('update', 'rilievi', data, function(err) {
+    btns.forEach(function(b) { b.disabled = false; b.innerHTML = '&#128190; Salva modifiche'; });
+    if (err) { alert('Errore salvataggio:\n' + err); return; }
+    _dirty = false;
+    API.miniSync('rilievi', function() {
+      history.back();
+    });
+  });
+}
+
+function confirmBack() {
+  if (_dirty && !confirm('Hai modifiche non salvate. Vuoi uscire?')) return;
+  history.back();
+}
+
+window.addEventListener('beforeunload', function(e) {
+  if (_dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+load();
+</script>
+</body>
+</html>
