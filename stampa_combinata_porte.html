@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Stampa combinata Porte &mdash; F4 Rilievi</title>
+  <style>
+    body { background: #f5f6fa; font-size: 12px; }
+    #modal-sel { position: fixed; inset: 0; z-index: 200; background: rgba(15,15,35,.55); display: flex; align-items: center; justify-content: center; }
+    .sel-box { background: #fff; border-radius: 14px; padding: 32px 36px; max-width: 420px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+    .sel-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .sel-logo .lb { border: 2px solid #E65100; padding: 3px 9px; font-size: 18px; font-weight: 900; color: #1a1a2e; }
+    .sel-logo .lt { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+    .sel-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+    .sel-sub { font-size: 12px; color: #6b7280; margin-bottom: 22px; }
+    .sel-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .sel-opt { display: flex; align-items: center; gap: 14px; border: 2px solid #e5e7eb; border-radius: 10px; padding: 12px 16px; cursor: pointer; transition: border-color .15s; }
+    .sel-opt:hover { border-color: #ffccaa; background: #fff8f5; }
+    .sel-opt input[type=checkbox] { width: 18px; height: 18px; accent-color: #E65100; flex-shrink: 0; cursor: pointer; }
+    .sel-opt.checked { border-color: #E65100; background: #fff3e0; }
+    .sel-opt-ico { font-size: 20px; flex-shrink: 0; }
+    .sel-opt-name { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+    .sel-opt-desc { font-size: 11px; color: #6b7280; }
+    .sel-actions { display: flex; gap: 10px; }
+    .btn-avvia { flex: 1; background: #E65100; color: #fff; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-avvia:hover { background: #bf4500; }
+    .btn-annulla { background: #f3f4f6; color: #374151; border: none; border-radius: 8px; padding: 12px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    #toolbar { background: #E65100; color: #fff; padding: 10px 18px; display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+    #toolbar h1 { font-size: 14px; margin: 0; flex: 1; font-weight: 600; }
+    .btn-tb { border: none; border-radius: 6px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; color: #fff; }
+    .btn-tb-primary { background: rgba(255,255,255,.25); } .btn-tb-primary:hover { background: rgba(255,255,255,.35); }
+    .btn-tb-neutral { background: rgba(0,0,0,.2); } .btn-tb-neutral:hover { background: rgba(0,0,0,.3); }
+    #wrap { max-width: 1100px; margin: 20px auto; padding: 0 14px 48px; }
+    #stato-msg { text-align: center; padding: 80px; color: #6b7280; }
+    .sezione { margin-bottom: 30px; }
+    .scheda-hdr { background: #fff; border: 2px solid #E65100; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+    .sh-top { display: grid; grid-template-columns: 110px 1fr 220px; border-bottom: 2px solid #E65100; }
+    .sh-logo { background: #E65100; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; font-size: 10px; font-weight: 700; text-align: center; }
+    .sh-logo .lb2 { border: 2px solid #fff; padding: 3px 8px; font-size: 16px; font-weight: 900; letter-spacing: -1px; margin-bottom: 3px; }
+    .sh-c { padding: 10px 14px; border-left: 2px solid #E65100; border-right: 2px solid #E65100; }
+    .sh-d { padding: 10px 12px; }
+    .sh-f { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; font-size: 11px; }
+    .sh-f label { font-weight: 700; color: #E65100; font-size: 10px; min-width: 68px; white-space: nowrap; }
+    .sh-f span { color: #374151; border-bottom: 1px solid #d1d5db; flex: 1; min-height: 13px; }
+    .sh-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .sh-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+    .sh-badge.orange { background: #fff3e0; color: #E65100; }
+    .sh-badge.green  { background: #d1fae5; color: #065f46; }
+    .tbl-outer { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow-x: auto; margin-bottom: 10px; }
+    table.t-c { border-collapse: collapse; width: 100%; font-size: 11px; white-space: nowrap; }
+    table.t-c thead tr.th-g th { background: #6b3a1f; color: #ffd5b8; padding: 3px 5px; text-align: center; font-size: 9px; font-weight: 700; text-transform: uppercase; border-right: 1px solid #854a2a; }
+    table.t-c thead tr.th-m th { background: #E65100; color: #fff; padding: 5px 6px; text-align: center; font-size: 10px; font-weight: 600; border-right: 1px solid #bf4500; }
+    table.t-c td { padding: 4px 6px; border-bottom: 1px solid #f0f0f6; font-size: 10px; color: #374151; }
+    table.t-c tr:nth-child(even) td { background: #fff8f5; }
+    table.t-c td.num { font-weight: 700; color: #E65100; font-family: monospace; background: #fff3e0 !important; text-align: center; }
+    table.t-c td.c { text-align: center; }
+    table.t-c td.gsep { border-left: 2px solid #e5e7eb; }
+    .badge-tipo-p { display: inline-block; padding: 1px 6px; border-radius: 10px; background: #fff3e0; color: #E65100; font-weight: 700; font-size: 10px; }
+    .chk { display: inline-block; width: 10px; height: 10px; border: 1.5px solid #9ca3af; border-radius: 2px; background: #fff; }
+    .chk.on { background: #E65100; border-color: #E65100; }
+    .tr-cap-hdr td { background: #E65100; color: #fff3e0; font-weight: 700; font-size: 9px; letter-spacing: 1px; padding: 5px 8px; border-top: 3px solid #bf4500; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tr-cap-subtot td { background: #fff3e0; color: #bf4500; font-size: 8px; font-weight: 600; padding: 3px 8px; border-bottom: 2px solid #ffccaa; }
+    .tr-cap-end td { background: #fff8f5; color: #9ca3af; font-size: 7.5px; padding: 2px 8px; }
+    .tr-no-cap td { background: #fafafa; color: #6b7280; font-size: 8px; font-weight: 600; padding: 3px 8px; border-top: 2px solid #e5e7eb; }
+    table.t-posa { width: 100%; border-collapse: collapse; font-size: 11px; }
+    table.t-posa thead th { background: #E65100; color: #fff; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 600; white-space: nowrap; }
+    table.t-posa thead th.c { text-align: center; }
+    table.t-posa td { padding: 5px 8px; border-bottom: 1px solid #f0f0f6; color: #374151; }
+    table.t-posa td.c { text-align: center; }
+    .tr-sez td { background: #fff3e0; color: #E65100; font-weight: 700; font-size: 9px; letter-spacing: .7px; text-transform: uppercase; padding: 3px 8px; border-top: 2px solid #ffccaa; }
+    .tr-voce.zero-row td { opacity: .4; }
+    .tr-voce td.ore-f { text-align: center; font-weight: 700; color: #E65100; }
+    .tr-tot td { background: #E65100; color: #fff; font-weight: 700; padding: 7px 8px; }
+    .tr-tot td.ore-f { text-align: center; color: #fff3e0; font-size: 14px; }
+    .posa-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .sum-block { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; }
+    .sum-block h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #E65100; margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px solid #fff3e0; }
+    .sum-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; border-bottom: 1px solid #fff8f5; }
+    .sum-row:last-child { border-bottom: none; }
+    .sum-row .lbl { color: #6b7280; } .sum-row .val { font-weight: 700; color: #1a1a2e; }
+    .sum-row.tot { border-top: 2px solid #fff3e0; margin-top: 3px; padding-top: 5px; }
+    .sum-row.tot .val { color: #E65100; font-size: 13px; }
+    .ore-grid-c { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 10px; }
+    .ore-card-c { text-align: center; padding: 10px; background: #fff8f5; border-radius: 8px; border: 1px solid #ffccaa; }
+    .ore-card-c .ov { font-size: 24px; font-weight: 700; color: #E65100; line-height: 1.1; }
+    .ore-card-c .ol { font-size: 9px; color: #6b7280; margin-top: 3px; text-transform: uppercase; }
+    .tipo-grid-c { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+    .tipo-chip-c { display: flex; align-items: center; gap: 4px; background: #fff3e0; border-radius: 8px; padding: 3px 8px; font-size: 11px; }
+    .tipo-chip-c .sig { font-weight: 700; color: #E65100; }
+    .tipo-chip-c .cnt { font-weight: 700; color: #1a1a2e; }
+    .tipo-chip-c.zero { opacity: .35; }
+    .cap-posa-hdr { background: #E65100; color: #fff3e0; padding: 6px 12px; margin: 10px 0 6px; border-radius: 5px; font-size: .82rem; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cap-posa-subtot { background: #fff3e0; border: 1px solid #ffccaa; border-radius: 6px; padding: 5px 12px; margin: 3px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: .78rem; }
+    .cps-lbl { font-weight: 700; color: #E65100; }
+    .cps-v { background: #ffccaa; color: #7a2d00; border-radius: 8px; padding: 1px 8px; font-weight: 600; font-size: 10px; }
+    .tot-globale-hdr { background: #7a2d00; color: #ffd5b8; padding: 6px 12px; margin: 14px 0 6px; border-radius: 5px; font-size: .82rem; font-weight: 700; }
+    @media print {
+      @page { size: A4 landscape; margin: 7mm; }
+      body { background: #fff; }
+      #modal-sel { display: none !important; }
+      #toolbar { display: none !important; }
+      #wrap { margin: 0; padding: 0; max-width: none; }
+      .sezione-break { page-break-after: always; }
+      .scheda-hdr { border-radius: 0; }
+      .tbl-outer { border-radius: 0; overflow: visible; }
+      table.t-c { font-size: 8px; white-space: normal; }
+      table.t-c thead tr.th-g th { padding: 2px 3px; font-size: 7px; }
+      table.t-c thead tr.th-m th { padding: 3px 4px; font-size: 8px; }
+      table.t-c td { padding: 2px 4px; font-size: 8px; }
+      table.t-posa { font-size: 8px; }
+      table.t-posa thead th { padding: 3px 5px; font-size: 7px; }
+      table.t-posa td { padding: 2px 5px; font-size: 8px; }
+      .tr-sez td { font-size: 7px; }
+      .tr-voce.zero-row { display: none !important; }
+      .ore-card-c .ov { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div id="modal-sel">
+  <div class="sel-box">
+    <div class="sel-logo"><div class="lb">[F4]</div><div class="lt">GRUPPO F4 &mdash; Porte Interne</div></div>
+    <div class="sel-title">&#128438; Stampa combinata</div>
+    <div class="sel-sub">Seleziona i report da includere</div>
+    <div class="sel-options">
+      <label class="sel-opt checked" id="opt-ril">
+        <input type="checkbox" id="chk-ril" checked onchange="updOpt(this,'opt-ril')">
+        <span class="sel-opt-ico">&#128196;</span>
+        <span class="sel-opt-text"><div class="sel-opt-name">Report Rilievo</div><div class="sel-opt-desc">Tabella posizioni porte con capitoli</div></span>
+      </label>
+      <label class="sel-opt checked" id="opt-posa">
+        <input type="checkbox" id="chk-posa" checked onchange="updOpt(this,'opt-posa')">
+        <span class="sel-opt-ico">&#9201;</span>
+        <span class="sel-opt-text"><div class="sel-opt-name">Report Posa</div><div class="sel-opt-desc">Voci di posa con ore calcolate per sistema</div></span>
+      </label>
+    </div>
+    <div class="sel-actions">
+      <button class="btn-annulla" onclick="history.back()">&#8592; Annulla</button>
+      <button class="btn-avvia" onclick="avvia()">&#128438; Genera e stampa</button>
+    </div>
+  </div>
+</div>
+<div id="toolbar" style="display:none">
+  <h1 id="tb-titolo">Stampa combinata Porte</h1>
+  <button class="btn-tb btn-tb-neutral" onclick="riaprModal()">&#9881;&#65039; Selezione</button>
+  <button class="btn-tb btn-tb-neutral" onclick="history.back()">&#8592; Indietro</button>
+  <button class="btn-tb btn-tb-primary" onclick="window.print()">&#128438; Stampa / PDF</button>
+</div>
+<div id="wrap">
+  <div id="stato-msg">Seleziona i report e clicca "Genera e stampa".</div>
+  <div id="out" style="display:none"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+var currentUser=Auth.requireLogin();if(!currentUser)throw new Error('not logged');
+var idRilievo=(new URLSearchParams(window.location.search)).get('idRilievo')||
+              (new URLSearchParams(window.location.search)).get('id');
+if(!idRilievo)history.back();
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function v(x){return(!x&&x!==0)?'':String(x);}
+function chk(val){return val===true||val==='SI'?'<span class="chk on"></span>':'<span class="chk"></span>';}
+function fmtH(x){if(!x&&x!==0)return'—';var r=Math.round(x*1000)/1000;return r.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')||'0';}
+function numPos(p){return p.numero_pos_alfa||p.numero_pos;}
+
+var POS_CTL_PORTE={},POS_PORTE={},ORE_INST_INT={},ORE_SOPRALUCE=0.5;
+var POS_CTL_PORTE_MIN=0.5,POS_PORTE_MIN=1.0,DP_PORTE={};
+var V2DP_PORTE={
+  'PROGETTAZIONE':'prog','GESTIONE ORDINI':'gord','INCONTRI IN CANTIERE':'incant',
+  'SCARICO E CARICO CTL':'scCtl','TRASPORTO CTL':'trCtl',
+  'SCARICO E CARICO PORTE':'scPorte','TRASPORTO PORTE':'trPorte',
+  'RIMOZIONE PORTE':'rimPorta','ASSEMBLAGGIO CTL':'assCtl','INSTALLAZIONE CTL':'instCtl',
+  'REGISTRAZIONE COLLAUDO':'regColl','PULIZIA CANTIERE':'puliz',
+  'SMALTIMENTO PORTE':'smalt','ALLARGAMENTO TELAIO':'allarg'
+};
+
+function buildTablesPorteFromPosa(rows){
+  POS_CTL_PORTE={};POS_PORTE={};ORE_INST_INT={};DP_PORTE={};
+  rows.forEach(function(r){
+    var v2=r.voce;
+    if(v2==='POSIZIONAMENTO CTL PORTE'&&r.piano!==null){POS_CTL_PORTE[String(r.piano)]=parseFloat(r.h_pos)||0.16667;if(r.min_cantiere)POS_CTL_PORTE_MIN=parseFloat(r.min_cantiere);}
+    if(v2==='POSIZIONAMENTO PORTE'&&r.piano!==null){POS_PORTE[String(r.piano)]=parseFloat(r.h_pos)||0.33333;if(r.min_cantiere)POS_PORTE_MIN=parseFloat(r.min_cantiere);}
+    if(v2==='INST PORTE INT'&&r.sistema){if(r.sistema==='SOPRALUCE')ORE_SOPRALUCE=parseFloat(r.h_pos)||0.5;else ORE_INST_INT[r.sistema]=parseFloat(r.h_pos)||1.5;}
+    if(v2==='INST BLINDATE'&&r.sistema==='BLI')DP_PORTE['instBLI']=[parseFloat(r.h_pos)||4,null];
+    if(v2==='INST REI'&&r.sistema==='REI')DP_PORTE['instREI']=[parseFloat(r.h_pos)||1.5,null];
+    var dpKey=V2DP_PORTE[v2];if(dpKey&&r.piano===null&&r.n_campi===null&&!r.sistema)DP_PORTE[dpKey]=[parseFloat(r.h_pos)||0,r.min_cantiere!==null?parseFloat(r.min_cantiere):null];
+  });
+  if(!DP_PORTE['instBLI'])DP_PORTE['instBLI']=[4.0,null];
+  if(!DP_PORTE['instREI'])DP_PORTE['instREI']=[1.5,null];
+}
+
+function pianoKey(p){var n=parseInt(p,10);if(isNaN(n))return'0';return String(Math.min(Math.max(n,-1),10));}
+function posCtlPortaH(piano){return POS_CTL_PORTE[pianoKey(piano)]||0.16667;}
+function posPortaH(piano){return POS_PORTE[pianoKey(piano)]||0.33333;}
+function cOre(n,dp){if(!dp||n<=0)return 0;var b=n*dp[0];return dp[1]?Math.max(b,dp[1]):b;}
+
+function calcolaVociPorte(pos){
+  var nT=pos.length,nCTL=0,nRim=0,nAll=0,nBLI=0,nREI=0;
+  var orePosCTL=0,orePosPorte=0,oreInstInt=0;
+  pos.forEach(function(p){
+    var hasCTL=p.fornitura_ctl_int==='SI'||p.fornitura_ctl_bli==='SI'||p.fornitura_ctl_rei==='SI'||p.install_ctl_int==='SI'||p.install_ctl_bli==='SI'||p.install_ctl_rei==='SI';
+    if(hasCTL){nCTL++;orePosCTL+=posCtlPortaH(p.piano);}
+    if(p.rimozione==='SI'||p.rimozione===true)nRim++;
+    if(p.allargamento_telaio==='SI'||p.allargamento_telaio===true)nAll++;
+    var tp=(p.tipo_porta||'').toUpperCase();
+    if(tp==='BLINDATA'||tp==='BLI')nBLI++;
+    else if(tp==='REI')nREI++;
+    else{var sis=(p.sistema||'ST').toUpperCase();var ore=ORE_INST_INT[sis]!==undefined?ORE_INST_INT[sis]:1.5;if(p.sopraluce==='SI'||p.sopraluce===true)ore+=ORE_SOPRALUCE;oreInstInt+=ore;}
+    orePosPorte+=posPortaH(p.piano);
+  });
+  orePosCTL=nCTL>0?Math.max(orePosCTL,POS_CTL_PORTE_MIN):0;
+  orePosPorte=nT>0?Math.max(orePosPorte,POS_PORTE_MIN):0;
+  var DP=DP_PORTE,nPorteInt=nT-nBLI-nREI;
+  var voci=[
+    {id:'prog',   area:'UFFICIO TECNICO',    serv:'Progettazione',                          n:nT,        dp:DP.prog,    tipo:'indir'},
+    {id:'gord',   area:'UFFICIO TECNICO',    serv:'Gestione ordini',                        n:nT,        dp:DP.gord,    tipo:'indir'},
+    {id:'incant', area:'UFFICIO TECNICO',    serv:'Incontri in cantiere',                   n:nT,        dp:DP.incant,  tipo:'indir'},
+    {id:'scCtl',  area:'MAGAZZINO',          serv:'Scarico e carico controtelai',           n:nCTL,      dp:DP.scCtl,   tipo:'indir'},
+    {id:'trCtl',  area:'TRASPORTO',          serv:'Trasporto e scarico controtelai',        n:nCTL,      dp:DP.trCtl,   tipo:'indir'},
+    {id:'scPorte',area:'MAGAZZINO',          serv:'Scarico e carico porte',                 n:nT,        dp:DP.scPorte, tipo:'indir'},
+    {id:'trPorte',area:'TRASPORTO',          serv:'Trasporto e scarico porte',              n:nT,        dp:DP.trPorte, tipo:'indir'},
+    {id:'posCtl', area:'POSIZIONAMENTO',     serv:'Posizionamento controtelai',             n:nCTL,      dp:null,fixed:orePosCTL,  tipo:'dir'},
+    {id:'posPorte',area:'POSIZIONAMENTO',    serv:'Posizionamento porte',                   n:nT,        dp:null,fixed:orePosPorte, tipo:'dir'},
+    {id:'rimPorta',area:'RIMOZIONE',         serv:'Rimozione porte esistenti',              n:nRim,      dp:DP.rimPorta,tipo:'dir'},
+    {id:'assCtl', area:'ASSEMBLAGGIO CTL',   serv:'Assemblaggio controtelai',               n:nCTL,      dp:DP.assCtl,  tipo:'dir'},
+    {id:'instCtl',area:'INSTALLAZIONE CTL',  serv:'Installazione controtelai',              n:nCTL,      dp:DP.instCtl, tipo:'dir'},
+    {id:'instInt',area:'POSA',               serv:'Installazione porte interne (per sistema)',n:nPorteInt,dp:null,fixed:oreInstInt,tipo:'dir'},
+    {id:'instBLI',area:'POSA',               serv:'Installazione porte blindate',           n:nBLI,      dp:DP.instBLI, tipo:'dir'},
+    {id:'instREI',area:'POSA',               serv:'Installazione porte REI',                n:nREI,      dp:DP.instREI, tipo:'dir'},
+    {id:'regColl',area:'POSA',               serv:'Registrazione e collaudo',               n:nT,        dp:DP.regColl, tipo:'dir'},
+    {id:'puliz',  area:'POSA',               serv:'Pulizia cantiere',                       n:nT,        dp:DP.puliz,   tipo:'dir'},
+    {id:'smalt',  area:'SMALTIMENTO',        serv:'Smaltimento porte esistenti',            n:nRim,      dp:DP.smalt,   tipo:'dir'},
+    {id:'allarg', area:'ALLARGAMENTO TELAIO',serv:'Allargamento telaio',                    n:nAll,      dp:DP.allarg,  tipo:'dir'}
+  ];
+  voci.forEach(function(v2){v2.oreCalc=v2.fixed!==undefined?v2.fixed:cOre(v2.n,v2.dp);});
+  return voci;
+}
+
+function loadAdj(){try{return JSON.parse(localStorage.getItem('f4_posa_adj_'+idRilievo))||{};}catch(e){return{};}}
+function loadAdjCap(capId){try{return JSON.parse(localStorage.getItem('f4_posa_adj_cap_'+idRilievo+'_'+capId))||{};}catch(e){return{};}}
+function loadMode(){return localStorage.getItem('f4_posa_mode_porte_'+idRilievo)||'tot';}
+
+function updOpt(chk,id){document.getElementById(id).classList.toggle('checked',chk.checked);}
+function riaprModal(){document.getElementById('modal-sel').style.display='flex';document.getElementById('toolbar').style.display='none';document.getElementById('out').style.display='none';}
+function avvia(){
+  var wR=document.getElementById('chk-ril').checked,wP=document.getElementById('chk-posa').checked;
+  if(!wR&&!wP){alert('Seleziona almeno un report.');return;}
+  document.getElementById('modal-sel').style.display='none';
+  document.getElementById('toolbar').style.display='flex';
+  document.getElementById('stato-msg').textContent='Caricamento\u2026';
+  document.getElementById('stato-msg').style.display='';
+  loadAndRender(wR,wP);
+}
+
+var SU=APP_CONFIG.SUPABASE_URL,SK=APP_CONFIG.SUPABASE_ANON_KEY;
+function sfetch(path,cb,eb){
+  var x=new XMLHttpRequest();x.open('GET',SU+'/rest/v1/'+path,true);
+  x.setRequestHeader('apikey',SK);x.setRequestHeader('Authorization','Bearer '+(Auth.getToken()||SK));
+  x.onload=function(){if(x.status>=200&&x.status<300){try{cb(JSON.parse(x.responseText));}catch(e){if(eb)eb(e);}}else{if(eb)eb('HTTP '+x.status);}};
+  x.onerror=function(){if(eb)eb('Rete');};x.send();
+}
+
+function loadAndRender(wR,wP){
+  var D={ril:null,pos:null,caps:null,posa:null};var done=0,tot=4;
+  function chkD(){done++;if(done<tot)return;
+    buildTablesPorteFromPosa(D.posa||[]);
+    document.getElementById('stato-msg').style.display='none';
+    var html=renderAll(D.ril,D.pos||[],D.caps||[],wR,wP);
+    var out=document.getElementById('out');out.innerHTML=html;out.style.display='';
+    var codice=D.ril&&D.ril.codice_completo||'';
+    document.getElementById('tb-titolo').textContent='Stampa Porte '+esc(codice);
+    document.title='Stampa Porte '+codice;
+  }
+  sfetch('rilievi?id=eq.'+idRilievo+'&select=id,codice_completo,referente,data_rilievo,data_posa,intervento,note_generali,cantieri(nome_cantiere,tipo_via,indirizzo,comune,provincia,cap,clienti(nome,telefono,email))',
+    function(r){D.ril=r&&r[0]||{};chkD();},function(){D.ril={};chkD();});
+  sfetch('posizioni_porte?id_rilievo=eq.'+idRilievo+'&stato=eq.attivo&select=*&order=ordine.asc',
+    function(r){D.pos=r||[];chkD();},function(){D.pos=[];chkD();});
+  sfetch('capitoli_rilievo?id_rilievo=eq.'+idRilievo+'&stato=eq.attivo&select=*&order=ordine_inizio.asc',
+    function(r){D.caps=r||[];chkD();},function(){D.caps=[];chkD();});
+  sfetch('dati_comuni_posa?tipo=eq.PORTE&stato=eq.attivo&select=*&order=codice.asc,piano.asc',
+    function(r){D.posa=r||[];chkD();},function(){D.posa=[];chkD();});
+}
+
+function renderAll(ril,pos,caps,wR,wP){
+  var cp=ril.cantieri||{},cli=cp.clienti||{};
+  var codice=ril.codice_completo||idRilievo;
+  var locStr=((cp.tipo_via||'')+' '+(cp.indirizzo||'')).trim();
+  var comuneStr=[cp.comune,cp.provincia?'('+cp.provincia+')':'',cp.cap].filter(Boolean).join(' ');
+
+  function mkHdr(sez){
+    var h='<div class="scheda-hdr"><div class="sh-top">';
+    h+='<div class="sh-logo"><div class="lb2">[F4]</div>GRUPPO F4<div style="font-size:8px;opacity:.8;margin-top:2px">'+esc(sez)+'</div></div>';
+    h+='<div class="sh-c">';
+    h+='<div class="sh-f"><label>Riferimento:</label><span>'+(cli.nome?esc(cli.nome)+' \u2014 ':'')+esc(cp.nome_cantiere||'—')+'</span><span style="margin-left:8px;font-size:10px;font-weight:700;color:#E65100;background:#fff3e0;padding:1px 7px;border-radius:8px;flex:none">'+esc(codice)+'</span></div>';
+    h+='<div class="sh-f"><label>Indirizzo:</label><span>'+esc(locStr||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Comune:</label><span>'+esc(comuneStr||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Tel / e-mail:</label><span>'+esc([cli.telefono,cli.email].filter(Boolean).join(' \u2014 ')||'—')+'</span></div>';
+    h+='</div><div class="sh-d">';
+    h+='<div class="sh-f"><label>Intervento:</label><span>'+esc(ril.intervento||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Referente:</label><span>'+esc(ril.referente||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Data rilievo:</label><span>'+esc(ril.data_rilievo||'—')+'</span></div>';
+    h+='<div class="sh-f"><label>Data posa:</label><span>'+esc(ril.data_posa||'—')+'</span></div>';
+    h+='<div class="sh-badges"><span class="sh-badge orange">PORTE INTERNE</span><span class="sh-badge green">'+pos.length+' pos.</span></div>';
+    h+='</div></div>';
+    if(ril.note_generali)h+='<div style="padding:5px 12px;font-size:10px;background:#fffbeb;border-top:1px solid #f59e0b;"><strong style="color:#92400e;">&#128221; Note generali:</strong> <span style="color:#78350f;">'+esc(ril.note_generali)+'</span></div>';
+    h+='</div>';
+    return h;
+  }
+
+  function buildRighe(pcArr,capsArr){
+    var righe=[];
+    pcArr.forEach(function(p){var ord=(p.ordine!==undefined&&p.ordine!==null)?p.ordine:p.numero_pos;righe.push({tipo:'pos',ordine:ord,data:p});});
+    (capsArr||[]).forEach(function(cap){righe.push({tipo:'cap_inizio',ordine:cap.ordine_inizio,data:cap});righe.push({tipo:'cap_fine',ordine:cap.ordine_fine,data:cap});});
+    righe.sort(function(a,b){return a.ordine-b.ordine;});
+    return righe;
+  }
+
+  function groupByCap(pcArr,capsArr){
+    var righe=buildRighe(pcArr,capsArr),gruppi=[],capCorr=null,posCorr=[],posiFuori=[];
+    righe.forEach(function(r){
+      if(r.tipo==='cap_inizio'){capCorr=r.data;posCorr=[];}
+      else if(r.tipo==='cap_fine'){if(capCorr)gruppi.push({cap:capCorr,pos:posCorr.slice()});capCorr=null;posCorr=[];}
+      else{if(capCorr)posCorr.push(r.data);else posiFuori.push(r.data);}
+    });
+    if(posiFuori.length)gruppi.push({cap:{titolo:'Senza capitolo',id:'__fuori__'},pos:posiFuori});
+    return gruppi;
+  }
+
+  var sections=[];
+
+  // ── SEZIONE RILIEVO ──
+  if(wR){
+    var h=mkHdr('Report Rilievo Porte');
+    var NCOL=14;
+    h+='<div class="tbl-outer"><table class="t-c"><thead>';
+    h+='<tr class="th-g"><th colspan="4">IDENTIFICAZIONE</th><th colspan="3" class="gsep">FORO / DIM.</th><th colspan="3" class="gsep">SISTEMA</th><th colspan="3" class="gsep">CARATTERISTICHE</th><th class="gsep">FLAG</th></tr>';
+    h+='<tr class="th-m"><th>N&#176;</th><th>Piano</th><th>Ambiente</th><th>Tipo</th>';
+    h+='<th class="gsep">Foro</th><th>H (mm)</th><th>L (mm)</th>';
+    h+='<th class="gsep">Fornitore</th><th>Sistema</th><th>Sopraluce</th>';
+    h+='<th class="gsep">Modello</th><th>Essenza</th><th>Verso</th>';
+    h+='<th class="gsep c">ALL/CTL/RIM</th>';
+    h+='</tr></thead><tbody>';
+
+    function rowPos(p){
+      var piano=(p.piano!==undefined&&p.piano!==null)?('P'+(parseInt(p.piano)>=0?'+':'')+p.piano):'—';
+      var flags=[];
+      if(p.allargamento_telaio==='SI'||p.allargamento_telaio===true)flags.push('<b style="color:#E65100">ALL</b>');
+      var hasCTL=p.fornitura_ctl_int==='SI'||p.install_ctl_int==='SI'||p.fornitura_ctl_bli==='SI'||p.install_ctl_bli==='SI'||p.fornitura_ctl_rei==='SI'||p.install_ctl_rei==='SI';
+      if(hasCTL)flags.push('<b>CTL</b>');
+      if(p.rimozione==='SI'||p.rimozione===true)flags.push('<b>RIM</b>');
+      var hr='<tr>';
+      hr+='<td class="num">'+esc(v(numPos(p)))+'</td>';
+      hr+='<td class="c">'+piano+'</td>';
+      hr+='<td style="white-space:normal;min-width:50px">'+esc(v(p.ambiente))+'</td>';
+      hr+='<td class="c"><span class="badge-tipo-p">'+esc(v(p.tipo_porta))+'</span></td>';
+      hr+='<td class="c gsep">'+esc(v(p.tipo_foro))+'</td>';
+      hr+='<td class="c">'+esc(v(p.h_mm||p.H_mm))+'</td>';
+      hr+='<td class="c">'+esc(v(p.l_mm||p.L_mm))+'</td>';
+      hr+='<td class="gsep" style="font-size:9px;">'+esc(v(p.fornitore))+'</td>';
+      hr+='<td style="font-size:9px;">'+esc(v(p.sistema))+'</td>';
+      hr+='<td class="c">'+chk(p.sopraluce==='SI'||p.sopraluce===true)+'</td>';
+      hr+='<td class="gsep" style="white-space:normal;min-width:50px;font-size:9px;">'+esc(v(p.modello))+'</td>';
+      hr+='<td style="font-size:9px;">'+esc(v(p.essenza))+'</td>';
+      hr+='<td style="font-size:9px;">'+esc(v(p.verso_apertura))+'</td>';
+      hr+='<td class="gsep c" style="font-size:8px;">'+flags.join(' ')+'</td>';
+      hr+='</tr>';
+      return hr;
+    }
+
+    function rowSubtot(titolo,posCap){
+      var nP=posCap.length,nRim=0,tipiMap={};
+      posCap.forEach(function(p){if(p.rimozione==='SI'||p.rimozione===true)nRim++;var t=p.tipo_porta||'—';tipiMap[t]=(tipiMap[t]||0)+1;});
+      var chips='<b>'+nP+'</b> pos.';Object.keys(tipiMap).sort().forEach(function(t){chips+=' \u25AA '+t+': <b>'+tipiMap[t]+'</b>';});if(nRim)chips+=' \u25AA Rim: <b>'+nRim+'</b>';
+      return '<tr class="tr-cap-subtot"><td colspan="'+NCOL+'">Subtotale \u2014 '+esc(titolo)+' \u2502 '+chips+'</td></tr>';
+    }
+
+    var righe=buildRighe(pos,caps),capCorr=null,posCap=[],posiFuori=[];
+    righe.forEach(function(r){
+      if(r.tipo==='cap_inizio'){
+        if(posiFuori.length){h+='<tr class="tr-no-cap"><td colspan="'+NCOL+'">Posizioni senza capitolo ('+posiFuori.length+')</td></tr>';posiFuori.forEach(function(p){h+=rowPos(p);});posiFuori=[];}
+        capCorr=r.data;posCap=[];
+        h+='<tr class="tr-cap-hdr"><td colspan="'+NCOL+'">\u2550\u2550\u2550 '+esc(r.data.titolo)+' \u2550\u2550\u2550</td></tr>';
+      }else if(r.tipo==='cap_fine'){
+        posCap.forEach(function(p){h+=rowPos(p);});
+        if(posCap.length)h+=rowSubtot(capCorr?capCorr.titolo:'',posCap);
+        h+='<tr class="tr-cap-end"><td colspan="'+NCOL+'">\u2500\u2500\u2500 Fine: '+esc(r.data.titolo)+' \u2500\u2500\u2500</td></tr>';
+        capCorr=null;posCap=[];
+      }else{if(capCorr)posCap.push(r.data);else posiFuori.push(r.data);}
+    });
+    if(posiFuori.length){if(caps&&caps.length)h+='<tr class="tr-no-cap"><td colspan="'+NCOL+'">Posizioni senza capitolo ('+posiFuori.length+')</td></tr>';posiFuori.forEach(function(p){h+=rowPos(p);});}
+    h+='</tbody></table></div>';
+    sections.push(h);
+  }
+
+  // ── SEZIONE POSA ──
+  if(wP){
+    var h=mkHdr('Report Posa Porte');
+    var POSA_MODE=loadMode(),adj=loadAdj();
+    var ct={INT:0,BLI:0,REI:0};
+    pos.forEach(function(p){var t=(p.tipo_porta||'').toUpperCase();if(t==='BLINDATA'||t==='BLI')ct.BLI++;else if(t==='REI')ct.REI++;else ct.INT++;});
+    h+='<div class="tipo-grid-c"><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-right:4px">Posizioni:</span>';
+    [{s:'INT',l:'Interne'},{s:'BLI',l:'Blindate'},{s:'REI',l:'REI'}].forEach(function(t){var n=ct[t.s]||0;h+='<span class="tipo-chip-c'+(n===0?' zero':'')+'"><span class="sig">'+t.s+'</span><span class="cnt">'+n+'</span></span>';});
+    h+='</div>';
+
+    if(caps&&caps.length){
+      var gruppi=groupByCap(pos,caps);
+      var totalVoceCalc={};
+      gruppi.forEach(function(g){var vG=calcolaVociPorte(g.pos);vG.forEach(function(vo){totalVoceCalc[vo.id]=(totalVoceCalc[vo.id]||0)+vo.oreCalc;});});
+      gruppi.forEach(function(g){
+        if(!g.pos.length)return;
+        var vG=calcolaVociPorte(g.pos),capId=g.cap.id||'__fuori__',adjCap=loadAdjCap(capId);
+        var tG=0,oDG=0,oIG=0;
+        vG.forEach(function(vo){
+          var fin;
+          if(POSA_MODE==='cap'){var m=parseFloat((adjCap[vo.id]||{}).minus)||0,pl=parseFloat((adjCap[vo.id]||{}).plus)||0;fin=Math.max(0,Math.round((vo.oreCalc-m+pl)*1000)/1000);}
+          else{var totV=totalVoceCalc[vo.id]||0,prop=totV>0?vo.oreCalc/totV:0;var mProp=((adj[vo.id]||{}).minus||0)*prop,plProp=((adj[vo.id]||{}).plus||0)*prop;fin=Math.max(0,Math.round((vo.oreCalc-mProp+plProp)*1000)/1000);}
+          tG+=fin;if(vo.tipo==='dir')oDG+=fin;else oIG+=fin;
+        });
+        tG=Math.round(tG*1000)/1000;
+        h+='<div class="cap-posa-hdr">\u2550\u2550 '+esc(g.cap.titolo)+' \u2550\u2550 <span style="font-size:.78rem;opacity:.8;">('+g.pos.length+' pos.)</span></div>';
+        var tbH='',lA='';
+        vG.forEach(function(vo){
+          var fin;
+          if(POSA_MODE==='cap'){var m=parseFloat((adjCap[vo.id]||{}).minus)||0,pl=parseFloat((adjCap[vo.id]||{}).plus)||0;fin=Math.max(0,Math.round((vo.oreCalc-m+pl)*1000)/1000);}
+          else{var totV=totalVoceCalc[vo.id]||0,prop=totV>0?vo.oreCalc/totV:0;var mProp=Math.round(((adj[vo.id]||{}).minus||0)*prop*1000)/1000,plProp=Math.round(((adj[vo.id]||{}).plus||0)*prop*1000)/1000;fin=Math.max(0,Math.round((vo.oreCalc-mProp+plProp)*1000)/1000);}
+          if(vo.n===0&&fin===0)return;
+          if(vo.area!==lA){tbH+='<tr class="tr-sez"><td colspan="5">'+vo.area+'</td></tr>';lA=vo.area;}
+          tbH+='<tr class="tr-voce"><td>'+vo.area+'</td><td>'+vo.serv+'</td><td class="c">'+(vo.n>0?vo.n:'—')+'</td><td class="c">'+(vo.dp?fmtH(vo.dp[0]):'—')+'</td><td class="ore-f">'+fmtH(fin)+'</td></tr>';
+        });
+        h+='<div class="tbl-outer"><table class="t-posa"><thead><tr><th style="width:22%">Area</th><th style="width:40%">Servizio</th><th class="c">N</th><th class="c">h/pos</th><th class="c">Ore</th></tr></thead><tbody>'+tbH+'</tbody><tfoot><tr class="tr-tot"><td colspan="4">TOTALE '+esc(g.cap.titolo)+'</td><td class="ore-f">'+fmtH(tG)+'</td></tr></tfoot></table></div>';
+        var giorni=tG>0?Math.ceil(tG/16*10)/10:0;
+        h+='<div class="cap-posa-subtot"><span class="cps-lbl">'+esc(g.cap.titolo)+'</span><span class="cps-v">Dir: '+fmtH(oDG)+'</span><span class="cps-v">Ind: '+fmtH(oIG)+'</span><span class="cps-v">Tot: '+fmtH(tG)+'</span><span class="cps-v">Giorni: '+giorni+'</span>'+(POSA_MODE==='cap'?'<span class="cps-v" style="background:#fef3c7;color:#92400e;">adj cap.</span>':'<span class="cps-v" style="background:#d1fae5;color:#065f46;">ripart. prop.</span>')+'</div>';
+      });
+      h+='<div class="tot-globale-hdr">\u2211 Totali complessivi</div>';
+    }
+
+    var voci=calcolaVociPorte(pos),totCalc=0,totFin=0,areaMap={},tbH='',lastArea='';
+    var globaleFin={};
+    if(POSA_MODE==='cap'&&caps&&caps.length){
+      groupByCap(pos,caps).forEach(function(g){
+        if(!g.pos.length)return;
+        var capId=g.cap.id||'__fuori__',adjCap=loadAdjCap(capId),vG=calcolaVociPorte(g.pos);
+        vG.forEach(function(vo){var m=parseFloat((adjCap[vo.id]||{}).minus)||0,pl=parseFloat((adjCap[vo.id]||{}).plus)||0;var fin=Math.max(0,Math.round((vo.oreCalc-m+pl)*1000)/1000);globaleFin[vo.id]=(globaleFin[vo.id]||0)+fin;});
+      });
+    }
+    voci.forEach(function(vo){
+      if(vo.area!==lastArea){tbH+='<tr class="tr-sez"><td colspan="6">'+vo.area+'</td></tr>';lastArea=vo.area;}
+      var fin;
+      if(POSA_MODE==='cap'&&caps&&caps.length){fin=Math.round((globaleFin[vo.id]||0)*1000)/1000;}
+      else{var minus=parseFloat((adj[vo.id]||{}).minus)||0,plus=parseFloat((adj[vo.id]||{}).plus)||0;fin=Math.max(0,Math.round((vo.oreCalc-minus+plus)*1000)/1000);}
+      totCalc+=vo.oreCalc;totFin+=fin;
+      if(!areaMap[vo.area])areaMap[vo.area]={fin:0,tipo:vo.tipo};areaMap[vo.area].fin+=fin;
+      var isZero=vo.n===0&&vo.oreCalc===0&&fin===0;
+      tbH+='<tr class="tr-voce'+(isZero?' zero-row':'')+'"><td>'+vo.area+'</td><td>'+vo.serv+'</td><td class="c">'+(vo.n>0?vo.n:'—')+'</td><td class="c">'+(vo.dp?fmtH(vo.dp[0]):'—')+'</td><td class="c">'+((vo.dp&&vo.dp[1])?fmtH(vo.dp[1]):'—')+'</td><td class="ore-f">'+fmtH(fin)+'</td></tr>';
+    });
+    h+='<div class="tbl-outer"><table class="t-posa"><thead><tr><th style="width:22%">Area</th><th style="width:38%">Servizio</th><th class="c">N</th><th class="c">h/pos</th><th class="c">Min</th><th class="c">Ore fin.</th></tr></thead><tbody>'+tbH+'</tbody><tfoot><tr class="tr-tot"><td colspan="5">TOTALE</td><td class="ore-f">'+fmtH(totFin)+'</td></tr></tfoot></table></div>';
+    var oreDir=0,oreInd=0,aHtml='';
+    Object.keys(areaMap).forEach(function(a){var d=areaMap[a];aHtml+='<div class="sum-row"><span class="lbl">'+a+'</span><span class="val">'+fmtH(d.fin)+'</span></div>';if(d.tipo==='dir')oreDir+=d.fin;else oreInd+=d.fin;});
+    aHtml+='<div class="sum-row tot"><span class="lbl">TOTALE</span><span class="val">'+fmtH(totFin)+'</span></div>';
+    var oHtml='<div class="sum-row"><span class="lbl">Ore Dirette</span><span class="val">'+fmtH(oreDir)+'</span></div><div class="sum-row"><span class="lbl">Ore Indirette</span><span class="val">'+fmtH(oreInd)+'</span></div><div class="sum-row tot"><span class="lbl">Totale</span><span class="val">'+fmtH(totFin)+'</span></div>';
+    h+='<div class="posa-bottom"><div class="sum-block"><h3>Per area</h3>'+aHtml+'</div><div class="sum-block"><h3>Ore</h3>'+oHtml+'</div></div>';
+    var giorni=totFin>0?Math.ceil(totFin/16*10)/10:0;
+    h+='<div class="ore-grid-c">';
+    [{l:'Ore Dirette',v:fmtH(oreDir)},{l:'Ore Indirette',v:fmtH(oreInd)},{l:'Ore Totali',v:fmtH(totFin)},{l:'Giorni stimati',v:fmtH(giorni)}].forEach(function(item){h+='<div class="ore-card-c"><div class="ov">'+item.v+'</div><div class="ol">'+item.l+'</div></div>';});
+    h+='</div>';
+    sections.push(h);
+  }
+
+  return sections.map(function(s,i){var isLast=(i===sections.length-1);return '<div class="sezione'+(isLast?'':' sezione-break')+'">'+s+'</div>';}).join('');
+}
+</script>
+</body>
+</html>
