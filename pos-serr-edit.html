@@ -656,6 +656,12 @@ function loadStratigrafie(){
 }
 
 function load(){
+  DBLocal.getAll('posizioni_serr', function(allPos){
+  var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo; });
+  var mx = 0;
+  fr.forEach(function(p){ if ((parseInt(p.numero_pos)||0) > mx) mx = parseInt(p.numero_pos)||0; });
+  _nextNumPos = mx + 1;
+});
   DBLocal.getAll('db_serramento',function(db){
     _dbSerr=db;
     var matSeen={};_dbSerr.forEach(function(d){if(d&&d.materiale)matSeen[d.materiale]=1;});
