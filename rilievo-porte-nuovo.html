@@ -231,10 +231,10 @@ function load() {
     });
   } else {
     DBLocal.getAll('clienti', function(cl) {
-      _clientiAll = cl.filter(function(c) { return c.stato === 'attivo'; });
+      _clientiAll = cl.filter(function(c) { return c.stato === 'bozza'; });
       _clientiAll.sort(function(a, b) { return (a.nome || '').localeCompare(b.nome || '', 'it'); });
       DBLocal.getAll('cantieri', function(ca) {
-        _cantieriAll = ca.filter(function(c) { return c.stato === 'attivo'; });
+        _cantieriAll = ca.filter(function(c) { return c.stato === 'bozza'; });
         var sel = document.getElementById('pickerCliente');
         _clientiAll.forEach(function(c) { sel.appendChild(new Option(c.nome, c.id)); });
         document.getElementById('pickerBox').style.display = 'block';
@@ -370,7 +370,7 @@ function salva() {
       data_rilievo: document.getElementById('fData').value,
       data_posa:    document.getElementById('fPosa').value || null,
       note:         document.getElementById('fNote').value || null,
-      stato:        'attivo'
+      stato:        'bozza'
     };
     API.writeRecord('insert', 'rilievi', data, function(err, saved) {
       if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva'; }
@@ -391,7 +391,7 @@ function salva() {
       comune:        document.getElementById('rComuneInput').value || null,
       provincia:     document.getElementById('rProvincia').value || null,
       cap:           document.getElementById('rCap').value || null,
-      stato:         'attivo'
+      stato:         'bozza'
     };
     API.writeRecord('update', 'cantieri', Object.assign({id: idCantiere}, cantPatch), function(errC) {
       if (errC) console.warn('Aggiornamento cantiere fallito:', errC);
