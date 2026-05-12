@@ -21,13 +21,13 @@
     .form-ctrl { width:100%; border:2px solid var(--c-border); border-radius:10px; padding:11px 13px; font-size:15px; font-family:inherit; color:var(--c-text); background:var(--c-surface); outline:none; -webkit-appearance:none; transition:border-color .15s; box-sizing:border-box; }
     .form-ctrl:focus { border-color:var(--c-accent); }
     .form-ctrl:disabled { background:var(--c-bg); color:var(--c-text-sec); }
-    /* Banner indirizzo */
+    .picker-step { background:#eef2ff; border:1.5px solid #c7d2fe; border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+    .picker-step-lbl { font-size:11px; font-weight:700; color:#3730a3; text-transform:uppercase; letter-spacing:.4px; margin-bottom:8px; }
     .addr-banner { background:#eef2ff; border:1.5px solid #c7d2fe; border-radius:10px; padding:12px 14px; margin-bottom:14px; }
     .addr-banner-txt { font-size:13px; color:#3730a3; font-weight:500; margin-bottom:10px; }
     .addr-banner-btns { display:flex; gap:8px; flex-wrap:wrap; }
     .btn-addr-si { background:var(--c-accent); color:#fff; border:none; border-radius:8px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
     .btn-addr-no { background:#fff; color:var(--c-accent); border:2px solid var(--c-accent); border-radius:8px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
-    /* Autocomplete */
     .ac-wrap { position:relative; }
     .ac-list { position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:2px solid var(--c-accent); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:200; max-height:220px; overflow-y:auto; display:none; }
     .ac-list.open { display:block; }
@@ -51,88 +51,105 @@
 
 <div style="position:fixed;top:56px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 32px;" id="formWrap">
 
-  <!-- DATI CANTIERE -->
-  <div class="fsec">
-    <div class="fsec-hdr">&#127959; DATI CANTIERE</div>
-    <div class="fsec-body">
-      <div class="form-group-m">
-        <label class="form-label-m">Nome cantiere <span class="req">*</span></label>
-        <input class="form-ctrl" type="text" id="fNome" placeholder="es. Villa Rossi" onchange="markDirty()"/>
-      </div>
-      <div class="form-group-m">
-        <label class="form-label-m">Cantiere padre <span style="font-size:10px;font-weight:400;">(se sotto-cantiere)</span></label>
-        <select class="form-ctrl" id="fPadre" onchange="markDirty()">
-          <option value="">— Nessuno (primo livello) —</option>
-        </select>
-      </div>
+  <!-- PICKER CLIENTE — visibile solo se arriva da Home senza id_cliente -->
+  <div id="pickerBox" style="display:none;">
+    <div class="picker-step">
+      <div class="picker-step-lbl">&#128100; Seleziona il cliente</div>
+      <select class="form-ctrl" id="pickerCliente" onchange="onPickerClienteChange()">
+        <option value="">— Seleziona cliente —</option>
+      </select>
     </div>
   </div>
 
-  <!-- INDIRIZZO -->
-  <div class="fsec">
-    <div class="fsec-hdr">&#128205; INDIRIZZO</div>
-    <div class="fsec-body">
+  <!-- FORM PRINCIPALE -->
+  <div id="formMain" style="display:none;">
 
-      <!-- Banner usa indirizzo cliente -->
-      <div class="addr-banner" id="addrBanner" style="display:none;">
-        <div class="addr-banner-txt" id="addrBannerTxt">&#128205; L'indirizzo del cantiere è lo stesso del cliente?</div>
-        <div class="addr-banner-btns">
-          <button class="btn-addr-si" onclick="usaIndirizzoCliente()">&#10003; Sì, usa i dati del cliente</button>
-          <button class="btn-addr-no" onclick="indirizzoManuale()">&#9998; No, indirizzo diverso</button>
-        </div>
-      </div>
-
-      <div id="addrFields">
-        <div class="form-row-2m">
-          <div class="form-group-m">
-            <label class="form-label-m">Tipo via</label>
-            <input class="form-ctrl" type="text" id="fTipoVia" placeholder="Via" onchange="markDirty()"/>
-          </div>
-          <div class="form-group-m">
-            <label class="form-label-m">Indirizzo</label>
-            <input class="form-ctrl" type="text" id="fIndirizzo" placeholder="es. Roma, 5" onchange="markDirty()"/>
-          </div>
+    <!-- DATI CANTIERE -->
+    <div class="fsec">
+      <div class="fsec-hdr">&#127959; DATI CANTIERE</div>
+      <div class="fsec-body">
+        <div class="form-group-m">
+          <label class="form-label-m">Nome cantiere <span class="req">*</span></label>
+          <input class="form-ctrl" type="text" id="fNome" placeholder="es. Villa Rossi" onchange="markDirty()"/>
         </div>
         <div class="form-group-m">
-          <label class="form-label-m">Comune</label>
-          <div class="ac-wrap">
-            <input class="form-ctrl" type="text" id="fComune" placeholder="Cerca comune..." autocomplete="off"
-              oninput="onComuneInput()" onblur="onComuneBlur()" onchange="markDirty()"/>
-            <div class="ac-list" id="acList"></div>
+          <label class="form-label-m">Cantiere padre <span style="font-size:10px;font-weight:400;">(se sotto-cantiere)</span></label>
+          <select class="form-ctrl" id="fPadre" onchange="markDirty()">
+            <option value="">— Nessuno (primo livello) —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- INDIRIZZO -->
+    <div class="fsec">
+      <div class="fsec-hdr">&#128205; INDIRIZZO</div>
+      <div class="fsec-body">
+        <div class="addr-banner" id="addrBanner" style="display:none;">
+          <div class="addr-banner-txt" id="addrBannerTxt">&#128205; Usa l'indirizzo del cliente?</div>
+          <div class="addr-banner-btns">
+            <button class="btn-addr-si" onclick="usaIndirizzoCliente()">&#10003; Sì, usa i dati del cliente</button>
+            <button class="btn-addr-no" onclick="indirizzoManuale()">&#9998; No, indirizzo diverso</button>
           </div>
         </div>
-        <div class="form-row-2m">
-          <div class="form-group-m">
-            <label class="form-label-m">Provincia</label>
-            <input class="form-ctrl" type="text" id="fProvincia" placeholder="es. PN" maxlength="2"
-              oninput="this.value=this.value.toUpperCase()" onchange="markDirty()"/>
+        <div id="addrFields">
+          <div class="form-row-2m">
+            <div class="form-group-m">
+              <label class="form-label-m">Tipo via</label>
+              <select class="form-ctrl" id="fTipoVia" onchange="markDirty()">
+                <option value="">—</option>
+                <option>Via</option><option>Piazza</option><option>Largo</option>
+                <option>Viale</option><option>Corso</option><option>Strada</option>
+                <option>Piazzale</option><option>Calle</option><option>Contrada</option>
+              </select>
+            </div>
+            <div class="form-group-m">
+              <label class="form-label-m">Indirizzo</label>
+              <input class="form-ctrl" type="text" id="fIndirizzo" placeholder="es. Roma, 5" onchange="markDirty()"/>
+            </div>
           </div>
           <div class="form-group-m">
-            <label class="form-label-m">CAP</label>
-            <input class="form-ctrl" type="text" id="fCap" placeholder="es. 33070" maxlength="5" onchange="markDirty()"/>
+            <label class="form-label-m">Comune</label>
+            <div class="ac-wrap">
+              <input class="form-ctrl" type="text" id="fComune" placeholder="Cerca comune..." autocomplete="off"
+                oninput="onComuneInput()" onblur="onComuneBlur()" onchange="markDirty()"/>
+              <div class="ac-list" id="acList"></div>
+            </div>
+          </div>
+          <div class="form-row-2m">
+            <div class="form-group-m">
+              <label class="form-label-m">Provincia</label>
+              <input class="form-ctrl" type="text" id="fProvincia" placeholder="es. PN" maxlength="2"
+                oninput="this.value=this.value.toUpperCase()" onchange="markDirty()"/>
+            </div>
+            <div class="form-group-m">
+              <label class="form-label-m">CAP</label>
+              <input class="form-ctrl" type="text" id="fCap" placeholder="es. 33070" maxlength="5" onchange="markDirty()"/>
+            </div>
           </div>
         </div>
       </div>
-
     </div>
-  </div>
 
-  <!-- NOTE -->
-  <div class="fsec">
-    <div class="fsec-hdr">&#128221; NOTE</div>
-    <div class="fsec-body">
-      <div class="form-group-m">
-        <textarea class="form-ctrl" id="fNote" rows="3" placeholder="Note sul cantiere..." onchange="markDirty()"></textarea>
+    <!-- NOTE -->
+    <div class="fsec">
+      <div class="fsec-hdr">&#128221; NOTE</div>
+      <div class="fsec-body">
+        <div class="form-group-m">
+          <textarea class="form-ctrl" id="fNote" rows="3" placeholder="Note sul cantiere..." onchange="markDirty()"></textarea>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div style="padding:4px 0 24px;">
-    <button class="btn btn-primary btn-full btn-lg" onclick="salva()">&#127959; Salva cantiere</button>
-    <div style="text-align:center;margin-top:12px;">
-      <button class="btn btn-ghost" onclick="confirmBack()">Annulla</button>
+    <div style="padding:4px 0 24px;">
+      <button class="btn btn-primary btn-full btn-lg" onclick="salva()">&#127959; Salva cantiere</button>
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn btn-ghost" onclick="confirmBack()">Annulla</button>
+      </div>
     </div>
-  </div>
+
+  </div><!-- /formMain -->
+
 </div>
 
 <script src="js/config.js"></script>
@@ -143,64 +160,86 @@
 var currentUser = Auth.requireLogin();
 if (!currentUser) throw new Error('not logged');
 
-var params = new URLSearchParams(window.location.search);
-var idCliente = params.get('id_cliente');
-if (!idCliente) { history.back(); }
-
-var _dirty = false;
-var _cliente = null;
+var params     = new URLSearchParams(window.location.search);
+var idCliente  = params.get('id_cliente');
+var _dirty     = false;
+var _cliente   = null;
+var _clientiAll = [];
 var _lkIndirizzo = [];
 var _acTimeout = null;
 
 function markDirty() { _dirty = true; }
 
 function load() {
-  // Carica dati cliente per banner indirizzo e subtitle
-  DBLocal.getById('clienti', idCliente, function(cl) {
-    _cliente = cl;
-    if (cl) {
-      document.getElementById('tbSub').textContent = cl.nome || '—';
-      // Mostra banner solo se il cliente ha un indirizzo
-      if (cl.comune || cl.indirizzo) {
-        var txt = '&#128205; L\'indirizzo del cantiere coincide con quello del cliente?';
-        if (cl.comune) txt += '<br><span style="font-size:12px;color:#4f46e5;font-weight:400;">' +
-          [cl.tipo_via, cl.indirizzo, cl.comune].filter(Boolean).join(' ') +
-          (cl.provincia ? ' (' + cl.provincia + ')' : '') +
-          (cl.cap ? ' ' + cl.cap : '') + '</span>';
-        document.getElementById('addrBannerTxt').innerHTML = txt;
-        document.getElementById('addrBanner').style.display = 'block';
-      }
-    }
-  });
-
-  // Carica cantieri esistenti del cliente per "cantiere padre"
-  DBLocal.getAll('cantieri', function(ca) {
-    var cantCliente = ca.filter(function(c) { return c.id_cliente === idCliente && c.stato === 'attivo'; });
-    var sel = document.getElementById('fPadre');
-    cantCliente.sort(function(a, b) { return (a.nome_cantiere || '').localeCompare(b.nome_cantiere || '', 'it'); });
-    cantCliente.forEach(function(c) {
-      sel.appendChild(new Option(c.nome_cantiere || c.id, c.id));
-    });
-  });
-
-  // Carica lookup indirizzi per autocomplete
   DBLocal.getLookup('LK_INDIRIZZO', function(rows) {
     _lkIndirizzo = rows || [];
   });
+
+  if (idCliente) {
+    // Arriva da cliente.html con id_cliente — mostra form direttamente
+    DBLocal.getById('clienti', idCliente, function(cl) {
+      _cliente = cl;
+      mostraForm();
+    });
+  } else {
+    // Arriva da Home senza id_cliente — mostra picker cliente
+    DBLocal.getAll('clienti', function(cl) {
+      _clientiAll = cl.filter(function(c){ return c.stato === 'attivo'; });
+      _clientiAll.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||'','it'); });
+      var sel = document.getElementById('pickerCliente');
+      _clientiAll.forEach(function(c){ sel.appendChild(new Option(c.nome, c.id)); });
+      document.getElementById('pickerBox').style.display = 'block';
+    });
+  }
+}
+
+function onPickerClienteChange() {
+  var cliId = document.getElementById('pickerCliente').value;
+  if (!cliId) { document.getElementById('formMain').style.display = 'none'; return; }
+  idCliente = cliId;
+  _cliente  = _clientiAll.find(function(c){ return c.id === cliId; });
+  document.getElementById('pickerBox').style.display = 'none';
+  mostraForm();
+}
+
+function mostraForm() {
+  // Subtitle
+  if (_cliente) {
+    document.getElementById('tbSub').textContent = _cliente.nome || '—';
+    // Banner indirizzo
+    if (_cliente.comune || _cliente.indirizzo) {
+      var parts = [_cliente.tipo_via, _cliente.indirizzo, _cliente.comune].filter(Boolean).join(' ');
+      if (_cliente.provincia) parts += ' (' + _cliente.provincia + ')';
+      if (_cliente.cap) parts += ' ' + _cliente.cap;
+      document.getElementById('addrBannerTxt').innerHTML =
+        '&#128205; Usa l\'indirizzo del cliente?<br>' +
+        '<span style="font-size:12px;color:#4f46e5;font-weight:400;">' + esc(parts) + '</span>';
+      document.getElementById('addrBanner').style.display = 'block';
+    }
+  }
+  // Cantieri padre
+  if (idCliente) {
+    DBLocal.getAll('cantieri', function(ca) {
+      var cc = ca.filter(function(c){ return c.id_cliente === idCliente && c.stato === 'attivo'; });
+      cc.sort(function(a,b){ return (a.nome_cantiere||'').localeCompare(b.nome_cantiere||'','it'); });
+      var sel = document.getElementById('fPadre');
+      cc.forEach(function(c){ sel.appendChild(new Option(c.nome_cantiere||c.id, c.id)); });
+    });
+  }
+  document.getElementById('formMain').style.display = 'block';
 }
 
 // ── BANNER INDIRIZZO ──
 function usaIndirizzoCliente() {
   if (!_cliente) return;
-  document.getElementById('fTipoVia').value   = _cliente.tipo_via   || '';
-  document.getElementById('fIndirizzo').value = _cliente.indirizzo  || '';
-  document.getElementById('fComune').value    = _cliente.comune     || '';
-  document.getElementById('fProvincia').value = _cliente.provincia  || '';
-  document.getElementById('fCap').value       = _cliente.cap        || '';
+  document.getElementById('fTipoVia').value   = _cliente.tipo_via  || '';
+  document.getElementById('fIndirizzo').value = _cliente.indirizzo || '';
+  document.getElementById('fComune').value    = _cliente.comune    || '';
+  document.getElementById('fProvincia').value = _cliente.provincia || '';
+  document.getElementById('fCap').value       = _cliente.cap       || '';
   document.getElementById('addrBanner').style.display = 'none';
   markDirty();
 }
-
 function indirizzoManuale() {
   document.getElementById('addrBanner').style.display = 'none';
   document.getElementById('fComune').focus();
@@ -212,32 +251,30 @@ function onComuneInput() {
   clearTimeout(_acTimeout);
   _acTimeout = setTimeout(showSuggestions, 150);
 }
-
 function showSuggestions() {
-  var q = (document.getElementById('fComune').value || '').trim().toLowerCase();
+  var q    = (document.getElementById('fComune').value || '').trim().toLowerCase();
   var list = document.getElementById('acList');
   if (q.length < 2) { list.className = 'ac-list'; return; }
-
-  var matches = _lkIndirizzo.filter(function(r) {
+  // Prima: inizia con
+  var matches = _lkIndirizzo.filter(function(r){
     return r && r.comune && r.comune.toLowerCase().indexOf(q) === 0;
-  }).slice(0, 8);
+  }).slice(0, 10);
+  // Fallback: contiene
   if (!matches.length) {
-    matches = _lkIndirizzo.filter(function(r) {
+    matches = _lkIndirizzo.filter(function(r){
       return r && r.comune && r.comune.toLowerCase().indexOf(q) >= 0;
-    }).slice(0, 8);
+    }).slice(0, 10);
   }
   if (!matches.length) { list.className = 'ac-list'; return; }
-
-  list.innerHTML = matches.map(function(r) {
+  list.innerHTML = matches.map(function(r){
     return '<div class="ac-item" onmousedown="selectComune(\'' +
-      esc(r.comune) + '\',\'' + esc(r.provincia || '') + '\',\'' + esc(r.cap || '') + '\')">' +
+      esc(r.comune) + '\',\'' + esc(r.provincia||'') + '\',\'' + esc(r.cap||'') + '\')">' +
       '<div><div class="ac-item-main">' + esc(r.comune) + '</div>' +
-      '<div class="ac-item-sub">' + (r.provincia ? '(' + esc(r.provincia) + ')' : '') + (r.cap ? ' ' + esc(r.cap) : '') + '</div></div>' +
+      '<div class="ac-item-sub">' + (r.provincia?'('+esc(r.provincia)+')':'') + (r.cap?' '+esc(r.cap):'') + '</div></div>' +
       '<div style="color:var(--c-text-ter);font-size:12px;">&#8250;</div></div>';
   }).join('');
   list.className = 'ac-list open';
 }
-
 function selectComune(comune, prov, cap) {
   document.getElementById('fComune').value    = comune;
   if (prov) document.getElementById('fProvincia').value = prov;
@@ -245,15 +282,15 @@ function selectComune(comune, prov, cap) {
   document.getElementById('acList').className = 'ac-list';
   markDirty();
 }
-
 function onComuneBlur() {
-  setTimeout(function() { document.getElementById('acList').className = 'ac-list'; }, 200);
+  setTimeout(function(){ document.getElementById('acList').className = 'ac-list'; }, 200);
 }
 
 // ── VALIDAZIONE ──
 function valida() {
   var errs = [];
-  if (!(document.getElementById('fNome').value || '').trim()) errs.push('Nome cantiere obbligatorio');
+  if (!idCliente) errs.push('Seleziona un cliente');
+  if (!(document.getElementById('fNome').value||'').trim()) errs.push('Nome cantiere obbligatorio');
   return errs;
 }
 
@@ -263,23 +300,23 @@ function salva() {
   if (errs.length) { alert('Campi obbligatori:\n' + errs.join('\n')); return; }
 
   var data = {
-    id_cliente:  idCliente,
-    id_parent:   document.getElementById('fPadre').value || null,   // FIX: era id_cantiere_padre
-    nome_cantiere: (document.getElementById('fNome').value || '').trim(),
-    tipo_via:    document.getElementById('fTipoVia').value || null,
-    indirizzo:   document.getElementById('fIndirizzo').value || null,
-    comune:      document.getElementById('fComune').value || null,
-    provincia:   document.getElementById('fProvincia').value || null,
-    cap:         document.getElementById('fCap').value || null,
-    note:        document.getElementById('fNote').value || null,
-    stato:       'attivo'
+    id_cliente:    idCliente,
+    id_parent:     document.getElementById('fPadre').value || null,
+    nome_cantiere: (document.getElementById('fNome').value||'').trim(),
+    tipo_via:      document.getElementById('fTipoVia').value || null,
+    indirizzo:     document.getElementById('fIndirizzo').value || null,
+    comune:        document.getElementById('fComune').value || null,
+    provincia:     document.getElementById('fProvincia').value || null,
+    cap:           document.getElementById('fCap').value || null,
+    note:          document.getElementById('fNote').value || null,
+    stato:         'attivo'
   };
 
-  var btn = document.querySelector('button[onclick="salva()"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
+  var btns = document.querySelectorAll('[onclick="salva()"]');
+  btns.forEach(function(b){ b.disabled = true; b.textContent = 'Salvataggio...'; });
 
   API.writeRecord('insert', 'cantieri', data, function(err, saved) {
-    if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva'; }
+    btns.forEach(function(b){ b.disabled = false; b.innerHTML = '&#128190; Salva'; });
     if (err) { alert('Errore salvataggio:\n\n' + err); return; }
     _dirty = false;
     API.miniSync('cantieri', function() {
@@ -290,12 +327,15 @@ function salva() {
 
 function confirmBack() {
   if (_dirty && !confirm('Hai modifiche non salvate. Vuoi uscire?')) return;
-  window.location.replace('cliente.html?id=' + idCliente);
+  if (idCliente) window.location.replace('cliente.html?id=' + idCliente);
+  else window.location.replace('home.html');
 }
 
-function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
-window.addEventListener('beforeunload', function(e) { if (_dirty) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', function(e){ if(_dirty){ e.preventDefault(); e.returnValue=''; } });
 load();
 </script>
 </body>
