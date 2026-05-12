@@ -8,7 +8,7 @@ var APP_SHELL = [
   '/f4-rilievi-mobile/rilievo-serr.html',
   '/f4-rilievi-mobile/rilievo-serr-nuovo.html',
   '/f4-rilievi-mobile/rilievo-porte.html',
-  '/f4-rilievi-mobile/rilievo-porte-novo.html',
+  '/f4-rilievi-mobile/rilievo-porte-nuovo.html',
   '/f4-rilievi-mobile/pos-serr-edit.html',
   '/f4-rilievi-mobile/pos-porte-edit.html',
   '/f4-rilievi-mobile/rilievo-edit.html',
