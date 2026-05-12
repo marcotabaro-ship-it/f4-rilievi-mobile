@@ -234,7 +234,7 @@ var API = (function(){
     {name:'LK_REFERENTI',      path:'lk_referenti?stato=eq.attivo&select=*&order=nome_completo.asc'},
     {name:'LK_INTERVENTO',     path:'lk_intervento?stato=eq.attivo&select=*&order=id.asc'},
     {name:'REGOLE_LATI',       path:'regole_lati?stato=eq.attivo&select=*'},
-    {name:'LK_INDIRIZZO',      path:'lk_indirizzo?select=comune,provincia,cap&order=comune.asc'}
+    {name:'LK_INDIRIZZO',      path:'lk_indirizzo?select=comune,provincia,cap&order=comune.asc&limit=10000'}
   ];
 
   function syncLookups(cb){
