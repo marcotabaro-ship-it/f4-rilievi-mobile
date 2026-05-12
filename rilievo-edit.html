@@ -83,7 +83,7 @@
       </div>
       <div class="chk-row">
         <input type="checkbox" id="fAllarme" onchange="markDirty()"/>
-        <label for="fAllarme">&#9888; Allarme presente in cantiere</label>
+        <label for="fAllarme">&#9888; Allarme presente (predisposizione serramenti)</label>
       </div>
       <div class="form-group-m" style="margin-top:12px;">
         <label class="form-label-m">Note generali</label>
@@ -201,7 +201,6 @@ function addOpt(selId, label, val, selected) {
 }
 
 function load() {
-  // Carica lookup in parallelo
   DBLocal.getLookup('LK_REFERENTI', function(rows) {
     (rows || []).forEach(function(r) {
       var label = r.nome_completo || r.nome || r.sigla || '';
@@ -223,7 +222,6 @@ var _lookupDone = 0;
 function afterLookup() {
   _lookupDone++;
   if (_lookupDone < 2) return;
-  // Entrambe le lookup pronte: carica rilievo
   DBLocal.getById('rilievi', idRilievo, function(ril) {
     if (!ril) {
       document.getElementById('infoBanner').textContent = 'Rilievo non trovato. Esegui una sincronizzazione.';
@@ -232,7 +230,6 @@ function afterLookup() {
     _rec = ril;
     _isPorte = (ril.tipo || '').toUpperCase() === 'PORTE';
 
-    // Adatta colore top bar per porte
     if (_isPorte) {
       document.getElementById('topBar').style.background = '#7c2d12';
       document.getElementById('btnSalva').style.background = 'var(--c-orange)';
@@ -241,26 +238,20 @@ function afterLookup() {
     document.getElementById('tbSub').textContent = ril.codice_completo || ril.id.substring(0, 8);
     document.title = 'Modifica ' + (ril.codice_completo || 'rilievo') + ' — F4 Rilievi';
 
-    // Sezioni specifiche per SERR
     if (!_isPorte) {
       document.getElementById('grpGru').style.display = 'block';
       document.getElementById('secNoteComm').style.display = 'block';
-      // Adatta colori fsec-hdr per porte (non serve, default blue)
     }
 
-    // Popola form valori base
     sv('fData',         ril.data_rilievo  || '');
     sv('fPosa',         ril.data_posa     || '');
     sv('fNoteGenerali', ril.note_generali || '');
     sv('fNote',         ril.note          || '');
-    sc('fGru',    ril.gru === 'SI' || ril.gru === true);
+    sc('fGru',     ril.gru === 'SI' || ril.gru === true);
     sc('fAllarme', ril.allarme === true);
-
-    // Select: imposta dopo che le option sono nel DOM
     sv('fReferente',  ril.referente  || '');
     sv('fIntervento', ril.intervento || '');
 
-    // Note commerciali (JSONB da Supabase, arriva come oggetto)
     var nc = ril.note_commerciali || {};
     if (typeof nc === 'string') { try { nc = JSON.parse(nc); } catch(e) { nc = {}; } }
     sv('ncAvvol',    nc.colore_avvol      || '');
@@ -274,16 +265,23 @@ function afterLookup() {
     sv('ncManiMarca', nc.maniglia_marca   || '');
     sv('ncManiMod',  nc.maniglia_modello  || '');
 
-    // Mostra form, nascondi banner
     document.getElementById('infoBanner').style.display = 'none';
     document.getElementById('formBox').style.display = 'block';
-
     _dirty = false;
   });
 }
 
 function raccogliDati() {
-  var data = Object.assign({}, _rec, {
+  // ── Costruisce il payload da zero — NON usa Object.assign con _rec
+  // per evitare di trasmettere campi computati (_tipo, ecc.) a Supabase
+  var data = {
+    id:            _rec.id,
+    id_cantiere:   _rec.id_cantiere,
+    tipo:          _rec.tipo,
+    codice_completo: _rec.codice_completo,
+    revisione:     _rec.revisione,
+    copia:         _rec.copia,
+    stato:         _rec.stato || 'bozza',
     referente:     gv('fReferente'),
     intervento:    gv('fIntervento'),
     data_rilievo:  gv('fData'),
@@ -291,21 +289,21 @@ function raccogliDati() {
     allarme:       gb('fAllarme'),
     note_generali: gv('fNoteGenerali'),
     note:          gv('fNote')
-  });
+  };
 
   if (!_isPorte) {
     data.gru = gb('fGru') ? 'SI' : 'NO';
     data.note_commerciali = {
-      colore_avvol:      document.getElementById('ncAvvol').value    || '',
-      colore_scuretto:   document.getElementById('ncScuretto').value || '',
-      colore_tenda:      document.getElementById('ncTenda').value    || '',
-      colore_frang:      document.getElementById('ncFrang').value    || '',
-      colore_zanzariera: document.getElementById('ncZanz').value     || '',
-      colore_dinox:      document.getElementById('ncDinox').value    || '',
-      colore_copri_int:  document.getElementById('ncCopriInt').value || '',
-      colore_copri_est:  document.getElementById('ncCopriEst').value || '',
+      colore_avvol:      document.getElementById('ncAvvol').value     || '',
+      colore_scuretto:   document.getElementById('ncScuretto').value  || '',
+      colore_tenda:      document.getElementById('ncTenda').value     || '',
+      colore_frang:      document.getElementById('ncFrang').value     || '',
+      colore_zanzariera: document.getElementById('ncZanz').value      || '',
+      colore_dinox:      document.getElementById('ncDinox').value     || '',
+      colore_copri_int:  document.getElementById('ncCopriInt').value  || '',
+      colore_copri_est:  document.getElementById('ncCopriEst').value  || '',
       maniglia_marca:    document.getElementById('ncManiMarca').value || '',
-      maniglia_modello:  document.getElementById('ncManiMod').value  || ''
+      maniglia_modello:  document.getElementById('ncManiMod').value   || ''
     };
   }
 
@@ -322,9 +320,7 @@ function salva() {
     btns.forEach(function(b) { b.disabled = false; b.innerHTML = '&#128190; Salva modifiche'; });
     if (err) { alert('Errore salvataggio:\n' + err); return; }
     _dirty = false;
-    API.miniSync('rilievi', function() {
-      history.back();
-    });
+    API.miniSync('rilievi', function() { history.back(); });
   });
 }
 
