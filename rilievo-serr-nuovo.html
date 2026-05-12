@@ -416,7 +416,7 @@ function salva() {
       stato:        'bozza'
     };
 
-    API.writeRecord('insert', 'rilievi', data, function(err, saved) {
+    API.createRilievo('SERR', idCantiere, data, function(err, saved) {
       if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva'; }
       if (err) { alert('Errore:\n' + err); return; }
       _dirty = false;
