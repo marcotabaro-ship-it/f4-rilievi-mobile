@@ -9,10 +9,13 @@ var API = (function(){
   function isOnline(){ return navigator.onLine; }
 
   function tipoRilievo(r){
+    var t=(r.tipo||'').toUpperCase();
+    if(t==='PORTE') return 'PORTE';
+    if(t==='SERR')  return 'SERR';
     var c=(r.codice_completo||r.tipo_rilievo||'').toUpperCase();
     if(c.indexOf('PORTE')>=0) return 'PORTE';
     if(c.indexOf('SERR')>=0)  return 'SERR';
-    return r.tipo_rilievo||'SERR';
+    return 'SERR';
   }
 
   function sfetch(path, cb, eb){
@@ -73,7 +76,7 @@ var API = (function(){
   }
 
   function sanitizePayload(payload, table){
-    // Elimina campi di posizioni_porte se stiamo salvando posizioni_serr
+    // Rimuovi campi di posizioni_porte quando si salva posizioni_serr
     if(table==='posizioni_serr'){
       ['sopraluce','vetri','mostrine','allargamento_telaio','allargamento_mm',
        'fornitura_ctl_int','fornitura_ctl_bli','fornitura_ctl_rei',
@@ -83,6 +86,7 @@ var API = (function(){
        'colore_cerniere','maniglia_marca','maniglia_modello','maniglia_colore_mat',
        'sp_muro_mm','telaio_decentrato_mm'].forEach(function(k){ delete payload[k]; });
     }
+
     var bools=['telaio_misto','solo_accessori','rimozione','rimozione_accessori',
                'taglio_marmo','angolari_pvc'];
     if(table==='posizioni_porte'){
@@ -90,14 +94,20 @@ var API = (function(){
         'fornitura_ctl_int','fornitura_ctl_bli','fornitura_ctl_rei',
         'install_ctl_int','install_ctl_bli','install_ctl_rei']);
     }
+
     bools.forEach(function(k){
+      // ── FIX: non aggiungere campi che non esistono nel payload ──
+      if(!(k in payload)) return;
       if(payload[k]===null||payload[k]===undefined) payload[k]=false;
       if(payload[k]==='SI'||payload[k]==='true') payload[k]=true;
       if(payload[k]==='NO'||payload[k]==='false') payload[k]=false;
     });
+
+    // Rimuovi campi undefined o null espliciti
     Object.keys(payload).forEach(function(k){
       if(payload[k]===undefined) delete payload[k];
     });
+
     return payload;
   }
 
@@ -251,11 +261,13 @@ var API = (function(){
 
   function miniSync(table, cb){
     var map={
-      'posizioni_serr': syncPosizioniSerr,
+      'posizioni_serr':  syncPosizioniSerr,
       'posizioni_porte': syncPosizioniPorte,
-      'rilievi': syncRilievi,
-      'cantieri': syncCantieri,
-      'clienti': syncClienti
+      'rilievi':         syncRilievi,
+      'cantieri':        syncCantieri,
+      'clienti':         syncClienti,
+      'capitoli_rilievo':syncCapitoli,
+      'stratigrafie':    syncStratigrafie
     };
     if(map[table]) map[table](cb||function(){});
     else if(cb) cb(null);
