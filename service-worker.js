@@ -1,4 +1,4 @@
-var CACHE_NAME = 'f4-mobile-v9';
+var CACHE_NAME = 'f4-mobile-v10';
 var APP_SHELL = [
   '/f4-rilievi-mobile/login.html',
   '/f4-rilievi-mobile/home.html',
