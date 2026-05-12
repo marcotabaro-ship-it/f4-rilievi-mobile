@@ -76,7 +76,6 @@ var API = (function(){
   }
 
   function sanitizePayload(payload, table){
-    // Rimuovi campi di posizioni_porte quando si salva posizioni_serr
     if(table==='posizioni_serr'){
       ['sopraluce','vetri','mostrine','allargamento_telaio','allargamento_mm',
        'fornitura_ctl_int','fornitura_ctl_bli','fornitura_ctl_rei',
@@ -96,14 +95,12 @@ var API = (function(){
     }
 
     bools.forEach(function(k){
-      // ── FIX: non aggiungere campi che non esistono nel payload ──
       if(!(k in payload)) return;
       if(payload[k]===null||payload[k]===undefined) payload[k]=false;
       if(payload[k]==='SI'||payload[k]==='true') payload[k]=true;
       if(payload[k]==='NO'||payload[k]==='false') payload[k]=false;
     });
 
-    // Rimuovi campi undefined o null espliciti
     Object.keys(payload).forEach(function(k){
       if(payload[k]===undefined) delete payload[k];
     });
@@ -147,6 +144,36 @@ var API = (function(){
     } else {
       doSave();
     }
+  }
+
+  // ── CREA RILIEVO con codice corretto (es. SERR-R00C00) ──
+  // Replica la logica _nextCodice della web app.
+  // Legge i rilievi esistenti da IndexedDB per lo stesso cantiere e tipo,
+  // calcola il prossimo codice libero e lo aggiunge al payload.
+  function createRilievo(tipo, idCantiere, data, cb){
+    DBLocal.getAll('rilievi', function(allRil){
+      var esistenti = allRil.filter(function(r){
+        return r.id_cantiere === idCantiere &&
+               (r.tipo || '').toUpperCase() === tipo.toUpperCase();
+      });
+      // Costruisce set dei codici revisione-copia già usati
+      var used = {};
+      esistenti.forEach(function(r){
+        if(r.revisione !== undefined && r.copia !== undefined){
+          used[r.revisione + '-' + r.copia] = true;
+        }
+      });
+      function pad2(n){ return n < 10 ? '0' + String(n) : String(n); }
+      var rev = 0, cop = 0;
+      while(used[rev + '-' + cop]){ cop++; }
+      var codice = tipo + '-R' + pad2(rev) + 'C' + pad2(cop);
+      var dataConCodice = Object.assign({}, data, {
+        codice_completo: codice,
+        revisione:       rev,
+        copia:           cop
+      });
+      writeRecord('insert', 'rilievi', dataConCodice, cb);
+    });
   }
 
   function syncAll(onProgress, onDone){
@@ -326,6 +353,7 @@ var API = (function(){
     savePosizione:      savePosizione,
     checkConflict:      checkConflict,
     writeRecord:        writeRecord,
+    createRilievo:      createRilievo,
     getStats:           getStats
   };
 })();
