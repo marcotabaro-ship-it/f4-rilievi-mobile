@@ -234,7 +234,7 @@ function load() {
       _clientiAll = cl.filter(function(c) { return c.stato === 'attivo'; });
       _clientiAll.sort(function(a, b) { return (a.nome || '').localeCompare(b.nome || '', 'it'); });
       DBLocal.getAll('cantieri', function(ca) {
-        _cantieriAll = ca.filter(function(c) { return c.stato === 'bozza'; });
+        _cantieriAll = ca.filter(function(c) { return c.stato === 'attivo'; });
         var sel = document.getElementById('pickerCliente');
         _clientiAll.forEach(function(c) { sel.appendChild(new Option(c.nome, c.id)); });
         document.getElementById('pickerBox').style.display = 'block';
