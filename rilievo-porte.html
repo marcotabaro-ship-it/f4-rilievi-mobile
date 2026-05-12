@@ -178,6 +178,7 @@ function renderPosizioni() {
     return (p.tipo_porta||'').toUpperCase()===_filtro.toUpperCase();
   });
 
+  document.getElementById('fabNuova').style.display = '';
   if (!pos.length) {
     container.innerHTML='<div class="empty-state"><div class="empty-ico">&#128682;</div><div class="empty-title">Nessuna posizione</div></div>';
     return;
