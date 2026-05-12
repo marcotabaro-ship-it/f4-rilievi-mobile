@@ -1,12 +1,20 @@
-var CACHE_NAME = 'f4-mobile-v6';
+var CACHE_NAME = 'f4-mobile-v7';
 var APP_SHELL = [
   '/f4-rilievi-mobile/login.html',
   '/f4-rilievi-mobile/home.html',
   '/f4-rilievi-mobile/cliente.html',
+  '/f4-rilievi-mobile/cliente-nuovo.html',
+  '/f4-rilievi-mobile/cantiere-nuovo.html',
   '/f4-rilievi-mobile/rilievo-serr.html',
+  '/f4-rilievi-mobile/rilievo-serr-nuovo.html',
   '/f4-rilievi-mobile/rilievo-porte.html',
+  '/f4-rilievi-mobile/rilievo-porte-novo.html',
   '/f4-rilievi-mobile/pos-serr-edit.html',
   '/f4-rilievi-mobile/pos-porte-edit.html',
+  '/f4-rilievi-mobile/rilievo-edit.html',
+  '/f4-rilievi-mobile/capitoli.html',
+  '/f4-rilievi-mobile/stratigrafie.html',
+  '/f4-rilievi-mobile/guida.html',
   '/f4-rilievi-mobile/css/mobile.css',
   '/f4-rilievi-mobile/js/config.js',
   '/f4-rilievi-mobile/js/auth.js',
@@ -28,7 +36,11 @@ self.addEventListener('install', function(e){
 self.addEventListener('activate', function(e){
   e.waitUntil(
     caches.keys().then(function(keys){
-      return Promise.all(keys.filter(function(k){ return k!==CACHE_NAME; }).map(function(k){ return caches.delete(k); }));
+      return Promise.all(
+        keys
+          .filter(function(k){ return k !== CACHE_NAME; })
+          .map(function(k){ return caches.delete(k); })
+      );
     })
   );
   self.clients.claim();
