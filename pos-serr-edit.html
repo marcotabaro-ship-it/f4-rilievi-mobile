@@ -738,6 +738,8 @@ function raccogliDati(){
     zanzariera:document.getElementById('fZanzariera').value||null,
     dinoxill:document.getElementById('fDinoxill').value||null,
     stato:'attivo'
+    numero_pos: isNew ? _nextNumPos : (_rec.numero_pos || null),
+    ordine:     isNew ? (_nextNumPos * 10) : (_rec.ordine || null),
   });
 }
 
