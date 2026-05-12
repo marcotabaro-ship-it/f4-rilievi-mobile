@@ -212,6 +212,7 @@ function renderPosizioni() {
     return (p.tipo_serramento||'').toUpperCase()===_filtro && !p.solo_accessori;
   });
 
+  document.getElementById('fabNuova').style.display = '';
   if (!pos.length) {
     container.innerHTML='<div class="empty-state"><div class="empty-ico">&#128295;</div><div class="empty-title">Nessuna posizione</div></div>';
     return;
