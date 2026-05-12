@@ -436,7 +436,7 @@ function salva() {
       comune:        document.getElementById('rComuneInput').value || null,
       provincia:     document.getElementById('rProvincia').value || null,
       cap:           document.getElementById('rCap').value || null,
-      stato:         'bozza'
+      stato:         'attivo'
     };
     API.writeRecord('update', 'cantieri', Object.assign({id: idCantiere}, cantPatch), function(errC) {
       if (errC) console.warn('Aggiornamento cantiere fallito:', errC);
