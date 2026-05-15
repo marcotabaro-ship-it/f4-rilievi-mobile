@@ -275,16 +275,16 @@ function onPickerClienteChange() {
   cantCliente.sort(function(a, b) { return (a.nome_cantiere || '').localeCompare(b.nome_cantiere || '', 'it'); });
   cantCliente.forEach(function(c) { selC.appendChild(new Option(c.nome_cantiere, c.id)); });
   if (cantCliente.length) {
-  cantBox.style.display = 'block';
-} else {
-  selC.innerHTML = '';
-  cantBox.innerHTML = '<div class="picker-step-lbl">&#127959; 2. Seleziona cantiere</div>' +
-    '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:12px;font-size:13px;color:#92400e;">' +
-    '&#9888; Nessun cantiere per questo cliente.<br><br>' +
-    '<button onclick="window.location.href=\'cantiere-nuovo.html?id_cliente=' + cliId + '\'" ' +
-    'style="background:var(--c-accent);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">&#43; Crea cantiere</button></div>';
-  cantBox.style.display = 'block';
-}
+    cantBox.style.display = 'block';
+  } else {
+    selC.innerHTML = '';
+    cantBox.innerHTML = '<div class="picker-step-lbl">&#127959; 2. Seleziona cantiere</div>' +
+      '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:12px;font-size:13px;color:#92400e;">' +
+      '&#9888; Nessun cantiere per questo cliente.<br><br>' +
+      '<button onclick="window.location.href=\'cantiere-nuovo.html?id_cliente=' + cliId + '\'" ' +
+      'style="background:var(--c-accent);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">&#43; Crea cantiere</button></div>';
+    cantBox.style.display = 'block';
+  }
 }
 
 function onPickerCantiereChange() {
@@ -307,11 +307,11 @@ function mostraForm() {
 
   // Pre-popola campi report edit
   if (_cantiere) {
-    document.getElementById('rTipoVia').value   = _cantiere.tipo_via  || '';
-    document.getElementById('rIndirizzo').value = _cantiere.indirizzo || '';
-    document.getElementById('rComuneInput').value = _cantiere.comune  || '';
-    document.getElementById('rProvincia').value = _cantiere.provincia || '';
-    document.getElementById('rCap').value       = _cantiere.CAP || _cantiere.cap || '';
+    document.getElementById('rTipoVia').value     = _cantiere.tipo_via  || '';
+    document.getElementById('rIndirizzo').value   = _cantiere.indirizzo || '';
+    document.getElementById('rComuneInput').value = _cantiere.comune    || '';
+    document.getElementById('rProvincia').value   = _cantiere.provincia || '';
+    document.getElementById('rCap').value         = _cantiere.CAP || _cantiere.cap || '';
   }
   if (_cliente) {
     document.getElementById('rTelefono').value = _cliente.telefono || '';
@@ -411,7 +411,7 @@ function salva() {
       intervento:   document.getElementById('fIntervento').value,
       data_rilievo: document.getElementById('fData').value,
       data_posa:    document.getElementById('fPosa').value || null,
-      gru:          document.getElementById('fGru').checked ? 'SI' : 'NO',
+      gru:          document.getElementById('fGru').checked,
       note:         document.getElementById('fNote').value || null,
       stato:        'bozza'
     };
