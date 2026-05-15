@@ -279,7 +279,6 @@
   <button onclick="confirmBack()" style="padding:14px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">&#8592;</button>
   <button onclick="salva()" style="flex:1;padding:14px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">&#128190; Salva posizione</button>
 </div>
-
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/db-local.js"></script>
@@ -642,6 +641,7 @@ function populateForm(p){
   _pendingStratId=p.id_stratigrafia_override||p.id_stratigrafia||'';
   ricalcola();_dirty=false;
 }
+
 function loadStratigrafie(){
   DBLocal.getAll('stratigrafie',function(strats){
     var sel=document.getElementById('fStratigrafia');
@@ -737,7 +737,7 @@ function raccogliDati(){
     controtelaio:document.getElementById('fControtelaio').value||null,
     zanzariera:document.getElementById('fZanzariera').value||null,
     dinoxill:document.getElementById('fDinoxill').value||null,
-    stato:'attivo'
+    stato:'attivo',
     numero_pos: isNew ? _nextNumPos : (_rec.numero_pos || null),
     ordine:     isNew ? (_nextNumPos * 10) : (_rec.ordine || null),
   });
