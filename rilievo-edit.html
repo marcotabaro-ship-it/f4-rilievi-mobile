@@ -292,7 +292,7 @@ function raccogliDati() {
   };
 
   if (!_isPorte) {
-    data.gru = gb('fGru') ? 'SI' : 'NO';
+    data.gru = gb('fGru');
     data.note_commerciali = {
       colore_avvol:      document.getElementById('ncAvvol').value     || '',
       colore_scuretto:   document.getElementById('ncScuretto').value  || '',
