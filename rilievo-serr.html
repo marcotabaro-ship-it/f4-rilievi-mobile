@@ -31,6 +31,14 @@
     .det-val.calc { color:var(--c-accent); font-style:italic; }
     .btn-del-sheet { flex:0 0 auto; padding:14px 16px; background:#fee2e2; color:#dc2626; border:2px solid #fca5a5; border-radius:10px; font-size:18px; font-weight:700; cursor:pointer; font-family:inherit; line-height:1; }
     .btn-del-sheet:active { background:#fecaca; }
+
+    /* ── C65/C128 — Barra navigazione report serramenti ── */
+    .report-nav { display:flex; gap:8px; padding:10px 14px 8px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:var(--c-surface,#fff); border-bottom:1px solid var(--c-border,#e5e7eb); }
+    .report-nav::-webkit-scrollbar { display:none; }
+    .report-nav-btn { flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 14px; background:#eef2ff; border:1.5px solid #c7d2fe; border-radius:10px; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; text-decoration:none; }
+    .report-nav-btn:active { background:#e0e7ff; border-color:#a5b4fc; }
+    .report-nav-btn .rn-ico { font-size:18px; line-height:1; }
+    .report-nav-btn .rn-lbl { font-size:10px; font-weight:700; color:#3730a3; white-space:nowrap; }
   </style>
 </head>
 <body>
@@ -62,6 +70,27 @@
       <div style="font-size:10px;opacity:.7;">pos.</div>
     </div>
   </div>
+
+  <!-- ── C65/C128 — Navigazione report serramenti ── -->
+  <div class="report-nav">
+    <button class="report-nav-btn" onclick="window.location.href='report_rilievo.html?id='+idRilievo">
+      <span class="rn-ico">&#128196;</span>
+      <span class="rn-lbl">Report rilievo</span>
+    </button>
+    <button class="report-nav-btn" onclick="window.location.href='report_acc.html?id='+idRilievo">
+      <span class="rn-ico">&#128202;</span>
+      <span class="rn-lbl">Report accessori</span>
+    </button>
+    <button class="report-nav-btn" onclick="window.location.href='report_posa.html?id='+idRilievo">
+      <span class="rn-ico">&#9201;</span>
+      <span class="rn-lbl">Report posa</span>
+    </button>
+    <button class="report-nav-btn" onclick="window.location.href='stampa_combinata.html?id='+idRilievo">
+      <span class="rn-ico">&#128438;</span>
+      <span class="rn-lbl">Stampa combinata</span>
+    </button>
+  </div>
+  <!-- ── fine navigazione report ── -->
 
   <div class="filter-row" style="padding:10px 14px 6px;margin-bottom:0;">
     <button class="filter-chip active" onclick="setFiltro('tutti',this)">Tutti</button>
