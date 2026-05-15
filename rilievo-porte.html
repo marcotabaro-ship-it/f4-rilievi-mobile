@@ -28,6 +28,14 @@
     .det-val  { font-weight:600; color:var(--c-text); text-align:right; max-width:60%; }
     .btn-del-sheet { flex:0 0 auto; padding:14px 16px; background:#fee2e2; color:#dc2626; border:2px solid #fca5a5; border-radius:10px; font-size:18px; font-weight:700; cursor:pointer; font-family:inherit; line-height:1; }
     .btn-del-sheet:active { background:#fecaca; }
+
+    /* ── C133/C128 — Barra navigazione report porte ── */
+    .report-nav { display:flex; gap:8px; padding:10px 14px 8px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:var(--c-surface,#fff); border-bottom:1px solid var(--c-border,#e5e7eb); }
+    .report-nav::-webkit-scrollbar { display:none; }
+    .report-nav-btn { flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 14px; background:#fff7ed; border:1.5px solid #fed7aa; border-radius:10px; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; text-decoration:none; }
+    .report-nav-btn:active { background:#ffedd5; border-color:#fb923c; }
+    .report-nav-btn .rn-ico { font-size:18px; line-height:1; }
+    .report-nav-btn .rn-lbl { font-size:10px; font-weight:700; color:#c2410c; white-space:nowrap; }
   </style>
 </head>
 <body>
@@ -58,6 +66,23 @@
       <div style="font-size:10px;opacity:.7;">pos.</div>
     </div>
   </div>
+
+  <!-- ── C133/C128 — Navigazione report porte ── -->
+  <div class="report-nav">
+    <button class="report-nav-btn" onclick="window.location.href='report_rilievo_porte.html?id='+idRilievo">
+      <span class="rn-ico">&#128196;</span>
+      <span class="rn-lbl">Report rilievo porte</span>
+    </button>
+    <button class="report-nav-btn" onclick="window.location.href='report_posa_porte.html?id='+idRilievo">
+      <span class="rn-ico">&#9201;</span>
+      <span class="rn-lbl">Report posa porte</span>
+    </button>
+    <button class="report-nav-btn" onclick="window.location.href='stampa_combinata_porte.html?id='+idRilievo">
+      <span class="rn-ico">&#128438;</span>
+      <span class="rn-lbl">Stampa combinata porte</span>
+    </button>
+  </div>
+  <!-- ── fine navigazione report porte ── -->
 
   <div class="filter-row" style="padding:10px 14px 6px;margin-bottom:0;">
     <button class="filter-chip active" onclick="setFiltro('tutti',this)">Tutti</button>
@@ -133,31 +158,31 @@ function load() {
     document.getElementById('tbCodice').textContent = ril.codice_completo || ril.id.substring(0,8);
 
     DBLocal.getAll('cantieri', function(ca){
-      var cant=ca.find(function(c){return c.id===ril.id_cantiere;});
+      var cant = ca.find(function(c){ return c.id===ril.id_cantiere; });
       DBLocal.getAll('clienti', function(cl){
-        var cli=cant?cl.find(function(c){return c.id===cant.id_cliente;}):null;
-        var sub='';
-        if (cli) sub+=cli.nome;
-        if (cant) sub+=(sub?' — ':'')+cant.nome_cantiere;
-        document.getElementById('tbSub').textContent=sub||'—';
+        var cli = cant ? cl.find(function(c){ return c.id===cant.id_cliente; }) : null;
+        var sub = '';
+        if (cli) sub += cli.nome;
+        if (cant) sub += (sub?' — ':'')+cant.nome_cantiere;
+        document.getElementById('tbSub').textContent = sub || '—';
 
-        var badges='';
-        if(ril.allarme===true) badges+='<span style="background:rgba(220,38,38,.3);color:#fca5a5;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">&#9888; ALLARME</span> ';
-        if(ril.intervento) badges+='<span style="background:rgba(255,255,255,.15);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">'+esc(ril.intervento)+'</span>';
-        document.getElementById('rilBadges').innerHTML=badges;
+        var badges = '';
+        if (ril.intervento) badges += '<span style="background:rgba(255,255,255,.15);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">'+esc(ril.intervento)+'</span>';
+        document.getElementById('rilBadges').innerHTML = badges;
 
-        var info=[];
-        if(ril.referente) info.push('Ref: '+ril.referente);
-        if(ril.data_rilievo) info.push(ril.data_rilievo);
-        document.getElementById('rilInfo').textContent=info.join(' · ');
+        var info = [];
+        if (ril.referente) info.push('Ref: '+ril.referente);
+        if (ril.data_rilievo) info.push(ril.data_rilievo);
+        if (ril.data_posa) info.push('Posa: '+ril.data_posa);
+        document.getElementById('rilInfo').textContent = info.join(' · ');
 
         DBLocal.getAll('posizioni_porte', function(pos){
-          _posizioni=pos.filter(function(p){return p.id_rilievo===idRilievo&&p.stato==='attivo';});
-          document.getElementById('rilNPosN').textContent=_posizioni.length;
+          _posizioni = pos.filter(function(p){ return p.id_rilievo===idRilievo && p.stato==='attivo'; });
+          document.getElementById('rilNPosN').textContent = _posizioni.length;
           DBLocal.getAll('capitoli_rilievo', function(cap){
-            _capitoli=cap.filter(function(c){return c.id_rilievo===idRilievo&&c.stato==='attivo';});
+            _capitoli = cap.filter(function(c){ return c.id_rilievo===idRilievo && c.stato==='attivo'; });
             DBLocal.getAll('db_porte', function(db){
-              _dbPorte=db;
+              _dbPorte = db||[];
               renderPosizioni();
             });
           });
@@ -168,17 +193,17 @@ function load() {
 }
 
 function setFiltro(f, btn) {
-  _filtro=f;
-  document.querySelectorAll('.filter-chip').forEach(function(b){b.classList.remove('active');});
+  _filtro = f;
+  document.querySelectorAll('.filter-chip').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   renderPosizioni();
 }
 
 function renderPosizioni() {
-  var container=document.getElementById('listaPosizioni');
-  var pos=_posizioni.filter(function(p){
-    if(_filtro==='tutti') return true;
-    return (p.tipo_porta||'').toUpperCase()===_filtro.toUpperCase();
+  var container = document.getElementById('listaPosizioni');
+  var pos = _posizioni.filter(function(p){
+    if (_filtro==='tutti') return true;
+    return (p.tipo_porta||'').toUpperCase()===_filtro;
   });
 
   document.getElementById('fabNuova').style.display = '';
@@ -187,66 +212,71 @@ function renderPosizioni() {
     return;
   }
 
-  var righe=[];
+  var righe = [];
   pos.forEach(function(p){ righe.push({tipo:'pos',ordine:p.ordine!=null?p.ordine:p.numero_pos,data:p}); });
-  _capitoli.forEach(function(cap){ righe.push({tipo:'cap_ini',ordine:cap.ordine_inizio,data:cap}); righe.push({tipo:'cap_fin',ordine:cap.ordine_fine,data:cap}); });
-  righe.sort(function(a,b){return a.ordine-b.ordine;});
+  _capitoli.forEach(function(cap){
+    righe.push({tipo:'cap_ini',ordine:cap.ordine_inizio,data:cap});
+    righe.push({tipo:'cap_fin',ordine:cap.ordine_fine,data:cap});
+  });
+  righe.sort(function(a,b){ return a.ordine-b.ordine; });
 
-  var html='';
+  var html = '';
   var capCorr=null, posCapCorr=[], posiFuori=[];
 
+  function flushCap() {
+    if (!capCorr||!posCapCorr.length) return;
+    html += '<div class="cap-sub">Subtotale '+esc(capCorr.titolo)+' &mdash; <b>'+posCapCorr.length+'</b> pos.</div>';
+  }
+
   righe.forEach(function(r){
-    if(r.tipo==='cap_ini'){
-      if(posiFuori.length){
-        html+='<div class="card" style="border-radius:var(--radius);margin:0;">';
-        posiFuori.forEach(function(p){html+=renderPortaRow(p);});
-        html+='</div>'; posiFuori=[];
+    if (r.tipo==='cap_ini') {
+      if (posiFuori.length) {
+        posiFuori.forEach(function(p){ html += renderPosizioneRow(p); });
+        posiFuori=[];
       }
       capCorr=r.data; posCapCorr=[];
-      html+='<div class="cap-hdr"><span>'+esc(r.data.titolo)+'</span></div>';
-      html+='<div class="card" style="margin:0;border-radius:0;">';
+      html += '<div class="cap-hdr"><span>'+esc(r.data.titolo)+'</span></div>';
+      html += '<div class="card" style="margin:0;border-radius:0;">';
       return;
     }
-    if(r.tipo==='cap_fin'){
-      if(capCorr){
-        html+='<div class="cap-sub">Subtotale '+esc(capCorr.titolo)+' &mdash; <b>'+posCapCorr.length+'</b> pos.</div>';
-        html+='</div>';
-      }
-      capCorr=null; posCapCorr=[]; return;
+    if (r.tipo==='cap_fin') {
+      if (capCorr) { flushCap(); html += '</div>'; }
+      capCorr=null; posCapCorr=[];
+      return;
     }
     var p=r.data;
-    if(capCorr){posCapCorr.push(p); html+=renderPortaRow(p);}
+    if (capCorr) { posCapCorr.push(p); html += renderPosizioneRow(p); }
     else posiFuori.push(p);
   });
 
-  if(posiFuori.length){
-    html+='<div class="card" style="border-radius:var(--radius);margin:0;">';
-    posiFuori.forEach(function(p){html+=renderPortaRow(p);});
-    html+='</div>';
+  if (posiFuori.length) {
+    html += '<div class="card" style="border-radius:var(--radius);margin:0;">';
+    posiFuori.forEach(function(p){ html += renderPosizioneRow(p); });
+    html += '</div>';
   }
 
-  container.innerHTML=html;
-  document.getElementById('fabNuova').style.display='';
+  container.innerHTML = html;
+  document.getElementById('fabNuova').style.display = '';
 }
 
-function renderPortaRow(p) {
-  var dim=calcDimPorta(p, _dbPorte);
-  var L=v(p.L_mm||p.l_mm), H=v(p.H_mm||p.h_mm);
-  var dimIns=L&&H?L+' &times; '+H:'—';
-  var dimCalc=dim?Math.round(dim.Lt)+' &times; '+Math.round(dim.Ht):'';
-  var tipoLabel=p.tipo_porta||'?';
-  var pianoStr=p.piano!=null?('P'+(p.piano>=0?'+':'')+p.piano):'—';
-  var sisStr=[p.fornitore, p.sistema].filter(Boolean).join(' / ');
-  var chips='';
-
-  // C131 FIX: tutti e 6 i campi CTL, con isYes() per accettare boolean true / 'true' / 'SI'
-  var hasCTL = isYes(p.fornitura_ctl_int) || isYes(p.fornitura_ctl_bli) || isYes(p.fornitura_ctl_rei) ||
-               isYes(p.install_ctl_int)   || isYes(p.install_ctl_bli)   || isYes(p.install_ctl_rei);
-  if(hasCTL) chips+='<span class="badge" style="background:#fff3e0;color:#E65100;font-size:10px;">CTL</span>';
-  if(p.allargamento_telaio===true||p.allargamento_telaio==='SI') chips+='<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">ALL</span>';
-  if(p.rimozione==='SI'||p.rimozione===true) chips+='<span class="badge badge-disattivo" style="font-size:10px;">Rim</span>';
-  var numDisp=p.numero_pos_alfa||p.numero_pos;
-  return '<div class="pos-row" onclick="apriDettaglio(\''+p.id+'\')">'+
+function renderPosizioneRow(p) {
+  var dim = calcDimPorta(p, _dbPorte);
+  var L=v(p.l_mm||p.L_mm), H=v(p.h_mm||p.H_mm);
+  var dimIns = L&&H ? L+' &times; '+H : '—';
+  var dimCalc = dim ? Math.round(dim.Lt)+' &times; '+Math.round(dim.Ht) : '';
+  var tipoLabel = p.tipo_porta||'?';
+  var pianoStr = p.piano!=null ? ('P'+(p.piano>=0?'+':'')+p.piano) : '—';
+  var sisStr = [p.fornitore, p.sistema].filter(Boolean).join(' / ') || '—';
+  var chips = '';
+  // C131 FIX: badge CTL usa isYes() su tutti e 6 i campi
+  var hasCTL = isYes(p.fornitura_ctl_int)||isYes(p.fornitura_ctl_bli)||isYes(p.fornitura_ctl_rei)||
+               isYes(p.install_ctl_int)||isYes(p.install_ctl_bli)||isYes(p.install_ctl_rei);
+  if (hasCTL) chips += '<span class="badge" style="background:#fee2e2;color:#dc2626;font-size:10px;">CTL</span>';
+  if (isYes(p.allargamento_telaio)) chips += '<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">Allarg.</span>';
+  if (isYes(p.rimozione)) chips += '<span class="badge badge-disattivo" style="font-size:10px;">Rim</span>';
+  if (p.sopraluce===true||p.sopraluce==='SI') chips += '<span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:10px;">Sopr.</span>';
+  var numDisp = p.numero_pos_alfa || p.numero_pos;
+  return '<div class="pos-row" onclick="apriDettaglio(\''+p.id+'\')" data-id="'+p.id+'">'+
     '<div class="pos-num">'+esc(String(numDisp))+'</div>'+
     '<div class="pos-body">'+
       '<div style="display:flex;align-items:baseline;gap:8px;">'+
@@ -256,9 +286,9 @@ function renderPortaRow(p) {
       '</div>'+
       '<div style="display:flex;align-items:baseline;gap:8px;">'+
         '<span class="pos-dim">'+dimIns+'</span>'+
-        (dimCalc&&dimCalc!==dimIns?'<span style="font-size:11px;color:var(--c-orange);font-style:italic;">('+dimCalc+')</span>':'')+
+        (dimCalc?'<span style="font-size:11px;color:var(--c-orange);font-style:italic;">('+dimCalc+')</span>':'')+
       '</div>'+
-      (sisStr?'<div class="pos-sis">'+esc(sisStr)+'</div>':'')+
+      '<div class="pos-sis">'+esc(sisStr)+'</div>'+
       (chips?'<div class="pos-acc">'+chips+'</div>':'')+
     '</div>'+
     '<div style="color:var(--c-text-ter);font-size:18px;">&#8250;</div>'+
