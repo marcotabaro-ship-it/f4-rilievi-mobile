@@ -86,7 +86,7 @@ var API = (function(){
        'sp_muro_mm','telaio_decentrato_mm'].forEach(function(k){ delete payload[k]; });
     }
 
-    var bools=['telaio_misto','solo_accessori','rimozione','rimozione_accessori',
+    var bools=['gru','telaio_misto','solo_accessori','rimozione','rimozione_accessori',
                'taglio_marmo','angolari_pvc'];
     if(table==='posizioni_porte'){
       bools=bools.concat(['sopraluce','vetri','mostrine','allargamento_telaio',
