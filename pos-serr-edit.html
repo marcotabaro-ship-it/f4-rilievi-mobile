@@ -170,7 +170,7 @@
     </div>
     <div class="form-row-2">
       <div class="field-group">
-        <div class="field-label">Stile design <span class="req">*</span></div>
+        <div class="field-label">Stile design</div>
         <select class="form-ctrl" id="fStile" onchange="onStileChange()" disabled><option value="">— Stile —</option></select>
       </div>
       <div class="field-group">
@@ -297,11 +297,43 @@ var _loadedAt = 0;
 var _dbSerr = [];
 var _lkColori = [];
 var _lkCopri = [];
+// 1B — C52: variabile per LK_VETRO
+var _lkVetro = [];
 var _rec = {};
-  var _nextNumPos = 1;
+var _nextNumPos = 1;
 
 if(!idRilievo){ history.back(); }
 
+// ── HELPER STILE DESIGN ──
+// Gestione valore sentinel '__NONE__' per stile_design nullo/vuoto in DB.
+//
+// Il select fStile usa '__NONE__' come valore per le righe DB con stile_design
+// null o vuoto (es. alluminio AT 075, AT 500). L'etichetta UI è "— Nessuno stile —".
+// '__NONE__' non viene mai scritto in Supabase: raccogliDati() lo converte in null.
+//
+// _stiDB2Key(v): DB → chiave UI
+//   null o '' → '__NONE__'
+//   stringa valorizzata → la stringa
+// _stiUI2DB(v): chiave UI → valore DB
+//   '__NONE__' → null
+//   stringa reale → la stringa
+//   null/'' → null
+function _stiDB2Key(v){ return (v&&String(v).trim()!=='')?v:'__NONE__'; }
+function _stiUI2DB(v){ return (v&&v!=='__NONE__')?v:null; }
+
+// ── HELPER MATERIALE SIGLA ──
+// Ritorna la materiale_sigla normalizzata (senza trattini) per il materiale
+// selezionato in fMateriale. Usata per filtrare colori interno/esterno.
+function _getMatSigla(){
+  var mat=document.getElementById('fMateriale').value;
+  if(!mat) return '';
+  var recMat=_dbSerr.find(function(d){return d&&d.materiale===mat;});
+  return recMat?String(recMat.materiale_sigla||'').replace(/-/g,'').trim():'';
+}
+
+// ── CALCOLO TUBOLARE ──
+// Usa (d.stile_design||'')===(p.stile_design||'') per gestire correttamente
+// il caso stile vuoto/null sia lato DB sia lato payload (dopo _stiUI2DB).
 function calcTub(p, db){
   var H=parseFloat(p.H_mm||p.h_mm)||0, L=parseFloat(p.L_mm||p.l_mm)||0;
   var tf=(p.tipo_foro||'').toUpperCase(), ts=(p.tipo_serramento||'').toUpperCase();
@@ -309,9 +341,20 @@ function calcTub(p, db){
   if(!H||!L||!tf) return null;
   var nAlH=(ts==='F'||ts==='FF')?2:1;
   var inclBasso=(ts==='F'||ts==='FF');
+  var pSti=p.stile_design||'';
   var Lt=0,Ht=0;
   if(p.telaio_misto===true||p.telaio_misto==='true'){
-    function getRm(sigla){if(!sigla)return null;for(var i=0;i<db.length;i++){var d=db[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design&&d.variante_telaio===sigla)return d;}return null;}
+    function getRm(sigla){
+      if(!sigla)return null;
+      for(var i=0;i<db.length;i++){
+        var d=db[i];
+        if(d&&d.materiale===p.materiale&&
+           (d.descrizione===p.sistema||d.sistema===p.sistema)&&
+           (d.stile_design||'')===pSti&&
+           d.variante_telaio===sigla)return d;
+      }
+      return null;
+    }
     var rA=getRm(p.variante_alto),rB=getRm(p.variante_basso),rS=getRm(p.variante_sx),rD=getRm(p.variante_dx);
     var nA=rA?(parseFloat(rA.telaio_nascosto_mm)||0):0;
     var nS=rS?(parseFloat(rS.telaio_nascosto_mm)||0):0,nD=rD?(parseFloat(rD.telaio_nascosto_mm)||0):0;
@@ -325,8 +368,21 @@ function calcTub(p, db){
     return {Lt:Math.round(Lt),Ht:Math.round(Ht)};
   }
   var rec=null;
-  for(var i=0;i<db.length;i++){var d=db[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design&&d.variante_telaio===p.variante_telaio){rec=d;break;}}
-  if(!rec){for(var i=0;i<db.length;i++){var d=db[i];if(d&&d.materiale===p.materiale&&(d.descrizione===p.sistema||d.sistema===p.sistema)&&d.stile_design===p.stile_design){rec=d;break;}}}
+  for(var i=0;i<db.length;i++){
+    var d=db[i];
+    if(d&&d.materiale===p.materiale&&
+       (d.descrizione===p.sistema||d.sistema===p.sistema)&&
+       (d.stile_design||'')===pSti&&
+       d.variante_telaio===p.variante_telaio){rec=d;break;}
+  }
+  if(!rec){
+    for(var i=0;i<db.length;i++){
+      var d=db[i];
+      if(d&&d.materiale===p.materiale&&
+         (d.descrizione===p.sistema||d.sistema===p.sistema)&&
+         (d.stile_design||'')===pSti){rec=d;break;}
+    }
+  }
   var na=rec?(parseFloat(rec.telaio_nascosto_mm)||0):0;
   var al=rec?(parseFloat(rec.aletta_mm)||0):0;
   var tv=rec?(parseFloat(rec.telaio_vista_mm)||0):0;
@@ -338,6 +394,8 @@ function calcTub(p, db){
 
 function markDirty(){ _dirty=true; }
 
+// ricalcola: converte '__NONE__' → null tramite _stiUI2DB prima di passare a calcTub.
+// calcTub riceve sempre null o stringa reale, mai '__NONE__'.
 function ricalcola(){
   markDirty();
   var L=parseFloat(document.getElementById('fLmm').value)||0;
@@ -352,7 +410,7 @@ function ricalcola(){
     tipo_serramento:document.getElementById('fTipoSerr').value,
     materiale:document.getElementById('fMateriale').value,
     sistema:document.getElementById('fSistema').value,
-    stile_design:document.getElementById('fStile').value,
+    stile_design:_stiUI2DB(document.getElementById('fStile').value),
     variante_telaio:document.getElementById('fVariante').value,
     telaio_misto:document.getElementById('fTelaioMisto').checked,
     variante_alto:document.getElementById('fVarAlto').value,
@@ -375,57 +433,173 @@ function onSoloAccChange(){
   ricalcola();
 }
 
+// ── CASCATA SERRAMENTO ──
+// Regole applicate:
+// 1. Righe con descrizione vuota/null → ESCLUSE dal select Sistema (righe sentinella DB).
+// 2. Righe con stile_design vuoto/null → INCLUSE con chiave '__NONE__' e
+//    etichetta "— Nessuno stile —". Sono righe operative valide (es. alluminio AT 075, AT 500).
+// 3. Righe con variante_telaio vuota/null → ESCLUSE dal select Variante.
+// 4. '__NONE__' non raggiunge mai Supabase: _stiUI2DB lo converte in null.
+// 5. Auto-selezione: se dopo popolazione esiste una sola opzione reale, viene
+//    preselezionata automaticamente e il livello successivo viene popolato.
+
 function onMaterialeChange(silent){
   if(!silent)markDirty();
   var mat=document.getElementById('fMateriale').value;
-  ['fSistema','fStile','fVariante'].forEach(function(id){var el=document.getElementById(id);el.innerHTML='<option value="">—</option>';el.disabled=true;});
+  ['fSistema','fStile','fVariante'].forEach(function(id){
+    var el=document.getElementById(id);
+    el.innerHTML='<option value="">—</option>';
+    el.disabled=true;
+  });
   document.getElementById('fCodice').value='';
-  document.getElementById('fNVetri').innerHTML='<option value="">—</option>';document.getElementById('fNVetri').disabled=true;
-  document.getElementById('fColoreInt').innerHTML='<option value="">—</option>';document.getElementById('fColoreInt').disabled=true;
-  document.getElementById('fColoreEst').innerHTML='<option value="">—</option>';document.getElementById('fColoreEst').disabled=true;
+  var nvSel=document.getElementById('fNVetri');
+  nvSel.innerHTML='<option value="">—</option>';
+  nvSel.disabled=true;
+  document.getElementById('fColoreInt').innerHTML='<option value="">—</option>';
+  document.getElementById('fColoreInt').disabled=true;
+  document.getElementById('fColoreEst').innerHTML='<option value="">—</option>';
+  document.getElementById('fColoreEst').disabled=true;
   if(!mat)return;
-  var sistSeen={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat)sistSeen[d.descrizione||d.sistema]=1;});
+  // Sistema: esclude righe con descrizione vuota/null
+  var sistSeen={};
+  _dbSerr.forEach(function(d){
+    if(d&&d.materiale===mat&&d.descrizione&&String(d.descrizione).trim()!==''){
+      sistSeen[d.descrizione]=1;
+    }
+  });
   var sSel=document.getElementById('fSistema');
   Object.keys(sistSeen).sort().forEach(function(s){sSel.appendChild(new Option(s,s));});
   sSel.disabled=false;
   updateColoriDropdowns();
 }
 
+// ── MODIFICA 1/3: auto-selezione stile se unica opzione disponibile ──
 function onSistemaChange(silent){
   if(!silent)markDirty();
-  var mat=document.getElementById('fMateriale').value,sis=document.getElementById('fSistema').value;
-  ['fStile','fVariante'].forEach(function(id){var el=document.getElementById(id);el.innerHTML='<option value="">—</option>';el.disabled=true;});
+  var mat=document.getElementById('fMateriale').value;
+  var sis=document.getElementById('fSistema').value;
+  ['fStile','fVariante'].forEach(function(id){
+    var el=document.getElementById(id);
+    el.innerHTML='<option value="">—</option>';
+    el.disabled=true;
+  });
   document.getElementById('fCodice').value='';
-  if(!sis)return;
-  var stileSeen={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis))stileSeen[d.stile_design]=1;});
+  var nvSel=document.getElementById('fNVetri');
+  nvSel.innerHTML='<option value="">—</option>';
+  nvSel.disabled=true;
+  if(!sis){ return; }
+  // Stile: righe con stile_design vuoto/null → chiave '__NONE__', label "— Nessuno stile —"
+  var stileSeen={};
+  _dbSerr.forEach(function(d){
+    if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)){
+      var sk=_stiDB2Key(d.stile_design);
+      stileSeen[sk]=1;
+    }
+  });
   var stSel=document.getElementById('fStile');
-  Object.keys(stileSeen).sort().forEach(function(s){stSel.appendChild(new Option(s,s));});
+  Object.keys(stileSeen).sort().forEach(function(s){
+    var lbl=s==='__NONE__'?'— Nessuno stile —':s;
+    stSel.appendChild(new Option(lbl,s));
+  });
   stSel.disabled=false;
+  // Auto-selezione stile: se esiste una sola opzione reale (valore≠''), preseleziona
+  // e propaga subito a onStileChange(true) per popolare fVariante
+  var realStili=Array.from(stSel.options).filter(function(o){return o.value!=='';});
+  if(realStili.length===1){
+    stSel.value=realStili[0].value;
+    onStileChange(true);
+  }
+  // 1B — C52: aggiorna vetri in base al sistema selezionato
+  updateVetriDropdown();
 }
 
+// ── MODIFICA 2/3: auto-selezione variante se unica opzione disponibile ──
 function onStileChange(silent){
   if(!silent)markDirty();
-  var mat=document.getElementById('fMateriale').value,sis=document.getElementById('fSistema').value,sti=document.getElementById('fStile').value;
-  document.getElementById('fVariante').innerHTML='<option value="">—</option>';document.getElementById('fVariante').disabled=true;
+  var mat=document.getElementById('fMateriale').value;
+  var sis=document.getElementById('fSistema').value;
+  var sti=document.getElementById('fStile').value; // può essere '__NONE__'
+  document.getElementById('fVariante').innerHTML='<option value="">—</option>';
+  document.getElementById('fVariante').disabled=true;
   document.getElementById('fCodice').value='';
   if(!sti)return;
-  var varSeen={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti)varSeen[d.variante_telaio]=1;});
+  // Variante: confronto dSti===sti con normalizzazione tramite _stiDB2Key
+  var varSeen={};
+  _dbSerr.forEach(function(d){
+    if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)){
+      var dSti=_stiDB2Key(d.stile_design);
+      if(dSti===sti&&d.variante_telaio&&String(d.variante_telaio).trim()!==''){
+        varSeen[d.variante_telaio]=1;
+      }
+    }
+  });
   var vSel=document.getElementById('fVariante');
   Object.keys(varSeen).sort().forEach(function(v){vSel.appendChild(new Option(v,v));});
   vSel.disabled=false;
+  // Auto-selezione variante: se esiste una sola variante reale (valore≠''), preseleziona
+  // e propaga subito a onVarianteChange(true) per popolare fCodice e ricalcolare
+  var realVar=Array.from(vSel.options).filter(function(o){return o.value!=='';});
+  if(realVar.length===1){
+    vSel.value=realVar[0].value;
+    onVarianteChange(true);
+  }
   if(document.getElementById('fTelaioMisto').checked){
     var html=vSel.innerHTML;
-    ['fVarAlto','fVarBasso','fVarSx','fVarDx'].forEach(function(id){var s=document.getElementById(id);s.innerHTML=html;s.disabled=false;});
+    ['fVarAlto','fVarBasso','fVarSx','fVarDx'].forEach(function(id){
+      var s=document.getElementById(id);s.innerHTML=html;s.disabled=false;
+    });
   }
 }
 
 function onVarianteChange(silent){
   if(!silent)markDirty();
-  var mat=document.getElementById('fMateriale').value,sis=document.getElementById('fSistema').value;
-  var sti=document.getElementById('fStile').value,vr=document.getElementById('fVariante').value;
-  var rec=_dbSerr.find(function(d){return d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti&&d.variante_telaio===vr;});
+  var mat=document.getElementById('fMateriale').value;
+  var sis=document.getElementById('fSistema').value;
+  var sti=document.getElementById('fStile').value; // può essere '__NONE__'
+  var vr=document.getElementById('fVariante').value;
+  // Cerca il record con stile normalizzato: _stiDB2Key(d.stile_design)===sti
+  var rec=_dbSerr.find(function(d){
+    var dSti=_stiDB2Key(d.stile_design);
+    return d&&d.materiale===mat&&
+           (d.descrizione===sis||d.sistema===sis)&&
+           dSti===sti&&
+           d.variante_telaio===vr;
+  });
   document.getElementById('fCodice').value=rec?(rec.codice||rec.codice_serramento||''):'';
   ricalcola();
+}
+
+// 1B — C52: popola fNVetri da _lkVetro filtrato per sistema selezionato.
+// lk_vetro.sistema corrisponde a db_serramento.descrizione (es. "KF 310").
+// n_vetri: 'D' (Doppio) o 'T' (Triplo).
+// Se disponibile una sola opzione, viene pre-selezionata automaticamente.
+// _pendingNVetri permette di ripristinare il valore già salvato (da populateForm).
+var _pendingNVetri='';
+function updateVetriDropdown(){
+  var sis=document.getElementById('fSistema').value;
+  var nvSel=document.getElementById('fNVetri');
+  nvSel.innerHTML='<option value="">—</option>';
+  nvSel.disabled=true;
+  if(!sis||!_lkVetro.length) return;
+  var opzioni=[];
+  _lkVetro.forEach(function(r){
+    if(r&&r.sistema===sis&&r.n_vetri&&opzioni.indexOf(r.n_vetri)<0){
+      opzioni.push(r.n_vetri);
+    }
+  });
+  opzioni.sort();
+  if(!opzioni.length) return;
+  opzioni.forEach(function(v){
+    var label=v==='T'?'Triplo':v==='D'?'Doppio':v;
+    nvSel.appendChild(new Option(label,v));
+  });
+  nvSel.disabled=false;
+  if(_pendingNVetri&&opzioni.indexOf(_pendingNVetri)>=0){
+    nvSel.value=_pendingNVetri;
+    _pendingNVetri='';
+  } else if(opzioni.length===1){
+    nvSel.value=opzioni[0];
+  }
 }
 
 function onTelaioMistoChange(){
@@ -436,11 +610,15 @@ function onTelaioMistoChange(){
     var vr=document.getElementById('fVariante').value;
     var mat=document.getElementById('fMateriale').value;
     var sis=document.getElementById('fSistema').value;
-    var sti=document.getElementById('fStile').value;
+    var sti=document.getElementById('fStile').value; // può essere '__NONE__'
     var vv={};
     _dbSerr.forEach(function(d){
-      if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti)
-        vv[d.variante_telaio]=1;
+      if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)){
+        var dSti=_stiDB2Key(d.stile_design);
+        if(dSti===sti&&d.variante_telaio&&String(d.variante_telaio).trim()!==''){
+          vv[d.variante_telaio]=1;
+        }
+      }
     });
     var keys=Object.keys(vv).sort();
     if(keys.length===0){
@@ -460,18 +638,25 @@ function onTelaioMistoChange(){
   ricalcola();
 }
 
+// ── COLORI ──
+// Filtra colore interno per matSigla del materiale selezionato.
 function updateColoriDropdowns(){
   var selI=document.getElementById('fColoreInt');
   while(selI.options.length>1)selI.remove(1);
   if(!_lkColori.length){selI.disabled=true;return;}
-  var mat=document.getElementById('fMateriale').value;
-  var recMat=_dbSerr.find(function(d){return d&&d.materiale===mat;});
-  var matSigla=recMat?String(recMat.materiale_sigla||'').replace(/-/g,'').trim():'';
-  var ints=[];_lkColori.forEach(function(r){if(!matSigla||r.materiale===matSigla){if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);}});ints.sort();
+  var matSigla=_getMatSigla();
+  var ints=[];
+  _lkColori.forEach(function(r){
+    if(!matSigla||r.materiale===matSigla){
+      if(r.colore_interno&&ints.indexOf(r.colore_interno)<0)ints.push(r.colore_interno);
+    }
+  });
+  ints.sort();
   ints.forEach(function(c){selI.appendChild(new Option(c,c));});
   selI.disabled=ints.length===0;
 }
 
+// Filtra colore esterno per (colore_interno AND matSigla).
 function onColoreIntChange(silent){
   if(!silent)markDirty();
   var selI=document.getElementById('fColoreInt');
@@ -479,8 +664,18 @@ function onColoreIntChange(silent){
   var ci=selI.value;
   var selE=document.getElementById('fColoreEst');
   if(!selE||selE.tagName!=='SELECT')return;
-  while(selE.options.length>1)selE.remove(1);selE.disabled=!ci;
-  var ests=[];_lkColori.forEach(function(r){if(r.colore_interno===ci&&r.colore_esterno&&ests.indexOf(r.colore_esterno)<0)ests.push(r.colore_esterno);});ests.sort();
+  while(selE.options.length>1)selE.remove(1);
+  selE.disabled=!ci;
+  if(!ci) return;
+  var matSigla=_getMatSigla();
+  var ests=[];
+  _lkColori.forEach(function(r){
+    var matchMat=!matSigla||r.materiale===matSigla;
+    if(matchMat&&r.colore_interno===ci&&r.colore_esterno&&ests.indexOf(r.colore_esterno)<0){
+      ests.push(r.colore_esterno);
+    }
+  });
+  ests.sort();
   ests.forEach(function(c){selE.appendChild(new Option(c,c));});
   if(ests.length===1)selE.value=ests[0];
 }
@@ -492,7 +687,11 @@ function onCopriMatChange(lato,silent){
   var mat=matEl.value;
   dimEl.innerHTML='<option value="">—</option>';dimEl.disabled=!mat;
   if(!mat)return;
-  var dims=[];_lkCopri.forEach(function(r){if(r&&r.materiale_sigla===mat&&r.dimensione_mm!=null&&dims.indexOf(r.dimensione_mm)<0)dims.push(r.dimensione_mm);});
+  var dims=[];
+  _lkCopri.forEach(function(r){
+    if(r&&r.materiale_sigla===mat&&r.dimensione_mm!=null&&dims.indexOf(r.dimensione_mm)<0)
+      dims.push(r.dimensione_mm);
+  });
   dims.sort(function(a,b){return a-b;});
   dims.forEach(function(d){dimEl.appendChild(new Option(d+' mm',d));});
 }
@@ -576,6 +775,7 @@ function setOpt(id,val){
   }
   el.value=v;
 }
+
 function populateForm(p){
   function sc(id,val){var el=document.getElementById(id);if(el)el.checked=!!(val===true||val==='true'||val==='SI');}
   document.getElementById('tbTitle').textContent='Posizione '+(p.numero_pos_alfa||p.numero_pos||'?');
@@ -594,26 +794,66 @@ function populateForm(p){
   sc('fRimozione',p.rimozione);sc('fRimozioneAcc',p.rimozione_accessori);
   sc('fTaglioMarmo',p.taglio_marmo);sc('fAngolariPvc',p.angolari_pvc);
   sc('fSoloAcc',p.solo_accessori);onSoloAccChange();
-  // Accessori
   setOpt('fSchermatura',p.schermatura);setOpt('fCassonetto',p.cassonetto);
   setOpt('fControtelaio',p.controtelaio);setOpt('fZanzariera',p.zanzariera);setOpt('fDinoxill',p.dinoxill);
-  // Cascade serramento sincrono
   if(!p.solo_accessori){
     setOpt('fMateriale',p.materiale);
-    var mat=p.materiale||'',sis=p.sistema||'',sti=p.stile_design||'',vr=p.variante_telaio||'';
-    // Sistema
-    var ssSel=document.getElementById('fSistema');ssSel.innerHTML='<option value="">—</option>';
-    if(mat){var ss={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat)ss[d.descrizione||d.sistema]=1;});Object.keys(ss).sort().forEach(function(x){ssSel.appendChild(new Option(x,x));});ssSel.disabled=false;}
+    var mat=p.materiale||'';
+    var sis=p.sistema||'';
+    // Converti stile_design DB (null/'') → chiave UI ('__NONE__' o stringa reale)
+    var stiKey=_stiDB2Key(p.stile_design||'');
+    var vr=p.variante_telaio||'';
+    // ── Popola Sistema: esclude righe con descrizione vuota ──
+    var ssSel=document.getElementById('fSistema');
+    ssSel.innerHTML='<option value="">—</option>';
+    if(mat){
+      var ss={};
+      _dbSerr.forEach(function(d){
+        if(d&&d.materiale===mat&&d.descrizione&&String(d.descrizione).trim()!==''){
+          ss[d.descrizione]=1;
+        }
+      });
+      Object.keys(ss).sort().forEach(function(x){ssSel.appendChild(new Option(x,x));});
+      ssSel.disabled=false;
+    }
     setOpt('fSistema',sis);
-    // Stile
-    var stSel=document.getElementById('fStile');stSel.innerHTML='<option value="">—</option>';
-    if(mat&&sis){var st={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis))st[d.stile_design]=1;});Object.keys(st).sort().forEach(function(x){stSel.appendChild(new Option(x,x));});stSel.disabled=false;}
-    setOpt('fStile',sti);
-    // Variante
-    var vvSel=document.getElementById('fVariante');vvSel.innerHTML='<option value="">—</option>';
-    if(mat&&sis&&sti){var vv={};_dbSerr.forEach(function(d){if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)&&d.stile_design===sti)vv[d.variante_telaio]=1;});Object.keys(vv).sort().forEach(function(x){vvSel.appendChild(new Option(x,x));});vvSel.disabled=false;}
+    // ── Popola Stile: righe con stile vuoto → '__NONE__' ──
+    var stSel=document.getElementById('fStile');
+    stSel.innerHTML='<option value="">—</option>';
+    if(mat&&sis){
+      var st={};
+      _dbSerr.forEach(function(d){
+        if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)){
+          var sk=_stiDB2Key(d.stile_design);
+          st[sk]=1;
+        }
+      });
+      Object.keys(st).sort().forEach(function(x){
+        var lbl=x==='__NONE__'?'— Nessuno stile —':x;
+        stSel.appendChild(new Option(lbl,x));
+      });
+      stSel.disabled=false;
+    }
+    // Imposta il valore normalizzato (null/'' → '__NONE__')
+    setOpt('fStile',stiKey);
+    // ── Popola Variante: condizione mat&&sis (stiKey è sempre valorizzato) ──
+    var vvSel=document.getElementById('fVariante');
+    vvSel.innerHTML='<option value="">—</option>';
+    if(mat&&sis){
+      var vv={};
+      _dbSerr.forEach(function(d){
+        if(d&&d.materiale===mat&&(d.descrizione===sis||d.sistema===sis)){
+          var dSti=_stiDB2Key(d.stile_design);
+          if(dSti===stiKey&&d.variante_telaio&&String(d.variante_telaio).trim()!==''){
+            vv[d.variante_telaio]=1;
+          }
+        }
+      });
+      Object.keys(vv).sort().forEach(function(x){vvSel.appendChild(new Option(x,x));});
+      vvSel.disabled=false;
+    }
     setOpt('fVariante',vr);
-    // Telaio misto
+    // ── Telaio misto ──
     var misto=p.telaio_misto===true||p.telaio_misto==='true';
     document.getElementById('fTelaioMisto').checked=misto;
     document.getElementById('telaioMistoBox').style.display=misto?'block':'none';
@@ -623,21 +863,22 @@ function populateForm(p){
       setOpt('fVarAlto',p.variante_alto);setOpt('fVarBasso',p.variante_basso);
       setOpt('fVarSx',p.variante_sx);setOpt('fVarDx',p.variante_dx);
     }
-    // Codice
+    // ── Codice ──
     var cdEl=document.getElementById('fCodice');if(cdEl)cdEl.value=p.codice_serramento||p.codice||'';
-    // N Vetri
-    var nvSel=document.getElementById('fNVetri');nvSel.innerHTML='<option value="">—</option>';
-    if(p.n_vetri){nvSel.appendChild(new Option(p.n_vetri==='T'?'Triplo':'Doppio',p.n_vetri));nvSel.value=p.n_vetri;nvSel.disabled=false;}
-    // Colori
+    // ── 1B — C52: N Vetri ──
+    // Imposta _pendingNVetri PRIMA di chiamare updateVetriDropdown()
+    _pendingNVetri=p.n_vetri||'';
+    updateVetriDropdown();
+    // ── Colori ──
     updateColoriDropdowns();
-    setOpt('fColoreInt',p.colore_int);onColoreIntChange(true);setOpt('fColoreEst',p.colore_est);
+    setOpt('fColoreInt',p.colore_int);
+    onColoreIntChange(true);
+    setOpt('fColoreEst',p.colore_est);
   }
-  // Coprifili
   setOpt('fCopriIntMat',p.coprifilo_int_mat);onCopriMatChange('int',true);
   setTimeout(function(){setOpt('fCopriIntDim',p.coprifilo_int_dim);},200);
   setOpt('fCopriEstMat',p.coprifilo_est_mat);onCopriMatChange('est',true);
   setTimeout(function(){setOpt('fCopriEstDim',p.coprifilo_est_dim);},200);
-  // Stratigrafia (attende loadStratigrafie)
   _pendingStratId=p.id_stratigrafia_override||p.id_stratigrafia||'';
   ricalcola();_dirty=false;
 }
@@ -655,16 +896,20 @@ function loadStratigrafie(){
   });
 }
 
+// ── LOAD principale ──
+// LK_VETRO caricato nella stessa catena di callback di LK_COLORI e LK_COPRIFILI,
+// così _lkVetro è garantito prima di buildLookupDropdowns / setupNew / loadExisting.
 function load(){
   DBLocal.getAll('posizioni_serr', function(allPos){
-  var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo; });
-  var mx = 0;
-  fr.forEach(function(p){ if ((parseInt(p.numero_pos)||0) > mx) mx = parseInt(p.numero_pos)||0; });
-  _nextNumPos = mx + 1;
-});
+    var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo; });
+    var mx = 0;
+    fr.forEach(function(p){ if ((parseInt(p.numero_pos)||0) > mx) mx = parseInt(p.numero_pos)||0; });
+    _nextNumPos = mx + 1;
+  });
   DBLocal.getAll('db_serramento',function(db){
     _dbSerr=db;
-    var matSeen={};_dbSerr.forEach(function(d){if(d&&d.materiale)matSeen[d.materiale]=1;});
+    var matSeen={};
+    _dbSerr.forEach(function(d){if(d&&d.materiale)matSeen[d.materiale]=1;});
     var mSel=document.getElementById('fMateriale');
     while(mSel.options.length>1)mSel.remove(1);
     Object.keys(matSeen).sort().forEach(function(m){mSel.appendChild(new Option(m,m));});
@@ -673,14 +918,20 @@ function load(){
       DBLocal.getLookup('LK_COPRIFILI',function(cop){
         _lkCopri=cop||[];
         var cpD={'P':'PVC','L':'LEGNO','A':'ALLUMINIO'};
-        var matsC=[];_lkCopri.forEach(function(r){if(r&&r.materiale_sigla&&matsC.indexOf(r.materiale_sigla)<0)matsC.push(r.materiale_sigla);});matsC.sort();
+        var matsC=[];
+        _lkCopri.forEach(function(r){if(r&&r.materiale_sigla&&matsC.indexOf(r.materiale_sigla)<0)matsC.push(r.materiale_sigla);});
+        matsC.sort();
         ['fCopriIntMat','fCopriEstMat'].forEach(function(id){
           var sel=document.getElementById(id);while(sel.options.length>1)sel.remove(1);
           matsC.forEach(function(m){sel.appendChild(new Option(m+' — '+(cpD[m]||m),m));});
         });
-        buildLookupDropdowns(function(){
-          if(isNew)setupNew();else loadExisting();
-          loadStratigrafie();
+        // 1B — C52: carica LK_VETRO prima di procedere al setup
+        DBLocal.getLookup('LK_VETRO',function(vet){
+          _lkVetro=vet||[];
+          buildLookupDropdowns(function(){
+            if(isNew)setupNew();else loadExisting();
+            loadStratigrafie();
+          });
         });
       });
     });
@@ -695,6 +946,8 @@ function loadExisting(){
   });
 }
 
+// raccogliDati: _stiUI2DB converte '__NONE__' → null prima del salvataggio.
+// Garantisce che Supabase riceva sempre null o una stringa reale, mai '__NONE__'.
 function raccogliDati(){
   var misto=document.getElementById('fTelaioMisto').checked;
   var soloAcc=document.getElementById('fSoloAcc').checked;
@@ -717,7 +970,7 @@ function raccogliDati(){
     note:document.getElementById('fNote').value||null,
     materiale:soloAcc?null:document.getElementById('fMateriale').value||null,
     sistema:soloAcc?null:document.getElementById('fSistema').value||null,
-    stile_design:soloAcc?null:document.getElementById('fStile').value||null,
+    stile_design:soloAcc?null:_stiUI2DB(document.getElementById('fStile').value)||null,
     variante_telaio:(soloAcc||misto)?null:document.getElementById('fVariante').value||null,
     telaio_misto:(!soloAcc&&misto)===true,
     variante_alto:misto?document.getElementById('fVarAlto').value||null:null,
@@ -743,6 +996,11 @@ function raccogliDati(){
   });
 }
 
+// ── MODIFICA 3/3: valida() con controlli su fStile e fVariante ──
+// Logica: se il campo è abilitato E ha almeno una opzione reale (valore≠'')
+// E nessun valore è selezionato → errore obbligatorio.
+// '__NONE__' è un valore valido (stile non specificato nel DB), quindi
+// fStile.value==='__NONE__' NON genera errore.
 function valida(){
   var errs=[];
   var soloAcc=document.getElementById('fSoloAcc').checked;
@@ -752,6 +1010,14 @@ function valida(){
   if(!soloAcc&&!document.getElementById('fTipoSerr').value)errs.push('Tipo serramento obbligatorio');
   if(!soloAcc&&!document.getElementById('fMateriale').value)errs.push('Materiale obbligatorio');
   if(!soloAcc&&!document.getElementById('fSistema').value)errs.push('Sistema obbligatorio');
+  if(!soloAcc){
+    var stSel=document.getElementById('fStile');
+    var hasRealStili=Array.from(stSel.options).some(function(o){return o.value!=='';});
+    if(!stSel.disabled&&hasRealStili&&!stSel.value)errs.push('Stile design obbligatorio');
+    var vvSel=document.getElementById('fVariante');
+    var hasRealVarianti=Array.from(vvSel.options).some(function(o){return o.value!=='';});
+    if(!vvSel.disabled&&hasRealVarianti&&!vvSel.value)errs.push('Variante telaio obbligatoria');
+  }
   return errs;
 }
 
