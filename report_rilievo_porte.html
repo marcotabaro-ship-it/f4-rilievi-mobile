@@ -31,7 +31,6 @@
     .sh-badge.orange { background: #fff3e0; color: #E65100; }
     .sh-badge.green { background: #d1fae5; color: #065f46; }
     .note-generali-bar { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 6px 10px 7px; font-size: 10px; border-top: 1px solid #fde68a; }
-    .sez-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #E65100; margin: 14px 0 8px; padding-bottom: 3px; border-bottom: 2px solid #ffe0cc; }
     .leg-block { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; page-break-inside: avoid; }
     .leg-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .leg-sec h4 { font-size: 9px; font-weight: 700; color: #E65100; margin: 0 0 3px; text-transform: uppercase; }
@@ -41,21 +40,22 @@
     .chk.on { background: #E65100; border-color: #E65100; }
     .tbl-outer { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow-x: auto; margin-bottom: 10px; }
     table.t-pos { border-collapse: collapse; width: 100%; font-size: 11px; white-space: nowrap; }
-    table.t-pos thead tr.th-g th { background: #6b3a1f; color: #ffd5b8; padding: 3px 5px; text-align: center; font-size: 9px; font-weight: 700; text-transform: uppercase; border-right: 1px solid #854a2a; }
-    table.t-pos thead tr.th-m th { background: #E65100; color: #fff; padding: 6px 6px; text-align: center; font-size: 10px; font-weight: 600; border-right: 1px solid #bf4500; }
-    table.t-pos td { padding: 4px 6px; border-bottom: 1px solid #f0f0f6; border-right: 1px solid #f5f5f5; font-size: 10px; color: #374151; }
-    table.t-pos tr:nth-child(even) td { background: #fff8f5; }
-    table.t-pos tr { page-break-inside: avoid; }
-    table.t-pos td.num { font-weight: 700; color: #E65100; font-family: monospace; background: #fff3e0 !important; text-align: center; }
-    table.t-pos td.c { text-align: center; }
-    table.t-pos td.gsep { border-left: 2px solid #e5e7eb; }
-    .badge-tipo-p { display: inline-block; padding: 1px 6px; border-radius: 10px; background: #fff3e0; color: #E65100; font-weight: 700; font-size: 10px; }
-    .tot-bar { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
-    .tot-chip { background: #fff3e0; color: #E65100; border-radius: 10px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
-    .tr-cap-hdr td { background: #E65100; color: #fff3e0; font-weight: 700; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 5px 8px; border-top: 3px solid #bf4500; page-break-after: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .tr-cap-subtot td { background: #fff3e0; color: #bf4500; font-size: 8px; font-weight: 600; padding: 3px 8px; border-bottom: 2px solid #ffccaa; page-break-before: avoid; }
-    .tr-cap-end td { background: #fff8f5; color: #9ca3af; font-size: 7.5px; padding: 2px 8px; border-bottom: 1px solid #e5e7eb; }
-    .tr-no-cap td { background: #fafafa; color: #6b7280; font-size: 8px; font-weight: 600; padding: 3px 8px; border-top: 2px solid #e5e7eb; }
+    table.t-pos thead tr.th-g th { background: #6b3a1f; color: #ffd5b8; padding: 3px 5px; text-align: center; font-size: 9px; font-weight: 700; letter-spacing: .4px; }
+    table.t-pos thead tr.th-m th { background: #E65100; color: #fff; padding: 4px 6px; text-align: left; font-size: 9px; font-weight: 600; white-space: nowrap; }
+    table.t-pos thead tr.th-m th.c { text-align: center; }
+    table.t-pos td { padding: 4px 6px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    table.t-pos tr:nth-child(even) td { background: #fafafa; }
+    table.t-pos tr:hover td { background: #fff3e0; }
+    .num { font-weight: 700; color: #E65100; font-family: monospace; text-align: center; }
+    .c { text-align: center; }
+    .gsep { border-left: 2px solid #fdba74; }
+    .badge-tipo-p { background: #fff3e0; color: #E65100; border: 1px solid #fdba74; border-radius: 4px; padding: 1px 5px; font-size: 9px; font-weight: 700; font-family: monospace; }
+    .tot-bar { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 12px; margin-bottom: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 11px; }
+    .tot-chip { display: flex; align-items: center; gap: 5px; }
+    .tr-cap-hdr td { background: #7c2d12; color: #fecaca; font-weight: 700; font-size: 10px; letter-spacing: .5px; padding: 5px 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tr-cap-subtot td { background: #fff7ed; color: #c2410c; font-size: 10px; font-weight: 600; padding: 4px 8px; border-top: 1px solid #fdba74; border-bottom: 2px solid #fdba74; }
+    .tr-cap-end td { background: #fef3c7; color: #92400e; font-size: 9px; padding: 3px 8px; }
+    .tr-no-cap td { background: #f3f4f6; color: #6b7280; font-size: 10px; font-style: italic; padding: 4px 8px; }
     @media print {
       @page { size: A4 landscape; margin: 7mm; }
       body { background: #fff; }
@@ -101,6 +101,9 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 function v(x){ return (!x&&x!==0)?'':String(x); }
 function chk(val){ return val===true||val==='SI'?'<span class="chk on"></span>':'<span class="chk"></span>'; }
 function numPos(p){ return p.numero_pos_alfa||p.numero_pos; }
+
+// C89 FIX: helper per leggere boolean da Supabase (true), legacy string ('SI') o 'true'
+function isYes(val){ return val===true || val==='SI' || val==='true'; }
 
 var SUPA_URL=APP_CONFIG.SUPABASE_URL, SUPA_KEY=APP_CONFIG.SUPABASE_ANON_KEY;
 function sfetch(path,cb,eb){
@@ -203,12 +206,24 @@ function render(ril,pos,caps){
     '<th class="gsep c">ALL</th><th class="c">CTL</th><th class="c">RIM</th><th>Note</th>'+
     '</tr></thead><tbody>';
 
+  // ── FUNZIONE RIGA POSIZIONE ──
   function rowPos(p){
     var piano=(p.piano!==undefined&&p.piano!==null)?('P'+(parseInt(p.piano)>=0?'+':'')+p.piano):'—';
     var numDisp=p.numero_pos_alfa||p.numero_pos;
-    var ctlForn=[p.fornitura_ctl_int==='SI'?'FI':'',p.fornitura_ctl_bli==='SI'?'FB':'',p.fornitura_ctl_rei==='SI'?'FR':''].filter(Boolean).join(' ');
-    var ctlInst=[p.install_ctl_int==='SI'?'II':'',p.install_ctl_bli==='SI'?'IB':'',p.install_ctl_rei==='SI'?'IR':''].filter(Boolean).join(' ');
+
+    // C89 FIX: usa isYes() per leggere boolean true da Supabase (non solo 'SI')
+    var ctlForn=[
+      isYes(p.fornitura_ctl_int)?'FI':'',
+      isYes(p.fornitura_ctl_bli)?'FB':'',
+      isYes(p.fornitura_ctl_rei)?'FR':''
+    ].filter(Boolean).join(' ');
+    var ctlInst=[
+      isYes(p.install_ctl_int)?'II':'',
+      isYes(p.install_ctl_bli)?'IB':'',
+      isYes(p.install_ctl_rei)?'IR':''
+    ].filter(Boolean).join(' ');
     var ctlStr=[ctlForn,ctlInst].filter(Boolean).join(' / ')||'—';
+
     var h='<tr>';
     h+='<td class="num">'+esc(v(numDisp))+'</td>';
     h+='<td class="c">'+piano+'</td>';
@@ -231,25 +246,37 @@ function render(ril,pos,caps){
     return h;
   }
 
+  // ── FUNZIONE SUBTOTALE CAPITOLO ──
   function rowSubtot(titolo,posCap){
-    var nP=posCap.length,nRim=0,nAll=0,tipiMap={},nCTLFI=0,nCTLII=0;
+    var nP=posCap.length,nRim=0,nAll=0,tipiMap={};
+    // C89 FIX: tutti e 6 i campi CTL con isYes(); aggiunti nCTLFB, nCTLFR, nCTLIB, nCTLIR
+    var nCTLFI=0, nCTLFB=0, nCTLFR=0;
+    var nCTLII=0, nCTLIB=0, nCTLIR=0;
     posCap.forEach(function(p){
-      if(p.rimozione==='SI'||p.rimozione===true)nRim++;
-      if(p.allargamento_telaio==='SI'||p.allargamento_telaio===true)nAll++;
-      if(p.fornitura_ctl_int==='SI')nCTLFI++;
-      if(p.install_ctl_int==='SI')nCTLII++;
-      var t=p.tipo_porta||'—';tipiMap[t]=(tipiMap[t]||0)+1;
+      if(p.rimozione==='SI'||p.rimozione===true) nRim++;
+      if(p.allargamento_telaio==='SI'||p.allargamento_telaio===true) nAll++;
+      if(isYes(p.fornitura_ctl_int)) nCTLFI++;
+      if(isYes(p.fornitura_ctl_bli)) nCTLFB++;
+      if(isYes(p.fornitura_ctl_rei)) nCTLFR++;
+      if(isYes(p.install_ctl_int))   nCTLII++;
+      if(isYes(p.install_ctl_bli))   nCTLIB++;
+      if(isYes(p.install_ctl_rei))   nCTLIR++;
+      var t=p.tipo_porta||'—'; tipiMap[t]=(tipiMap[t]||0)+1;
     });
     var chips='<b>'+nP+'</b> pos.';
     Object.keys(tipiMap).sort().forEach(function(t){chips+=' &#9642; '+t+': <b>'+tipiMap[t]+'</b>';});
-    if(nRim)  chips+=' &#9642; Rim: <b>'+nRim+'</b>';
-    if(nAll)  chips+=' &#9642; Allarg: <b>'+nAll+'</b>';
-    if(nCTLFI)chips+=' &#9642; CTL-FI: <b>'+nCTLFI+'</b>';
-    if(nCTLII)chips+=' &#9642; CTL-II: <b>'+nCTLII+'</b>';
+    if(nRim)   chips+=' &#9642; Rim: <b>'+nRim+'</b>';
+    if(nAll)   chips+=' &#9642; Allarg: <b>'+nAll+'</b>';
+    if(nCTLFI) chips+=' &#9642; CTL-FI: <b>'+nCTLFI+'</b>';
+    if(nCTLFB) chips+=' &#9642; CTL-FB: <b>'+nCTLFB+'</b>';
+    if(nCTLFR) chips+=' &#9642; CTL-FR: <b>'+nCTLFR+'</b>';
+    if(nCTLII) chips+=' &#9642; CTL-II: <b>'+nCTLII+'</b>';
+    if(nCTLIB) chips+=' &#9642; CTL-IB: <b>'+nCTLIB+'</b>';
+    if(nCTLIR) chips+=' &#9642; CTL-IR: <b>'+nCTLIR+'</b>';
     return '<tr class="tr-cap-subtot"><td colspan="'+NCOL+'">Subtotale &mdash; '+esc(titolo)+' &nbsp;&#124; '+chips+'</td></tr>';
   }
 
-  // costruisci righe con capitoli
+  // ── COSTRUZIONE RIGHE CON CAPITOLI ──
   var righe=[];
   pos.forEach(function(p){var ord=(p.ordine!==undefined&&p.ordine!==null)?p.ordine:p.numero_pos;righe.push({tipo:'pos',ordine:ord,data:p});});
   (caps||[]).forEach(function(cap){righe.push({tipo:'cap_inizio',ordine:cap.ordine_inizio,data:cap});righe.push({tipo:'cap_fine',ordine:cap.ordine_fine,data:cap});});
@@ -260,25 +287,25 @@ function render(ril,pos,caps){
     if(r.tipo==='cap_inizio'){
       if(posiFuori.length){
         html+='<tr class="tr-no-cap"><td colspan="'+NCOL+'">Posizioni senza capitolo ('+posiFuori.length+')</td></tr>';
-        posiFuori.forEach(function(p){html+=rowPos(p);});posiFuori=[];
+        posiFuori.forEach(function(p){html+=rowPos(p);}); posiFuori=[];
       }
-      capCorr=r.data;posCap=[];
+      capCorr=r.data; posCap=[];
       html+='<tr class="tr-cap-hdr"><td colspan="'+NCOL+'">\u2550\u2550\u2550 '+esc(r.data.titolo)+' \u2550\u2550\u2550</td></tr>';
-    }else if(r.tipo==='cap_fine'){
+    } else if(r.tipo==='cap_fine'){
       posCap.forEach(function(p){html+=rowPos(p);});
-      if(posCap.length)html+=rowSubtot(capCorr?capCorr.titolo:'',posCap);
+      if(posCap.length) html+=rowSubtot(capCorr?capCorr.titolo:'',posCap);
       html+='<tr class="tr-cap-end"><td colspan="'+NCOL+'">\u2500\u2500\u2500 Fine: '+esc(r.data.titolo)+' \u2500\u2500\u2500</td></tr>';
-      capCorr=null;posCap=[];
-    }else{
-      if(capCorr)posCap.push(r.data);else posiFuori.push(r.data);
+      capCorr=null; posCap=[];
+    } else {
+      if(capCorr) posCap.push(r.data); else posiFuori.push(r.data);
     }
   });
   if(posiFuori.length){
-    if(caps&&caps.length)html+='<tr class="tr-no-cap"><td colspan="'+NCOL+'">Posizioni senza capitolo ('+posiFuori.length+')</td></tr>';
+    if(caps&&caps.length) html+='<tr class="tr-no-cap"><td colspan="'+NCOL+'">Posizioni senza capitolo ('+posiFuori.length+')</td></tr>';
     posiFuori.forEach(function(p){html+=rowPos(p);});
   }
-  html+='</tbody></table></div>';
 
+  html+='</tbody></table></div>';
   document.getElementById('stato-msg').style.display='none';
   document.getElementById('rep-content').style.display='';
   document.getElementById('rep-content').innerHTML=html;
