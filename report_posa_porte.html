@@ -5,86 +5,78 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Report Posa Porte &mdash; F4 Rilievi</title>
   <style>
-    body { background:#f5f6fa; }
-    #toolbar { background:#E65100;color:#fff;padding:10px 18px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.25); }
-    #toolbar h1 { font-size:14px;margin:0;flex:1;font-weight:600; }
-    .btn-tb { border:none;border-radius:6px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;color:#fff; }
-    .btn-tb-primary { background:rgba(255,255,255,.25); } .btn-tb-primary:hover { background:rgba(255,255,255,.35); }
-    .btn-tb-neutral { background:rgba(0,0,0,.2); } .btn-tb-neutral:hover { background:rgba(0,0,0,.3); }
-    #wrap { max-width:980px;margin:20px auto;padding:0 14px 48px; }
-    #stato-msg { text-align:center;padding:64px;color:#6b7280; }
-    #stato-msg.errore { color:#dc2626; }
-    .r-header { background:#fff;border-radius:10px;padding:16px 20px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid #E65100; }
-    .r-header-top { display:flex;align-items:baseline;gap:10px;margin-bottom:8px; }
-    .r-header-top h2 { margin:0;font-size:16px;color:#E65100;font-weight:700; }
-    .r-badge { font-size:11px;background:#fff3e0;color:#E65100;padding:2px 8px;border-radius:10px;font-weight:600; }
-    .r-meta { display:flex;gap:20px;flex-wrap:wrap; }
-    .r-meta-item { font-size:12px;color:#6b7280; }
-    .r-meta-item strong { color:#1a1a2e; }
-    .tipo-grid { background:#fff;border-radius:10px;padding:10px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
-    .tipo-chip { display:flex;align-items:center;gap:5px;background:#fff3e0;border-radius:8px;padding:4px 10px;font-size:12px; }
-    .tipo-chip .sigla { font-weight:700;color:#E65100; }
-    .tipo-chip .cnt { font-weight:700;color:#1a1a2e; }
-    .tipo-chip.zero { opacity:.35; }
-    .tipo-lbl { font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-right:4px; }
-    .mode-panel { background:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:none;border-left:4px solid #E65100; }
-    .mode-panel-title { font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px; }
-    .mode-btns { display:flex;gap:8px; }
-    .mode-hint { font-size:11px;color:#6b7280;margin-top:6px; }
-    .table-wrap { background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:hidden;margin-bottom:12px; }
-    table.t-posa { width:100%;border-collapse:collapse;font-size:12px; }
-    table.t-posa thead th { background:#E65100;color:#fff;padding:9px 10px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap; }
-    table.t-posa thead th.c { text-align:center; }
-    table.t-posa td { padding:6px 10px;border-bottom:1px solid #f0f0f6;color:#374151; }
-    table.t-posa td.c { text-align:center; }
-    .tr-sez td { background:#fff3e0;color:#E65100;font-weight:700;font-size:10px;letter-spacing:.7px;text-transform:uppercase;padding:4px 10px;border-top:2px solid #ffccaa; }
-    .tr-voce:hover { background:#fff8f5; }
-    .tr-voce.zero-row { opacity:.38; }
-    .tr-voce td.ore-calc { text-align:center;font-weight:600; }
-    .tr-voce td.ore-fin  { text-align:center;font-weight:700;color:#E65100; }
-    .adj-input { width:56px;text-align:center;border:1px solid #d1d5db;border-radius:5px;padding:3px 5px;font-size:12px;color:#374151;background:#fff; }
-    .adj-input:focus { outline:none;border-color:#E65100; }
-    .adj-minus { color:#dc2626; }
-    .adj-plus  { color:#16a34a; }
-    .adj-prop  { color:#9ca3af;font-size:10px;text-align:center; }
-    .tr-tot td { background:#E65100;color:#fff;font-weight:700;padding:9px 10px;font-size:12px; }
-    .tr-tot td.ore-fin { text-align:center;color:#fff3e0;font-size:15px; }
-    .summary-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px; }
-    .sum-block { background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08); }
-    .sum-block h3 { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#E65100;margin:0 0 10px;padding-bottom:5px;border-bottom:2px solid #fff3e0; }
-    .sum-row { display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;border-bottom:1px solid #fff8f5; }
-    .sum-row:last-child { border-bottom:none; }
-    .sum-row .lbl { color:#6b7280; }
-    .sum-row .val { font-weight:700;color:#1a1a2e;min-width:48px;text-align:right; }
-    .sum-row.total { border-top:2px solid #fff3e0;margin-top:4px;padding-top:6px; }
-    .sum-row.total .val { color:#E65100;font-size:14px; }
-    .ore-block { background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:12px; }
-    .ore-block h3 { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a1a2e;margin:0 0 12px;padding-bottom:5px;border-bottom:2px solid #fff3e0; }
-    .ore-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px; }
-    .ore-card { text-align:center;padding:10px;background:#fff8f5;border-radius:8px;border:1px solid #ffccaa; }
-    .ore-card .ore-val { font-size:26px;font-weight:700;color:#E65100;line-height:1.1; }
-    .ore-card .ore-lbl { font-size:10px;color:#6b7280;margin-top:3px;text-transform:uppercase;letter-spacing:.3px; }
-    .posatori-row { display:flex;gap:20px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid #f0f0f6;font-size:12px;color:#6b7280; }
-    .cap-posa-hdr { background:#E65100;color:#fff3e0;padding:8px 14px;margin:16px 0 8px;border-radius:8px;font-size:.88rem;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:10px; }
-    .cap-posa-hdr .cpn { background:rgba(255,255,255,.25);color:#fff;border-radius:4px;padding:1px 8px;font-size:.8rem; }
-    .cap-posa-subtot { background:#fff3e0;border:1px solid #ffccaa;border-radius:8px;padding:8px 14px;margin:4px 0 16px;font-size:.8rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center; }
-    .cap-posa-subtot .cps-lbl { font-weight:700;color:#E65100; }
-    .cap-posa-subtot .cps-v { background:#ffccaa;color:#7a2d00;border-radius:8px;padding:1px 9px;font-weight:600; }
-    .totali-globali-posa { background:#7a2d00;color:#ffd5b8;padding:8px 14px;margin:20px 0 8px;border-radius:8px;font-size:.88rem;font-weight:700; }
+    body{background:#f5f6fa;font-size:12px;font-family:Roboto,sans-serif;}
+    #toolbar{background:#E65100;color:#fff;padding:10px 18px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+    #toolbar h1{font-size:14px;margin:0;flex:1;font-weight:600;}
+    .btn-tb{border:none;border-radius:6px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;color:#fff;}
+    .btn-tb-primary{background:rgba(255,255,255,.25);}.btn-tb-primary:hover{background:rgba(255,255,255,.35);}
+    .btn-tb-neutral{background:rgba(0,0,0,.2);}.btn-tb-neutral:hover{background:rgba(0,0,0,.3);}
+    #wrap{max-width:960px;margin:20px auto;padding:0 14px 48px;}
+    #stato-msg{text-align:center;padding:80px;color:#6b7280;}
+    #stato-msg.errore{color:#dc2626;}
+    .r-header{background:#fff;border-radius:10px;padding:14px 18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+    .r-header-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+    .r-header-top h2{margin:0;font-size:15px;font-weight:700;color:#1a1a2e;flex:1;}
+    .r-badge{background:#E65100;color:#fff;border-radius:8px;padding:2px 10px;font-size:11px;font-weight:700;}
+    .r-meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:11px;color:#6b7280;}
+    .r-meta-item strong{color:#374151;}
+    .tipo-grid{background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .tipo-lbl{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.3px;}
+    .tipo-chip{display:flex;align-items:center;background:#fff3e0;border:1px solid #fdba74;border-radius:8px;overflow:hidden;font-weight:700;}
+    .tipo-chip.zero{opacity:.4;}
+    .tipo-chip .sigla{background:#E65100;color:#fff;padding:3px 7px;font-size:11px;}
+    .tipo-chip .cnt{padding:3px 8px;font-size:12px;color:#c2410c;}
+    .mode-panel{background:#fff;border-radius:10px;padding:12px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:none;}
+    .mode-panel-title{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;}
+    .mode-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .btn{border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .btn-sm{padding:4px 12px;font-size:11px;}
+    .btn-outline{background:transparent;border:1.5px solid #E65100;color:#E65100;}
+    .mode-hint{font-size:11px;color:#6b7280;margin-left:4px;}
+    .table-wrap{background:#fff;border-radius:10px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto;}
+    table.t-posa{border-collapse:collapse;width:100%;font-size:12px;}
+    table.t-posa thead th{background:#E65100;color:#fff;padding:7px 10px;text-align:left;font-size:11px;font-weight:600;white-space:nowrap;}
+    table.t-posa thead th.c{text-align:center;}
+    table.t-posa td{padding:6px 10px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+    table.t-posa tr:nth-child(even) td{background:#fafafa;}
+    .tr-sez td{background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:4px 10px;}
+    .tr-voce.zero-row td{color:#d1d5db;}
+    .c{text-align:center;}
+    .ore-calc{text-align:center;font-weight:600;color:#374151;}
+    .ore-fin{text-align:center;font-weight:700;color:#E65100;}
+    .adj-minus{text-align:center;background:#fef2f2;}
+    .adj-plus{text-align:center;background:#f0fdf4;}
+    .adj-prop{text-align:center;color:#9ca3af;font-size:11px;}
+    .adj-input{width:52px;border:1px solid #d1d5db;border-radius:4px;padding:2px 5px;font-size:11px;text-align:center;font-family:inherit;}
+    .adj-input:focus{outline:none;border-color:#E65100;}
+    .ore-block{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:12px;}
+    .ore-block h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a1a2e;margin:0 0 12px;padding-bottom:5px;border-bottom:2px solid #fff3e0;}
+    .ore-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+    .ore-card{text-align:center;padding:10px;background:#fff8f5;border-radius:8px;border:1px solid #ffccaa;}
+    .ore-card .ore-val{font-size:26px;font-weight:700;color:#E65100;line-height:1.1;}
+    .ore-card .ore-lbl{font-size:10px;color:#6b7280;margin-top:3px;text-transform:uppercase;letter-spacing:.3px;}
+    .posatori-row{display:flex;gap:20px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid #f0f0f6;font-size:12px;color:#6b7280;}
+    .cap-posa-hdr{background:#E65100;color:#fff3e0;padding:8px 14px;margin:16px 0 8px;border-radius:8px;font-size:.88rem;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:10px;}
+    .cap-posa-hdr .cpn{background:rgba(255,255,255,.25);color:#fff;border-radius:4px;padding:1px 8px;font-size:.8rem;}
+    .cap-posa-subtot{background:#fff3e0;border:1px solid #ffccaa;border-radius:8px;padding:8px 14px;margin:4px 0 16px;font-size:.8rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .cap-posa-subtot .cps-lbl{font-weight:700;color:#E65100;}
+    .cap-posa-subtot .cps-v{background:#ffccaa;color:#7a2d00;border-radius:8px;padding:1px 9px;font-weight:600;}
+    .totali-globali-posa{background:#7a2d00;color:#ffd5b8;padding:8px 14px;margin:20px 0 8px;border-radius:8px;font-size:.88rem;font-weight:700;}
+    #titolo-globale-posa{display:none;}
     @media print {
-      @page { size:A4 portrait;margin:8mm; }
-      body { background:#fff; }
-      #toolbar { display:none !important; }
-      #wrap { margin:0;padding:0;max-width:none; }
-      .table-wrap,.sum-block,.ore-block,.r-header,.tipo-grid { box-shadow:none;border:1px solid #ccc;border-radius:0;page-break-inside:avoid; }
-      table.t-posa { font-size:8px; }
-      table.t-posa thead th { padding:3px 6px;font-size:7px; }
-      table.t-posa td { padding:2px 6px;font-size:8px; }
-      .tr-sez td { font-size:7px; }
-      .tr-voce.zero-row { display:none !important; }
-      .ore-grid { grid-template-columns:repeat(4,1fr); }
-      .ore-card .ore-val { font-size:16px; }
-      .adj-input { width:40px;font-size:7px;padding:1px 3px; }
+      @page{size:A4 portrait;margin:8mm;}
+      body{background:#fff;}
+      #toolbar{display:none !important;}
+      #wrap{margin:0;padding:0;max-width:none;}
+      .table-wrap,.sum-block,.ore-block,.r-header,.tipo-grid{box-shadow:none;border:1px solid #ccc;border-radius:0;page-break-inside:avoid;}
+      table.t-posa{font-size:8px;}
+      table.t-posa thead th{padding:3px 6px;font-size:7px;}
+      table.t-posa td{padding:2px 6px;font-size:8px;}
+      .tr-sez td{font-size:7px;}
+      .tr-voce.zero-row{display:none !important;}
+      .ore-grid{grid-template-columns:repeat(4,1fr);}
+      .ore-card .ore-val{font-size:16px;}
+      .adj-input{width:40px;font-size:7px;padding:1px 3px;}
     }
   </style>
 </head>
@@ -115,47 +107,43 @@
       <div class="mode-panel-title">&#9881;&#65039; Modalit&agrave; aggiustamenti</div>
       <div class="mode-btns">
         <button id="btn-mode-tot" class="btn btn-sm" onclick="setMode('tot')">&#931; Sul totale</button>
-        <button id="btn-mode-cap" class="btn btn-sm btn-outline" onclick="setMode('cap')">&#128195; Per capitolo</button>
+        <button id="btn-mode-cap" class="btn btn-sm btn-outline" onclick="setMode('cap')">&#128218; Per capitolo</button>
+        <span class="mode-hint" id="mode-hint">Aggiustamenti globali.</span>
       </div>
-      <div class="mode-hint" id="mode-hint"></div>
     </div>
-    <div id="cap-posa-container"></div>
-    <div id="titolo-globale-posa" style="display:none;" class="totali-globali-posa">&#8721; Totali complessivi</div>
+    <div class="ore-block">
+      <h3>Riepilogo ore</h3>
+      <div class="ore-grid">
+        <div class="ore-card"><div class="ore-val" id="card-dir">—</div><div class="ore-lbl">Dirette</div></div>
+        <div class="ore-card"><div class="ore-val" id="card-ind">—</div><div class="ore-lbl">Indirette</div></div>
+        <div class="ore-card"><div class="ore-val" id="card-tot">—</div><div class="ore-lbl">Totale</div></div>
+        <div class="ore-card"><div class="ore-val" id="card-giorni">—</div><div class="ore-lbl">Giorni (2 op.)</div></div>
+      </div>
+      <div class="posatori-row">
+        <span>&#128119; 2 operatori &#183; turno: <strong>16h</strong></span>
+      </div>
+    </div>
+    <div id="titolo-globale-posa" class="totali-globali-posa">&#128295; Totale globale (tutti i capitoli)</div>
     <div class="table-wrap">
       <table class="t-posa">
-        <thead><tr>
-          <th style="width:20%">Area</th>
-          <th style="width:28%">Servizio</th>
-          <th class="c">N</th>
-          <th class="c">h/pos</th>
-          <th class="c">Min cant.</th>
-          <th class="c">Ore calc.</th>
-          <th class="c">&minus; Ore</th>
-          <th class="c">+ Ore</th>
-          <th class="c">Ore fin.</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th style="width:20%">Area</th>
+            <th style="width:34%">Servizio</th>
+            <th class="c">N</th>
+            <th class="c">h/pos</th>
+            <th class="c">Min.</th>
+            <th class="c">Ore calc.</th>
+            <th class="c adj-minus">&#8722; Agg.</th>
+            <th class="c adj-plus">+ Agg.</th>
+            <th class="c">Ore fin.</th>
+          </tr>
+        </thead>
         <tbody id="tbody-posa"></tbody>
         <tfoot id="tfoot-posa"></tfoot>
       </table>
     </div>
-    <div class="summary-grid">
-      <div class="sum-block"><h3>Riepilogo per area</h3><div id="sum-area"></div></div>
-      <div class="sum-block"><h3>Riepilogo ore</h3><div id="sum-ore"></div></div>
-    </div>
-    <div class="ore-block">
-      <h3>Totali</h3>
-      <div class="ore-grid">
-        <div class="ore-card"><div class="ore-val" id="card-dirette">—</div><div class="ore-lbl">Ore Dirette</div></div>
-        <div class="ore-card"><div class="ore-val" id="card-indirette">—</div><div class="ore-lbl">Ore Indirette</div></div>
-        <div class="ore-card"><div class="ore-val" id="card-totali">—</div><div class="ore-lbl">Ore Totali</div></div>
-        <div class="ore-card"><div class="ore-val" id="card-giorni">—</div><div class="ore-lbl">Giorni stimati</div></div>
-      </div>
-      <div class="posatori-row">
-        <span>N&#176; Posatori: <strong>2</strong></span>
-        <span>h/giorno: <strong>8h</strong></span>
-        <span>Ore/giorno (2 pers.): <strong>16h</strong></span>
-      </div>
-    </div>
+    <div id="cap-posa-container"></div>
   </div>
 </div>
 
@@ -194,7 +182,8 @@ function buildTablesPorteFromPosa(rows){
     if(vv==='INST BLINDATE'&&r.sistema==='BLI')DP_PORTE['instBLI']=[parseFloat(r.h_pos)||4,null];
     if(vv==='INST REI'&&r.sistema==='REI')DP_PORTE['instREI']=[parseFloat(r.h_pos)||1.5,null];
     var dpKey=V2DP_PORTE[vv];
-    if(dpKey&&r.piano===null&&r.n_campi===null&&!r.sistema)DP_PORTE[dpKey]=[parseFloat(r.h_pos)||0,r.min_cantiere!==null?parseFloat(r.min_cantiere):null];
+    if(dpKey&&r.piano===null&&r.n_campi===null&&!r.sistema)
+      DP_PORTE[dpKey]=[parseFloat(r.h_pos)||0,r.min_cantiere!==null?parseFloat(r.min_cantiere):null];
   });
   if(!DP_PORTE['instBLI'])DP_PORTE['instBLI']=[4.0,null];
   if(!DP_PORTE['instREI'])DP_PORTE['instREI']=[1.5,null];
@@ -206,48 +195,61 @@ function posPortaH(piano){return POS_PORTE[pianoKey(piano)]||0.33333;}
 function cOre(n,dp){if(!dp||n<=0)return 0;var b=n*dp[0];return dp[1]?Math.max(b,dp[1]):b;}
 function fmtH(x){if(!x&&x!==0)return'—';var r=Math.round(x*1000)/1000;return r.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')||'0';}
 
+// C107 FIX: helper per leggere boolean da Supabase (true), legacy string ('SI') o 'true'
+function isYes(val){ return val===true || val==='SI' || val==='true'; }
+
 function calcolaVociPorte(pos){
   var nT=pos.length,nCTL=0,nRim=0,nAll=0,nBLI=0,nREI=0;
   var orePosCTL=0,orePosPorte=0,oreInstInt=0;
   pos.forEach(function(p){
-    var hasCTL=p.fornitura_ctl_int==='SI'||p.fornitura_ctl_bli==='SI'||p.fornitura_ctl_rei==='SI'||p.install_ctl_int==='SI'||p.install_ctl_bli==='SI'||p.install_ctl_rei==='SI';
+    // C107 FIX: tutti e 6 i campi CTL con isYes() — accetta boolean true da Supabase
+    var hasCTL=isYes(p.fornitura_ctl_int)||isYes(p.fornitura_ctl_bli)||isYes(p.fornitura_ctl_rei)||
+               isYes(p.install_ctl_int)  ||isYes(p.install_ctl_bli)  ||isYes(p.install_ctl_rei);
     if(hasCTL){nCTL++;orePosCTL+=posCtlPortaH(p.piano);}
     if(p.rimozione==='SI'||p.rimozione===true)nRim++;
     if(p.allargamento_telaio==='SI'||p.allargamento_telaio===true)nAll++;
     var tp=(p.tipo_porta||'').toUpperCase();
     if(tp==='BLINDATA'||tp==='BLI')nBLI++;
     else if(tp==='REI')nREI++;
-    else{var sis=(p.sistema||'ST').toUpperCase();var oreBase=ORE_INST_INT[sis]!==undefined?ORE_INST_INT[sis]:1.5;if(p.sopraluce==='SI'||p.sopraluce===true)oreBase+=ORE_SOPRALUCE;oreInstInt+=oreBase;}
+    else{
+      var sis=(p.sistema||'ST').toUpperCase();
+      var oreBase=ORE_INST_INT[sis]!==undefined?ORE_INST_INT[sis]:1.5;
+      if(p.sopraluce==='SI'||p.sopraluce===true)oreBase+=ORE_SOPRALUCE;
+      oreInstInt+=oreBase;
+    }
     orePosPorte+=posPortaH(p.piano);
   });
   orePosCTL=nCTL>0?Math.max(orePosCTL,POS_CTL_PORTE_MIN):0;
   orePosPorte=nT>0?Math.max(orePosPorte,POS_PORTE_MIN):0;
   var DP=DP_PORTE, nPorteInt=nT-nBLI-nREI;
   var voci=[
-    {id:'prog',   area:'UFFICIO TECNICO',    serv:'Progettazione',                          n:nT,        dp:DP.prog,    tipo:'indir'},
-    {id:'gord',   area:'UFFICIO TECNICO',    serv:'Gestione ordini',                        n:nT,        dp:DP.gord,    tipo:'indir'},
-    {id:'incant', area:'UFFICIO TECNICO',    serv:'Incontri in cantiere',                   n:nT,        dp:DP.incant,  tipo:'indir'},
-    {id:'scCtl',  area:'MAGAZZINO',          serv:'Scarico e carico controtelai',           n:nCTL,      dp:DP.scCtl,   tipo:'indir'},
-    {id:'trCtl',  area:'TRASPORTO',          serv:'Trasporto e scarico controtelai',        n:nCTL,      dp:DP.trCtl,   tipo:'indir'},
-    {id:'scPorte',area:'MAGAZZINO',          serv:'Scarico e carico porte',                 n:nT,        dp:DP.scPorte, tipo:'indir'},
-    {id:'trPorte',area:'TRASPORTO',          serv:'Trasporto e scarico porte',              n:nT,        dp:DP.trPorte, tipo:'indir'},
-    {id:'posCtl', area:'POSIZIONAMENTO',     serv:'Posizionamento controtelai',             n:nCTL,      dp:null,fixed:orePosCTL,  tipo:'dir'},
-    {id:'posPorte',area:'POSIZIONAMENTO',    serv:'Posizionamento porte',                   n:nT,        dp:null,fixed:orePosPorte, tipo:'dir'},
-    {id:'rimPorta',area:'RIMOZIONE',         serv:'Rimozione porte esistenti',              n:nRim,      dp:DP.rimPorta,tipo:'dir'},
-    {id:'assCtl', area:'ASSEMBLAGGIO CTL',   serv:'Assemblaggio controtelai',               n:nCTL,      dp:DP.assCtl,  tipo:'dir'},
-    {id:'instCtl',area:'INSTALLAZIONE CTL',  serv:'Installazione controtelai',              n:nCTL,      dp:DP.instCtl, tipo:'dir'},
-    {id:'instInt',area:'POSA',               serv:'Installazione porte interne (per sistema)',n:nPorteInt,dp:null,fixed:oreInstInt,tipo:'dir'},
-    {id:'instBLI',area:'POSA',               serv:'Installazione porte blindate',           n:nBLI,      dp:DP.instBLI, tipo:'dir'},
-    {id:'instREI',area:'POSA',               serv:'Installazione porte REI',                n:nREI,      dp:DP.instREI, tipo:'dir'},
-    {id:'regColl',area:'POSA',               serv:'Registrazione e collaudo',               n:nT,        dp:DP.regColl, tipo:'dir'},
-    {id:'puliz',  area:'POSA',               serv:'Pulizia cantiere',                       n:nT,        dp:DP.puliz,   tipo:'dir'},
-    {id:'smalt',  area:'SMALTIMENTO',        serv:'Smaltimento porte esistenti',            n:nRim,      dp:DP.smalt,   tipo:'dir'},
-    {id:'allarg', area:'ALLARGAMENTO TELAIO',serv:'Allargamento telaio',                    n:nAll,      dp:DP.allarg,  tipo:'dir'}
+    {id:'prog',    area:'UFFICIO TECNICO',     serv:'Progettazione',                            n:nT,        dp:DP.prog,    tipo:'indir'},
+    {id:'gord',    area:'UFFICIO TECNICO',     serv:'Gestione ordini',                          n:nT,        dp:DP.gord,    tipo:'indir'},
+    {id:'incant',  area:'UFFICIO TECNICO',     serv:'Incontri in cantiere',                     n:nT,        dp:DP.incant,  tipo:'indir'},
+    {id:'scCtl',   area:'MAGAZZINO',           serv:'Scarico e carico controtelai',             n:nCTL,      dp:DP.scCtl,   tipo:'indir'},
+    {id:'trCtl',   area:'TRASPORTO',           serv:'Trasporto e scarico controtelai',          n:nCTL,      dp:DP.trCtl,   tipo:'indir'},
+    {id:'scPorte', area:'MAGAZZINO',           serv:'Scarico e carico porte',                   n:nT,        dp:DP.scPorte, tipo:'indir'},
+    {id:'trPorte', area:'TRASPORTO',           serv:'Trasporto e scarico porte',                n:nT,        dp:DP.trPorte, tipo:'indir'},
+    {id:'posCtl',  area:'POSIZIONAMENTO',      serv:'Posizionamento controtelai',               n:nCTL,      dp:null,fixed:orePosCTL,  tipo:'dir'},
+    {id:'posPorte',area:'POSIZIONAMENTO',      serv:'Posizionamento porte',                     n:nT,        dp:null,fixed:orePosPorte, tipo:'dir'},
+    {id:'rimPorta',area:'RIMOZIONE',           serv:'Rimozione porte esistenti',                n:nRim,      dp:DP.rimPorta,tipo:'dir'},
+    {id:'assCtl',  area:'ASSEMBLAGGIO CTL',    serv:'Assemblaggio controtelai',                 n:nCTL,      dp:DP.assCtl,  tipo:'dir'},
+    {id:'instCtl', area:'INSTALLAZIONE CTL',   serv:'Installazione controtelai',                n:nCTL,      dp:DP.instCtl, tipo:'dir'},
+    {id:'instInt', area:'POSA',                serv:'Installazione porte interne (per sistema)',n:nPorteInt, dp:null,fixed:oreInstInt,  tipo:'dir'},
+    {id:'instBLI', area:'POSA',                serv:'Installazione porte blindate',             n:nBLI,      dp:DP.instBLI, tipo:'dir'},
+    {id:'instREI', area:'POSA',                serv:'Installazione porte REI',                  n:nREI,      dp:DP.instREI, tipo:'dir'},
+    {id:'regColl', area:'POSA',                serv:'Registrazione e collaudo',                 n:nT,        dp:DP.regColl, tipo:'dir'},
+    {id:'puliz',   area:'POSA',                serv:'Pulizia cantiere',                         n:nT,        dp:DP.puliz,   tipo:'dir'},
+    {id:'smalt',   area:'SMALTIMENTO',         serv:'Smaltimento porte esistenti',              n:nRim,      dp:DP.smalt,   tipo:'dir'},
+    {id:'allarg',  area:'ALLARGAMENTO TELAIO', serv:'Allargamento telaio',                      n:nAll,      dp:DP.allarg,  tipo:'dir'}
   ];
   voci.forEach(function(v){v.oreCalc=v.fixed!==undefined?v.fixed:cOre(v.n,v.dp);});
   return voci;
 }
 
+// ================================================================
+// LOCALSTORAGE
+// ================================================================
 function loadAdj(){try{return JSON.parse(localStorage.getItem(ADJ_LS_KEY))||{};}catch(e){return{};}}
 function saveAdj(adj){try{localStorage.setItem(ADJ_LS_KEY,JSON.stringify(adj));}catch(e){}}
 function loadAdjCap(capId){try{return JSON.parse(localStorage.getItem('f4_posa_adj_cap_'+ID_RILIEVO+'_'+capId))||{};}catch(e){return{};}}
@@ -256,13 +258,16 @@ function clearAllCapAdj(){GRUPPI_POSA.forEach(function(g){localStorage.removeIte
 function loadMode(){return localStorage.getItem('f4_posa_mode_porte_'+ID_RILIEVO)||'tot';}
 function saveMode(m){localStorage.setItem('f4_posa_mode_porte_'+ID_RILIEVO,m);}
 
+// ================================================================
+// MODALITA'
+// ================================================================
 function setMode(mode){
   if(mode===POSA_MODE)return;
   var other=mode==='cap'?'tot':'cap';
   var hasAdj=false;
   if(other==='tot'){var a=loadAdj();hasAdj=Object.keys(a).some(function(k){var d=a[k];return(parseFloat(d.minus)||0)+(parseFloat(d.plus)||0)>0;});}
   else{GRUPPI_POSA.forEach(function(g){var a=loadAdjCap(g.cap.id||'__fuori__');if(Object.keys(a).some(function(k){var d=a[k];return(parseFloat(d.minus)||0)+(parseFloat(d.plus)||0)>0;}))hasAdj=true;});}
-  if(hasAdj&&!confirm('Cambiare modalit\u00e0 eliminer\u00e0 gli aggiustamenti precedenti. Continuare?'))return;
+  if(hasAdj&&!confirm('Cambiare modalit\u00e0 eliminer\u00e0 gli aggiustamenti della modalit\u00e0 precedente. Continuare?'))return;
   if(other==='tot')saveAdj({});else clearAllCapAdj();
   POSA_MODE=mode;saveMode(mode);updateModeUI();refreshRender();
 }
@@ -270,8 +275,15 @@ function setMode(mode){
 function updateModeUI(){
   var btnTot=document.getElementById('btn-mode-tot'),btnCap=document.getElementById('btn-mode-cap'),hint=document.getElementById('mode-hint');
   if(!btnTot)return;
-  if(POSA_MODE==='tot'){btnTot.style.cssText='background:#E65100;color:#fff;';btnTot.className='btn btn-sm';btnCap.style.cssText='';btnCap.className='btn btn-sm btn-outline';hint.textContent='Aggiustamenti globali: i capitoli mostrano la ripartizione proporzionale.';}
-  else{btnTot.style.cssText='';btnTot.className='btn btn-sm btn-outline';btnCap.style.cssText='background:#E65100;color:#fff;';btnCap.className='btn btn-sm';hint.textContent='Aggiustamenti per capitolo: il totale somma automaticamente i capitoli.';}
+  if(POSA_MODE==='tot'){
+    btnTot.style.cssText='background:#E65100;color:#fff;';btnTot.className='btn btn-sm';
+    btnCap.style.cssText='';btnCap.className='btn btn-sm btn-outline';
+    hint.textContent='Aggiustamenti globali: i capitoli mostrano la ripartizione proporzionale.';
+  } else {
+    btnTot.style.cssText='';btnTot.className='btn btn-sm btn-outline';
+    btnCap.style.cssText='background:#E65100;color:#fff;';btnCap.className='btn btn-sm';
+    hint.textContent='Aggiustamenti per capitolo: il totale somma automaticamente i capitoli.';
+  }
 }
 
 function onAdjChange(el){
@@ -284,13 +296,18 @@ function onAdjCapChange(el){
   var val=Math.max(0,parseFloat(el.value)||0);el.value=val||'';
   var adj=loadAdjCap(capId);if(!adj[id])adj[id]={};adj[id][type]=val;saveAdjCap(capId,adj);refreshRender();
 }
-function resetAdj(){if(!confirm('Eliminare tutti gli aggiustamenti manuali?'))return;if(POSA_MODE==='cap')clearAllCapAdj();else saveAdj({});refreshRender();}
-
+function resetAdj(){
+  if(!confirm('Eliminare tutti gli aggiustamenti manuali?'))return;
+  if(POSA_MODE==='cap')clearAllCapAdj();else saveAdj({});refreshRender();
+}
 function refreshRender(){
   renderAll(VOCI_GLOBALI,loadAdj());
   if(GRUPPI_POSA.length)renderCapitoliPosaFromGruppi();
 }
 
+// ================================================================
+// RENDER TABELLA GLOBALE
+// ================================================================
 function renderAll(voci,adj){
   adj=adj||{};
   var tbody=document.getElementById('tbody-posa'),tfoot=document.getElementById('tfoot-posa');
@@ -324,30 +341,43 @@ function renderAll(voci,adj){
     } else {
       var msVal=parseFloat((adj[v.id]||{}).minus)>0?(adj[v.id]||{}).minus:'';
       var plVal=parseFloat((adj[v.id]||{}).plus)>0?(adj[v.id]||{}).plus:'';
-      html+='<td class="c adj-minus"><input class="adj-input" type="number" min="0" step="0.5" value="'+msVal+'" data-id="'+v.id+'" data-type="minus" onchange="onAdjChange(this)"/></td>';
-      html+='<td class="c adj-plus"><input class="adj-input" type="number" min="0" step="0.5" value="'+plVal+'" data-id="'+v.id+'" data-type="plus" onchange="onAdjChange(this)"/></td>';
+      html+='<td class="adj-minus"><input class="adj-input" type="number" min="0" step="0.5" value="'+msVal+'" data-id="'+v.id+'" data-type="minus" onchange="onAdjChange(this)"/></td>';
+      html+='<td class="adj-plus"><input class="adj-input" type="number" min="0" step="0.5" value="'+plVal+'" data-id="'+v.id+'" data-type="plus" onchange="onAdjChange(this)"/></td>';
     }
     html+='<td class="ore-fin">'+fmtH(oreFin)+'</td></tr>';
   });
 
   tbody.innerHTML=html;
-  tfoot.innerHTML='<tr class="tr-tot"><td colspan="8">TOTALE</td><td class="ore-fin">'+fmtH(totFin)+'</td></tr>';
+  totCalc=Math.round(totCalc*1000)/1000;
+  totFin=Math.round(totFin*1000)/1000;
+  tfoot.innerHTML='<tr style="background:#E65100;color:#fff;font-weight:700;"><td colspan="5">TOTALE</td>'+
+    '<td class="c">'+fmtH(totCalc)+'</td><td></td><td></td><td class="c">'+fmtH(totFin)+'</td></tr>';
 
-  var oreDir=0,oreInd=0,aHtml='';
-  Object.keys(areaMap).forEach(function(a){var d=areaMap[a];aHtml+='<div class="sum-row"><span class="lbl">'+a+'</span><span class="val">'+fmtH(d.fin)+'</span></div>';if(d.tipo==='dir')oreDir+=d.fin;else oreInd+=d.fin;});
-  aHtml+='<div class="sum-row total"><span class="lbl">TOTALE</span><span class="val">'+fmtH(totFin)+'</span></div>';
-  document.getElementById('sum-area').innerHTML=aHtml;
-  var oHtml='<div class="sum-row"><span class="lbl">Ore Dirette</span><span class="val">'+fmtH(oreDir)+'</span></div>'+
-    '<div class="sum-row"><span class="lbl">Ore Indirette</span><span class="val">'+fmtH(oreInd)+'</span></div>'+
-    '<div class="sum-row total"><span class="lbl">Totale</span><span class="val">'+fmtH(totFin)+'</span></div>';
-  document.getElementById('sum-ore').innerHTML=oHtml;
-  document.getElementById('card-dirette').textContent=fmtH(oreDir);
-  document.getElementById('card-indirette').textContent=fmtH(oreInd);
-  document.getElementById('card-totali').textContent=fmtH(totFin);
-  var giorni=totFin>0?Math.ceil(totFin/16*10)/10:0;
+  var oreDir=0,oreInd=0;
+  voci.forEach(function(v){
+    var oreFin2;
+    if(POSA_MODE==='cap'&&GRUPPI_POSA.length){
+      oreFin2=0;GRUPPI_POSA.forEach(function(g){var adjC=loadAdjCap(g.cap.id||'__fuori__');var cv=g.voci.find(function(x){return x.id===v.id;});if(cv){var m=parseFloat((adjC[v.id]||{}).minus)||0,pl=parseFloat((adjC[v.id]||{}).plus)||0;oreFin2+=Math.max(0,cv.oreCalc-m+pl);}});
+      oreFin2=Math.round(oreFin2*1000)/1000;
+    } else {
+      var minus=parseFloat((adj[v.id]||{}).minus)||0,plus=parseFloat((adj[v.id]||{}).plus)||0;
+      oreFin2=Math.max(0,Math.round((v.oreCalc-minus+plus)*1000)/1000);
+    }
+    if(v.tipo==='dir')oreDir+=oreFin2;else oreInd+=oreFin2;
+  });
+  oreDir=Math.round(oreDir*1000)/1000;
+  oreInd=Math.round(oreInd*1000)/1000;
+  var oreTot=Math.round((oreDir+oreInd)*1000)/1000;
+  document.getElementById('card-dir').textContent=fmtH(oreDir);
+  document.getElementById('card-ind').textContent=fmtH(oreInd);
+  document.getElementById('card-tot').textContent=fmtH(oreTot);
+  var giorni=oreTot>0?Math.ceil(oreTot/16*10)/10:0;
   document.getElementById('card-giorni').textContent=fmtH(giorni);
 }
 
+// ================================================================
+// RENDER CAPITOLI
+// ================================================================
 function renderCapitoliPosa(tuttePos,caps){
   var righe=[];
   tuttePos.forEach(function(p){var ord=(p.ordine!==undefined&&p.ordine!==null)?p.ordine:p.numero_pos;righe.push({tipo:'pos',ordine:ord,data:p});});
@@ -385,6 +415,7 @@ function renderCapitoliPosaFromGruppi(){
       tG+=fin;if(v.tipo==='dir')oDG+=fin;else oIG+=fin;
     });
     tG=Math.round(tG*1000)/1000;
+
     html+='<div class="cap-posa-hdr"><span class="cpn">'+g.pos.length+' pos.</span>\u2550\u2550 '+g.cap.titolo+' \u2550\u2550</div>';
     var tbH='',lA='';
     g.voci.forEach(function(v){
@@ -421,23 +452,33 @@ function renderCapitoliPosaFromGruppi(){
       '<th style="width:22%">Area</th><th style="width:36%">Servizio</th>'+
       '<th class="c">N</th><th class="c">h/pos</th><th class="c">Min.</th>'+
       '<th class="c">Ore calc.</th>'+
-      (POSA_MODE==='cap'?'<th class="c adj-minus">&minus; Ore</th><th class="c adj-plus">+ Ore</th>':'<th class="c adj-prop" style="color:#9ca3af;">&minus; prop.</th><th class="c adj-prop" style="color:#9ca3af;">+ prop.</th>')+
+      (POSA_MODE==='cap'?
+        '<th class="c adj-minus">&#8722; Agg.</th><th class="c adj-plus">+ Agg.</th>':
+        '<th class="adj-prop">&#8722; prop.</th><th class="adj-prop">+ prop.</th>')+
       '<th class="c">Ore fin.</th></tr></thead><tbody>'+tbH+'</tbody>'+
-      '<tfoot><tr class="tr-tot"><td colspan="8">TOTALE '+g.cap.titolo+'</td><td class="ore-fin">'+fmtH(tG)+'</td></tr></tfoot></table></div>';
+      '<tfoot><tr style="background:#E65100;color:#fff;font-weight:700;"><td colspan="8">TOTALE '+g.cap.titolo+'</td><td class="ore-fin">'+fmtH(tG)+'</td></tr></tfoot></table></div>';
     var giorni=tG>0?Math.ceil(tG/16*10)/10:0;
-    html+='<div class="cap-posa-subtot"><span class="cps-lbl">'+g.cap.titolo+'</span>'+
-      '<span class="cps-v">Dir: '+fmtH(oDG)+'</span><span class="cps-v">Ind: '+fmtH(oIG)+'</span>'+
-      '<span class="cps-v">Tot: '+fmtH(tG)+'</span><span class="cps-v">Giorni: '+giorni+'</span></div>';
+    html+='<div class="cap-posa-subtot">'+
+      '<span class="cps-lbl">'+g.cap.titolo+'</span>'+
+      '<span class="cps-v">Dir: '+fmtH(oDG)+'</span>'+
+      '<span class="cps-v">Ind: '+fmtH(oIG)+'</span>'+
+      '<span class="cps-v">Tot: '+fmtH(tG)+'</span>'+
+      '<span class="cps-v">Giorni: '+giorni+'</span>'+
+    '</div>';
   });
   container.innerHTML=html;
 }
 
+// ================================================================
+// UTILITY
+// ================================================================
 function renderTipoGrid(pos){
   var cnt={INT:0,BLI:0,REI:0};
   pos.forEach(function(p){var t=(p.tipo_porta||'').toUpperCase();if(t==='BLINDATA'||t==='BLI')cnt.BLI++;else if(t==='REI')cnt.REI++;else cnt.INT++;});
   var html='<span class="tipo-lbl">Per tipo:</span>';
   [{s:'INT',l:'Interne'},{s:'BLI',l:'Blindate'},{s:'REI',l:'REI'}].forEach(function(t){
-    var n=cnt[t.s]||0;html+='<span class="tipo-chip'+(n===0?' zero':'')+'" title="'+t.l+'"><span class="sigla">'+t.s+'</span><span class="cnt">'+n+'</span></span>';
+    var n=cnt[t.s]||0;
+    html+='<span class="tipo-chip'+(n===0?' zero':'')+'" title="'+t.l+'"><span class="sigla">'+t.s+'</span><span class="cnt">'+n+'</span></span>';
   });
   document.getElementById('tipo-grid').innerHTML=html;
 }
@@ -445,13 +486,23 @@ function renderTipoGrid(pos){
 function doFetch(path,cb,eb){
   var x=new XMLHttpRequest();x.open('GET',SUPA_URL+'/rest/v1/'+path,true);
   x.setRequestHeader('apikey',SUPA_KEY);x.setRequestHeader('Authorization','Bearer '+(Auth.getToken()||SUPA_KEY));
-  x.onload=function(){if(x.status>=200&&x.status<300){try{cb(JSON.parse(x.responseText));}catch(e){if(eb)eb(e);}}else{if(eb)eb('HTTP '+x.status);}};
-  x.onerror=function(){if(eb)eb('Rete');};x.send();
+  x.onload=function(){if(x.status>=200&&x.status<300){try{cb(JSON.parse(x.responseText));}catch(e){eb(e);}}else eb('HTTP '+x.status);};
+  x.onerror=function(){eb('Rete');};x.send();
 }
 
-function setStato(msg,isErr){var el=document.getElementById('stato-msg');el.textContent=msg;el.className=isErr?'errore':'';el.style.display='';document.getElementById('report-content').style.display='none';}
-function showReport(){document.getElementById('stato-msg').style.display='none';document.getElementById('report-content').style.display='';}
+function setStato(msg,isErr){
+  var el=document.getElementById('stato-msg');
+  el.textContent=msg;el.className=isErr?'errore':'';el.style.display='';
+  document.getElementById('report-content').style.display='none';
+}
+function showReport(){
+  document.getElementById('stato-msg').style.display='none';
+  document.getElementById('report-content').style.display='';
+}
 
+// ================================================================
+// INIT
+// ================================================================
 function init(){
   var loaded={ril:null,pos:null,caps:null,posa:null};var errored=false;
   var done=0,tot=4;
