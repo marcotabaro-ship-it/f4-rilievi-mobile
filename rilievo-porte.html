@@ -119,6 +119,9 @@ function calcDimPorta(p, dbPorte) {
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function v(x){ return (x===null||x===undefined)?'':String(x); }
 
+// ── C131/C132 FIX: accetta boolean true, stringa 'true' e stringa 'SI' ──
+function isYes(val){ return val===true || val==='SI' || val==='true'; }
+
 function load() {
   DBLocal.getById('rilievi', idRilievo, function(ril) {
     if (!ril) {
@@ -235,7 +238,10 @@ function renderPortaRow(p) {
   var pianoStr=p.piano!=null?('P'+(p.piano>=0?'+':'')+p.piano):'—';
   var sisStr=[p.fornitore, p.sistema].filter(Boolean).join(' / ');
   var chips='';
-  var hasCTL=p.fornitura_ctl_int==='SI'||p.install_ctl_int==='SI'||p.fornitura_ctl_bli==='SI'||p.install_ctl_bli==='SI';
+
+  // C131 FIX: tutti e 6 i campi CTL, con isYes() per accettare boolean true / 'true' / 'SI'
+  var hasCTL = isYes(p.fornitura_ctl_int) || isYes(p.fornitura_ctl_bli) || isYes(p.fornitura_ctl_rei) ||
+               isYes(p.install_ctl_int)   || isYes(p.install_ctl_bli)   || isYes(p.install_ctl_rei);
   if(hasCTL) chips+='<span class="badge" style="background:#fff3e0;color:#E65100;font-size:10px;">CTL</span>';
   if(p.allargamento_telaio===true||p.allargamento_telaio==='SI') chips+='<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">ALL</span>';
   if(p.rimozione==='SI'||p.rimozione===true) chips+='<span class="badge badge-disattivo" style="font-size:10px;">Rim</span>';
@@ -295,20 +301,24 @@ function apriDettaglio(id) {
   if(p.sopraluce===true||p.sopraluce==='SI') html+='<div class="det-row"><span class="det-lbl">Sopraluce</span><span class="det-val">&#9989;</span></div>';
   html+='</div>';
 
-  var hasCTL=p.fornitura_ctl_int==='SI'||p.install_ctl_int==='SI'||p.fornitura_ctl_bli==='SI'||p.install_ctl_bli==='SI'||p.fornitura_ctl_rei==='SI'||p.install_ctl_rei==='SI';
-  var hasFlag=p.allargamento_telaio===true||p.allargamento_telaio==='SI'||p.rimozione==='SI'||p.rimozione===true;
+  // C132 FIX: hasCTL usa isYes() su tutti e 6 i campi, accetta boolean true / 'true' / 'SI'
+  var hasCTL = isYes(p.fornitura_ctl_int) || isYes(p.fornitura_ctl_bli) || isYes(p.fornitura_ctl_rei) ||
+               isYes(p.install_ctl_int)   || isYes(p.install_ctl_bli)   || isYes(p.install_ctl_rei);
+  // C132 FIX: hasFlag separato — la sezione si apre se c'è CTL OPPURE un flag strutturale
+  var hasFlag = isYes(p.allargamento_telaio) || isYes(p.rimozione);
   if(hasCTL||hasFlag){
     html+='<div class="det-sec"><div class="det-sec-title">&#9881; Installazione e flag</div>';
-    if(p.fornitura_ctl_int==='SI') html+='<div class="det-row"><span class="det-lbl">Fornitura CTL int.</span><span class="det-val">&#9989;</span></div>';
-    if(p.fornitura_ctl_bli==='SI') html+='<div class="det-row"><span class="det-lbl">Fornitura CTL blindata</span><span class="det-val">&#9989;</span></div>';
-    if(p.fornitura_ctl_rei==='SI') html+='<div class="det-row"><span class="det-lbl">Fornitura CTL REI</span><span class="det-val">&#9989;</span></div>';
-    if(p.install_ctl_int==='SI')   html+='<div class="det-row"><span class="det-lbl">Install. CTL int.</span><span class="det-val">&#9989;</span></div>';
-    if(p.install_ctl_bli==='SI')   html+='<div class="det-row"><span class="det-lbl">Install. CTL blindata</span><span class="det-val">&#9989;</span></div>';
-    if(p.install_ctl_rei==='SI')   html+='<div class="det-row"><span class="det-lbl">Install. CTL REI</span><span class="det-val">&#9989;</span></div>';
-    if(p.allargamento_telaio===true||p.allargamento_telaio==='SI'){
+    // C132 FIX: ogni singolo CTL usa isYes() invece di === 'SI'
+    if(isYes(p.fornitura_ctl_int)) html+='<div class="det-row"><span class="det-lbl">Fornitura CTL int.</span><span class="det-val">&#9989;</span></div>';
+    if(isYes(p.fornitura_ctl_bli)) html+='<div class="det-row"><span class="det-lbl">Fornitura CTL blindata</span><span class="det-val">&#9989;</span></div>';
+    if(isYes(p.fornitura_ctl_rei)) html+='<div class="det-row"><span class="det-lbl">Fornitura CTL REI</span><span class="det-val">&#9989;</span></div>';
+    if(isYes(p.install_ctl_int))   html+='<div class="det-row"><span class="det-lbl">Install. CTL int.</span><span class="det-val">&#9989;</span></div>';
+    if(isYes(p.install_ctl_bli))   html+='<div class="det-row"><span class="det-lbl">Install. CTL blindata</span><span class="det-val">&#9989;</span></div>';
+    if(isYes(p.install_ctl_rei))   html+='<div class="det-row"><span class="det-lbl">Install. CTL REI</span><span class="det-val">&#9989;</span></div>';
+    if(isYes(p.allargamento_telaio)){
       html+='<div class="det-row"><span class="det-lbl">Allargamento telaio</span><span class="det-val">&#9989;'+(p.allargamento_mm?' — '+p.allargamento_mm+' mm':'')+'</span></div>';
     }
-    if(p.rimozione==='SI'||p.rimozione===true) html+='<div class="det-row"><span class="det-lbl">Rimozione porta</span><span class="det-val">&#9989;</span></div>';
+    if(isYes(p.rimozione)) html+='<div class="det-row"><span class="det-lbl">Rimozione porta</span><span class="det-val">&#9989;</span></div>';
     html+='</div>';
   }
 
