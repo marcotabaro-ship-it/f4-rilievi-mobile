@@ -78,7 +78,8 @@
       <div class="form-row-2m">
         <div class="form-group-m">
           <label class="form-label-m">Tipo porta <span class="req">*</span></label>
-          <select class="form-ctrl" id="fTipoPorta" onchange="markDirty()">
+          <!-- 1B FIX: onchange chiama onTipoPortaChange() invece di solo markDirty() -->
+          <select class="form-ctrl" id="fTipoPorta" onchange="onTipoPortaChange()">
             <option value="">— Tipo —</option>
             <option value="INT">INT — Interna</option>
             <option value="BLI">BLI — Blindata</option>
@@ -180,15 +181,16 @@
     <div class="fsec-body">
       <div class="form-group-m" style="margin-bottom:6px;">
         <label class="form-label-m">Fornitura CTL</label>
-        <div class="chk-row"><input type="checkbox" id="fFornCTLInt" onchange="markDirty()"/><label for="fFornCTLInt">Fornitura CTL porta interna</label></div>
-        <div class="chk-row"><input type="checkbox" id="fFornCTLBli" onchange="markDirty()"/><label for="fFornCTLBli">Fornitura CTL blindata</label></div>
-        <div class="chk-row"><input type="checkbox" id="fFornCTLRei" onchange="markDirty()"/><label for="fFornCTLRei">Fornitura CTL REI</label></div>
+        <!-- 1B: i checkbox vengono abilitati/disabilitati da aggiornaCTL() in base a tipo_porta -->
+        <div class="chk-row" id="rowFornCTLInt"><input type="checkbox" id="fFornCTLInt" onchange="markDirty()"/><label for="fFornCTLInt">Fornitura CTL porta interna</label></div>
+        <div class="chk-row" id="rowFornCTLBli"><input type="checkbox" id="fFornCTLBli" onchange="markDirty()"/><label for="fFornCTLBli">Fornitura CTL blindata</label></div>
+        <div class="chk-row" id="rowFornCTLRei"><input type="checkbox" id="fFornCTLRei" onchange="markDirty()"/><label for="fFornCTLRei">Fornitura CTL REI</label></div>
       </div>
       <div class="form-group-m" style="margin-bottom:0;">
         <label class="form-label-m">Installazione CTL</label>
-        <div class="chk-row"><input type="checkbox" id="fInstCTLInt" onchange="markDirty()"/><label for="fInstCTLInt">Installazione CTL porta interna</label></div>
-        <div class="chk-row"><input type="checkbox" id="fInstCTLBli" onchange="markDirty()"/><label for="fInstCTLBli">Installazione CTL blindata</label></div>
-        <div class="chk-row"><input type="checkbox" id="fInstCTLRei" onchange="markDirty()"/><label for="fInstCTLRei">Installazione CTL REI</label></div>
+        <div class="chk-row" id="rowInstCTLInt"><input type="checkbox" id="fInstCTLInt" onchange="markDirty()"/><label for="fInstCTLInt">Installazione CTL porta interna</label></div>
+        <div class="chk-row" id="rowInstCTLBli"><input type="checkbox" id="fInstCTLBli" onchange="markDirty()"/><label for="fInstCTLBli">Installazione CTL blindata</label></div>
+        <div class="chk-row" id="rowInstCTLRei"><input type="checkbox" id="fInstCTLRei" onchange="markDirty()"/><label for="fInstCTLRei">Installazione CTL REI</label></div>
       </div>
     </div>
   </div>
@@ -247,7 +249,7 @@
 var currentUser = Auth.requireLogin();
 if (!currentUser) throw new Error('not logged');
 
-var params = new URLSearchParams(window.location.search);
+var params    = new URLSearchParams(window.location.search);
 var idRilievo = params.get('id_rilievo');
 var idPos     = params.get('id');
 var isNew     = !idPos;
@@ -268,7 +270,10 @@ function setOpt(id, val) {
   }
   el.value = v;
 }
-function sc(id, val) { var el = document.getElementById(id); if (el) el.checked = !!(val === true || val === 'true' || val === 'SI'); }
+function sc(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.checked = !!(val === true || val === 'true' || val === 'SI');
+}
 function gv(id) { var el = document.getElementById(id); return el ? (el.value || null) : null; }
 function gb(id) { var el = document.getElementById(id); return el ? el.checked : false; }
 function markDirty() { _dirty = true; }
@@ -281,7 +286,6 @@ function ricalcola() {
   document.getElementById('cLins').textContent = (L && H) ? L + ' x ' + H : '—';
   if (!L || !H) { document.getElementById('cLord').textContent = '—'; return; }
   var tf = document.getElementById('fTipoForo').value;
-  // Foro N = dimensioni finali, Foro P = cerca offset in db_porte
   if (tf === 'N') {
     document.getElementById('cLord').textContent = Math.round(L) + ' x ' + Math.round(H);
     return;
@@ -320,6 +324,51 @@ function onFornitoreChange(silent) {
   ricalcola();
 }
 
+// ── 1B FIX: GESTIONE CTL IN BASE A TIPO PORTA ──
+
+// aggiornaCTL — abilita i soli 2 CTL coerenti con tipo_porta,
+// disabilita e azzera tutti gli altri.
+// Chiamata: al cambio tipo_porta, all'apertura (populateForm) e su nuova posizione (setupNew).
+function aggiornaCTL() {
+  var tipoP = document.getElementById('fTipoPorta').value;
+
+  // Mappa tipo_porta → id checkbox abilitati
+  var mappa = {
+    'INT': ['fFornCTLInt', 'fInstCTLInt'],
+    'BLI': ['fFornCTLBli', 'fInstCTLBli'],
+    'REI': ['fFornCTLRei', 'fInstCTLRei']
+  };
+  // id riga wrapper corrispondente a ogni checkbox
+  var rowMap = {
+    'fFornCTLInt': 'rowFornCTLInt',
+    'fFornCTLBli': 'rowFornCTLBli',
+    'fFornCTLRei': 'rowFornCTLRei',
+    'fInstCTLInt': 'rowInstCTLInt',
+    'fInstCTLBli': 'rowInstCTLBli',
+    'fInstCTLRei': 'rowInstCTLRei'
+  };
+
+  var tuttiCTL = ['fFornCTLInt','fFornCTLBli','fFornCTLRei',
+                  'fInstCTLInt','fInstCTLBli','fInstCTLRei'];
+  var attivi   = mappa[tipoP] || [];  // [] se tipo vuoto → tutto disabilitato
+
+  tuttiCTL.forEach(function(id) {
+    var el  = document.getElementById(id);
+    var row = document.getElementById(rowMap[id]);
+    if (!el) return;
+    var abilitato = attivi.indexOf(id) >= 0;
+    el.disabled = !abilitato;
+    if (!abilitato) el.checked = false;   // azzera i CTL non coerenti
+    if (row) row.style.opacity = abilitato ? '1' : '0.35';
+  });
+}
+
+// onTipoPortaChange — handler del select fTipoPorta
+function onTipoPortaChange() {
+  markDirty();
+  aggiornaCTL();
+}
+
 // ── CARICAMENTO INIZIALE ──
 function load() {
   // Prossimo numero posizione
@@ -342,7 +391,9 @@ function load() {
   // DB Porte per cascade fornitore → sistema
   DBLocal.getAll('db_porte', function(db){
     _dbPorte = db;
-    var forn = []; db.forEach(function(d){ if (d.fornitore && forn.indexOf(d.fornitore) < 0) forn.push(d.fornitore); }); forn.sort();
+    var forn = [];
+    db.forEach(function(d){ if (d.fornitore && forn.indexOf(d.fornitore) < 0) forn.push(d.fornitore); });
+    forn.sort();
     var selF = document.getElementById('fFornitore');
     while (selF.options.length > 1) selF.remove(1);
     forn.forEach(function(f){ selF.appendChild(new Option(f, f)); });
@@ -355,6 +406,9 @@ function setupNew() {
   document.getElementById('tbSub').textContent   = 'Porte';
   _loadedAt = Date.now();
   _rec = { id_rilievo: idRilievo, stato: 'attivo' };
+  // 1B FIX: al caricamento di una nuova posizione, tipo_porta è vuoto
+  // → tutti i CTL partono disabilitati finché l'utente non sceglie il tipo
+  aggiornaCTL();
 }
 
 function loadExisting() {
@@ -403,12 +457,19 @@ function populateForm(p) {
   setOpt('fManigliaModello',  p.maniglia_modello);
   setOpt('fManigliaColore',   p.maniglia_colore_mat);
 
+  // CTL: carica prima i valori dal DB, poi applica le restrizioni per tipo_porta.
+  // Ordine obbligatorio: sc() prima, aggiornaCTL() dopo.
+  // Se il DB aveva dati incoerenti (es. tipo=INT con ctl_bli=true),
+  // aggiornaCTL() li azzera nell'UI. Al salvataggio verranno scritti false su Supabase.
   sc('fFornCTLInt', p.fornitura_ctl_int);
   sc('fFornCTLBli', p.fornitura_ctl_bli);
   sc('fFornCTLRei', p.fornitura_ctl_rei);
   sc('fInstCTLInt', p.install_ctl_int);
   sc('fInstCTLBli', p.install_ctl_bli);
   sc('fInstCTLRei', p.install_ctl_rei);
+  // 1B FIX: applica restrizioni CTL DOPO aver caricato i valori
+  aggiornaCTL();
+
   sc('fVetri',    p.vetri);
   sc('fMostrine', p.mostrine);
 
@@ -418,6 +479,11 @@ function populateForm(p) {
 
 // ── RACCOLTA DATI (solo campi esistenti in posizioni_porte) ──
 function raccogliDati() {
+  // 1B FIX: i campi CTL vengono filtrati in base al tipo_porta.
+  // Solo i 2 CTL coerenti con il tipo selezionato possono essere true.
+  // Protezione doppia: UI (disabled+unchecked) + payload (esplicitamente false).
+  var tipoP = gv('fTipoPorta') || '';
+
   return Object.assign({}, _rec, {
     numero_pos:           isNew ? _nextNumPos : (_rec.numero_pos || null),
     ordine:               isNew ? (_nextNumPos * 10) : (_rec.ordine || null),
@@ -447,12 +513,13 @@ function raccogliDati() {
     maniglia_marca:       gv('fManigliaMarca'),
     maniglia_modello:     gv('fManigliaModello'),
     maniglia_colore_mat:  gv('fManigliaColore'),
-    fornitura_ctl_int:    gb('fFornCTLInt'),
-    fornitura_ctl_bli:    gb('fFornCTLBli'),
-    fornitura_ctl_rei:    gb('fFornCTLRei'),
-    install_ctl_int:      gb('fInstCTLInt'),
-    install_ctl_bli:      gb('fInstCTLBli'),
-    install_ctl_rei:      gb('fInstCTLRei'),
+    // 1B FIX: CTL filtrati per tipo_porta — false esplicito per i campi non coerenti
+    fornitura_ctl_int:    tipoP === 'INT' ? gb('fFornCTLInt') : false,
+    fornitura_ctl_bli:    tipoP === 'BLI' ? gb('fFornCTLBli') : false,
+    fornitura_ctl_rei:    tipoP === 'REI' ? gb('fFornCTLRei') : false,
+    install_ctl_int:      tipoP === 'INT' ? gb('fInstCTLInt')  : false,
+    install_ctl_bli:      tipoP === 'BLI' ? gb('fInstCTLBli')  : false,
+    install_ctl_rei:      tipoP === 'REI' ? gb('fInstCTLRei')  : false,
     vetri:                gb('fVetri'),
     mostrine:             gb('fMostrine'),
     note:                 gv('fNote'),
@@ -498,9 +565,12 @@ function forceOverwrite() {
     window.location.replace('rilievo-porte.html?id=' + idRilievo);
   });
 }
+
 function reloadRecord() {
+  document.getElementById('conflictBanner').style.display = 'none';
   window.location.replace('pos-porte-edit.html?id_rilievo=' + idRilievo + '&id=' + idPos);
 }
+
 function confirmBack() {
   if (_dirty && !confirm('Hai modifiche non salvate. Vuoi uscire?')) return;
   window.location.replace('rilievo-porte.html?id=' + idRilievo);
