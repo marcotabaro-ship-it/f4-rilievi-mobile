@@ -72,12 +72,12 @@
     <div class="form-group-m">
       <label class="form-label-m">Posizione iniziale *</label>
       <select class="form-ctrl" id="shInizio"><option value="">— Seleziona —</option></select>
-      <div class="sheet-hint">Il capitolo inizia prima di questa posizione</div>
+      <div class="sheet-hint">Prima posizione inclusa nel capitolo</div>
     </div>
     <div class="form-group-m">
       <label class="form-label-m">Posizione finale *</label>
       <select class="form-ctrl" id="shFine"><option value="">— Seleziona —</option></select>
-      <div class="sheet-hint">Il capitolo termina dopo questa posizione</div>
+      <div class="sheet-hint">Ultima posizione inclusa nel capitolo</div>
     </div>
   </div>
   <div class="sheet-footer">
@@ -95,9 +95,9 @@ if (!currentUser) throw new Error('not logged');
 document.getElementById('userAvatar').textContent = currentUser.sigla || (currentUser.nome||'U').substring(0,2).toUpperCase();
 document.getElementById('onlineIndicator').className = 'top-bar-online' + (API.isOnline() ? '' : ' offline');
 
-var params     = new URLSearchParams(window.location.search);
-var idRilievo  = params.get('id_rilievo');
-var tipoRil    = (params.get('tipo') || 'SERR').toUpperCase();
+var params    = new URLSearchParams(window.location.search);
+var idRilievo = params.get('id_rilievo');
+var tipoRil   = (params.get('tipo') || 'SERR').toUpperCase();
 if (!idRilievo) { history.back(); }
 
 var _capitoli  = [];
@@ -105,17 +105,23 @@ var _posizioni = [];
 var _editingId = null;
 var _isPorte   = (tipoRil === 'PORTE');
 
-// Adatta colori per porte
 if (_isPorte) {
   document.getElementById('topBar').style.background = '#7c2d12';
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ── HELPER: ordine di una posizione (fallback su numero_pos) ──
+function _ord(p) {
+  return (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
+}
+
 // ── CARICAMENTO ──
 function load() {
   DBLocal.getById('rilievi', idRilievo, function(ril) {
-    document.getElementById('tbSub').textContent = ril ? (ril.codice_completo || ril.id.substring(0,8)) : '—';
+    document.getElementById('tbSub').textContent = ril
+      ? (ril.codice_completo || ril.id.substring(0,8))
+      : '—';
   });
 
   var storePosizioni = _isPorte ? 'posizioni_porte' : 'posizioni_serr';
@@ -123,11 +129,7 @@ function load() {
   DBLocal.getAll(storePosizioni, function(pos) {
     _posizioni = pos
       .filter(function(p) { return p.id_rilievo === idRilievo && p.stato === 'attivo'; })
-      .sort(function(a, b) {
-        var oa = (a.ordine !== null && a.ordine !== undefined) ? a.ordine : a.numero_pos;
-        var ob = (b.ordine !== null && b.ordine !== undefined) ? b.ordine : b.numero_pos;
-        return oa - ob;
-      });
+      .sort(function(a, b) { return _ord(a) - _ord(b); });
 
     DBLocal.getAll('capitoli_rilievo', function(caps) {
       _capitoli = caps
@@ -157,33 +159,33 @@ function renderCapitoli() {
   var html = '';
   _capitoli.forEach(function(cap) {
     var nPos = _posizioni.filter(function(p) {
-      var ord = (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
-      return ord >= cap.ordine_inizio && ord <= cap.ordine_fine;
+      var o = _ord(p);
+      return o >= cap.ordine_inizio && o <= cap.ordine_fine;
     }).length;
 
     var posInizio = _posizioni.find(function(p) {
-      var ord = (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
-      return ord >= cap.ordine_inizio;
+      return _ord(p) >= cap.ordine_inizio;
     });
     var posFine = _posizioni.slice().reverse().find(function(p) {
-      var ord = (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
-      return ord <= cap.ordine_fine;
+      return _ord(p) <= cap.ordine_fine;
     });
 
-    var labelInizio = posInizio ? (posInizio.numero_pos_alfa || posInizio.numero_pos) : cap.ordine_inizio;
-    var labelFine   = posFine   ? (posFine.numero_pos_alfa   || posFine.numero_pos)   : cap.ordine_fine;
+    var labelInizio = posInizio ? (posInizio.numero_pos_alfa || posInizio.numero_pos) : '—';
+    var labelFine   = posFine   ? (posFine.numero_pos_alfa   || posFine.numero_pos)   : '—';
 
-    html += '<div class="cap-card">' +
-      '<div class="cap-card-hdr' + (_isPorte ? ' porte' : '') + '">' +
-        '<span class="cap-title">&#128218; ' + esc(cap.titolo) + '</span>' +
-      '</div>' +
-      '<div class="cap-card-body">' +
-        '<div class="cap-range">Da pos. <strong>' + esc(String(labelInizio)) + '</strong> a pos. <strong>' + esc(String(labelFine)) + '</strong></div>' +
-        '<span class="cap-npos' + (_isPorte ? ' porte' : '') + '">' + nPos + ' pos.</span>' +
-        '<button class="btn-icon btn-edit" onclick="apriSheet(\'' + cap.id + '\')" title="Modifica">&#9998;</button>' +
-        '<button class="btn-icon btn-del"  onclick="eliminaCapitolo(\'' + cap.id + '\')" title="Elimina">&#128465;</button>' +
-      '</div>' +
-    '</div>';
+    html +=
+      '<div class="cap-card">' +
+        '<div class="cap-card-hdr' + (_isPorte ? ' porte' : '') + '">' +
+          '<span class="cap-title">&#128218; ' + esc(cap.titolo) + '</span>' +
+        '</div>' +
+        '<div class="cap-card-body">' +
+          '<div class="cap-range">Da pos. <strong>' + esc(String(labelInizio)) + '</strong>' +
+            ' a pos. <strong>' + esc(String(labelFine)) + '</strong></div>' +
+          '<span class="cap-npos' + (_isPorte ? ' porte' : '') + '">' + nPos + ' pos.</span>' +
+          '<button class="btn-icon btn-edit" onclick="apriSheet(\'' + cap.id + '\')" title="Modifica">&#9998;</button>' +
+          '<button class="btn-icon btn-del"  onclick="eliminaCapitolo(\'' + cap.id + '\')" title="Elimina">&#128465;</button>' +
+        '</div>' +
+      '</div>';
   });
 
   container.innerHTML = html;
@@ -193,26 +195,42 @@ function renderCapitoli() {
 function apriSheet(idCap) {
   _editingId = idCap;
 
-  // Popola select posizioni
   var selI = document.getElementById('shInizio');
   var selF = document.getElementById('shFine');
   selI.innerHTML = '<option value="">— Seleziona —</option>';
   selF.innerHTML = '<option value="">— Seleziona —</option>';
 
   _posizioni.forEach(function(p) {
-    var ord   = (p.ordine !== null && p.ordine !== undefined) ? p.ordine : p.numero_pos;
-    var label = 'Pos. ' + (p.numero_pos_alfa || p.numero_pos) + (p.ambiente ? ' — ' + p.ambiente : '');
-    selI.appendChild(new Option(label, ord));
-    selF.appendChild(new Option(label, ord));
+    var o     = _ord(p);
+    var label = 'Pos. ' + (p.numero_pos_alfa || p.numero_pos) +
+                (p.ambiente ? ' — ' + p.ambiente : '');
+    selI.appendChild(new Option(label, o));
+    selF.appendChild(new Option(label, o));
   });
 
   if (idCap) {
     var cap = _capitoli.find(function(c) { return c.id === idCap; });
     if (cap) {
-      document.getElementById('shTitle').textContent   = 'Modifica capitolo';
-      document.getElementById('shTitolo').value        = cap.titolo || '';
-      selI.value = cap.ordine_inizio;
-      selF.value = cap.ordine_fine;
+      document.getElementById('shTitle').textContent = 'Modifica capitolo';
+      document.getElementById('shTitolo').value = cap.titolo || '';
+
+      // Pre-selezione compatibile con:
+      //   - nuovi capitoli mobile  (ordine_inizio = n-0.5, ordine_fine = m+0.5)
+      //   - vecchi capitoli mobile (bordi interi coincidenti con posizioni)
+      //   - capitoli web           (flanking interi, posizioni inside con confronto stretto)
+      // Trova le posizioni nel range inclusivo e seleziona la prima e l'ultima.
+      var posInRange = _posizioni
+        .filter(function(p) {
+          var o = _ord(p);
+          return o >= cap.ordine_inizio && o <= cap.ordine_fine;
+        })
+        .sort(function(a, b) { return _ord(a) - _ord(b); });
+
+      var firstOrd = posInRange.length ? _ord(posInRange[0])                     : null;
+      var lastOrd  = posInRange.length ? _ord(posInRange[posInRange.length - 1]) : null;
+
+      selI.value = firstOrd !== null ? String(firstOrd) : '';
+      selF.value = lastOrd  !== null ? String(lastOrd)  : '';
     }
   } else {
     document.getElementById('shTitle').textContent = 'Nuovo capitolo';
@@ -233,36 +251,70 @@ function closeSheet() {
 }
 
 // ── SALVA CAPITOLO ──
+// C75 FIX — ordine_inizio = ordine_pos_inizio - 0.5, ordine_fine = ordine_pos_fine + 0.5.
+// Il flanking ±0.5 garantisce che nessun ordine intero di posizione coincida con i bordi
+// del capitolo. Il confronto dei report (ordine > ordIni && ordine < ordFine) cattura
+// correttamente tutte le posizioni con ordine >= pos_ini e ordine <= pos_fine.
+//
+// C76 FIX — Dopo il salvataggio viene eseguita la patch id_capitolo sulle posizioni
+// nel range (solo se online). Se offline viene aggiornata solo la memoria locale
+// e viene mostrato un avviso operativo all'utente.
+//
+// ANTI-OVERLAP — Prima di inviare a Supabase, verifica che il nuovo intervallo
+// non si sovrapponga ad alcun capitolo attivo già esistente (escluso il corrente
+// in modalità modifica). Due intervalli con bordi adiacenti (es. 9.5–30.5 e 30.5–50.5)
+// NON sono considerati sovrapposti perché !(50.5 <= 30.5 || 9.5 >= 30.5) = false.
 function salvaCapitolo() {
-  var titolo  = (document.getElementById('shTitolo').value || '').trim();
-  var ordIni  = document.getElementById('shInizio').value;
-  var ordFine = document.getElementById('shFine').value;
+  var titolo     = (document.getElementById('shTitolo').value || '').trim();
+  var ordIniRaw  = document.getElementById('shInizio').value;
+  var ordFineRaw = document.getElementById('shFine').value;
 
-  if (!titolo)  { alert('Inserisci un titolo per il capitolo.'); return; }
-  if (!ordIni)  { alert('Seleziona la posizione iniziale.'); return; }
-  if (!ordFine) { alert('Seleziona la posizione finale.'); return; }
+  if (!titolo)     { alert('Inserisci un titolo per il capitolo.'); return; }
+  if (!ordIniRaw)  { alert('Seleziona la posizione iniziale.'); return; }
+  if (!ordFineRaw) { alert('Seleziona la posizione finale.'); return; }
 
-  ordIni  = parseFloat(ordIni);
-  ordFine = parseFloat(ordFine);
+  var ordIni  = parseFloat(ordIniRaw);
+  var ordFine = parseFloat(ordFineRaw);
 
   if (ordFine < ordIni) {
     alert('La posizione finale deve essere uguale o successiva a quella iniziale.');
     return;
   }
 
+  // Flanking ±0.5
+  var ordineInizio = ordIni  - 0.5;
+  var ordineFine   = ordFine + 0.5;
+
+  // ── ANTI-OVERLAP ──
+  // Controlla che il nuovo intervallo non si sovrapponga a capitoli attivi esistenti.
+  // In modifica (_editingId valorizzato) esclude il capitolo corrente dal confronto.
+  var overlap = _capitoli.find(function(c) {
+    if (_editingId && c.id === _editingId) { return false; }
+    return !(ordineFine <= c.ordine_inizio || ordineInizio >= c.ordine_fine);
+  });
+  if (overlap) {
+    alert(
+      'Il range selezionato si sovrappone al capitolo "' +
+      (overlap.titolo || 'senza titolo') +
+      '".\nModifica le posizioni iniziale/finale.'
+    );
+    return;
+  }
+
+  var op   = _editingId ? 'update' : 'insert';
   var data = {
     id_rilievo:    idRilievo,
     titolo:        titolo,
-    ordine_inizio: ordIni,
-    ordine_fine:   ordFine,
+    ordine_inizio: ordineInizio,
+    ordine_fine:   ordineFine,
     stato:         'attivo'
   };
+  if (op === 'update') { data.id = _editingId; }
 
-  var op = 'insert';
-  if (_editingId) {
-    data.id = _editingId;
-    op = 'update';
-  }
+  // Cattura prima che closeSheet() azzeri _editingId
+  var capIdEdit = _editingId;
+  var isUpdate  = (op === 'update');
+  var online    = API.isOnline();
 
   var btn = document.querySelector('[onclick="salvaCapitolo()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
@@ -271,32 +323,243 @@ function salvaCapitolo() {
     if (btn) { btn.disabled = false; btn.innerHTML = '&#128190; Salva capitolo'; }
     if (err) { alert('Errore salvataggio:\n' + err); return; }
 
+    var capId = (op === 'insert' && saved && saved.id) ? saved.id : capIdEdit;
+
     closeSheet();
 
-    // Aggiorna lista locale senza reload
+    // Aggiorna lista locale
     if (op === 'insert' && saved) {
-      _capitoli.push(Object.assign({}, data, {id: saved.id}));
+      _capitoli.push(Object.assign({}, data, { id: capId }));
     } else if (op === 'update') {
-      var idx = _capitoli.findIndex(function(c) { return c.id === _editingId; });
-      if (idx >= 0) _capitoli[idx] = Object.assign({}, _capitoli[idx], data);
+      var idx = _capitoli.findIndex(function(c) { return c.id === capIdEdit; });
+      if (idx >= 0) { _capitoli[idx] = Object.assign({}, _capitoli[idx], data); }
     }
     _capitoli.sort(function(a, b) { return a.ordine_inizio - b.ordine_inizio; });
-
     renderCapitoli();
     API.miniSync('capitoli_rilievo', function() {});
+
+    // C76 FIX — Patch id_capitolo (solo online)
+    if (capId) {
+      if (!online) {
+        // Offline: aggiorna solo la memoria locale.
+        // La patch Supabase NON viene eseguita né accodata.
+        // L'operatore deve verificare manualmente l'assegnazione dopo la sincronizzazione.
+        _aggiornaPosMemoria(capId, ordineInizio, ordineFine, isUpdate);
+        alert(
+          'Capitolo salvato.\n\n' +
+          'Attenzione: il dispositivo era offline al momento del salvataggio.\n' +
+          'L\'assegnazione id_capitolo alle posizioni non è stata eseguita su Supabase.\n' +
+          'Verificare i raggruppamenti dopo la sincronizzazione online.'
+        );
+      } else {
+        patchPosizioniCapitolo(capId, ordineInizio, ordineFine, isUpdate);
+      }
+    }
   });
 }
 
 // ── ELIMINA CAPITOLO ──
+// C77 FIX: stato = 'eliminato' (allineato alla web app — confermato da Q3 Supabase).
+// C74 FIX: azzera id_capitolo nelle posizioni collegate dopo l'eliminazione.
+//          Se offline: aggiorna solo la memoria locale e avvisa l'utente.
 function eliminaCapitolo(id) {
   if (!confirm('Eliminare questo capitolo? Le posizioni non vengono eliminate, solo il raggruppamento.')) return;
 
-  API.writeRecord('update', 'capitoli_rilievo', {id: id, stato: 'disattivo'}, function(err) {
+  var online = API.isOnline();
+
+  API.writeRecord('update', 'capitoli_rilievo', { id: id, stato: 'eliminato' }, function(err) {
     if (err) { alert('Errore eliminazione:\n' + err); return; }
+
     _capitoli = _capitoli.filter(function(c) { return c.id !== id; });
     renderCapitoli();
     API.miniSync('capitoli_rilievo', function() {});
+
+    // C74 FIX — Azzera id_capitolo nelle posizioni collegate
+    if (!online) {
+      // Offline: aggiorna solo la memoria locale.
+      // La patch Supabase NON viene eseguita né accodata.
+      _posizioni.forEach(function(p) {
+        if (p.id_capitolo === id) { p.id_capitolo = null; }
+      });
+      alert(
+        'Capitolo eliminato.\n\n' +
+        'Attenzione: il dispositivo era offline al momento dell\'eliminazione.\n' +
+        'L\'azzeramento id_capitolo sulle posizioni non è stato eseguito su Supabase.\n' +
+        'Verificare i raggruppamenti dopo la sincronizzazione online.'
+      );
+    } else {
+      clearCapitoloPositions(id);
+    }
   });
+}
+
+// ────────────────────────────────────────────────────────────
+// HELPER PRIVATI — Patch id_capitolo (Strategia C, Fase 5)
+// ────────────────────────────────────────────────────────────
+
+// ── _sbPatch ──
+// Esegue una PATCH REST diretta su Supabase.
+// Bypassa API.writeRecord e il suo sanitizePayload per poter inviare
+// id_capitolo: null in modo esplicito (valore che sanitizePayload potrebbe rimuovere).
+//
+// filterPairs: array di coppie [campo, valore_postGREST]
+//   es. [['id_rilievo','eq.uuid'], ['ordine','gt.9.5'], ['ordine','lt.40.5']]
+// body: oggetto JSON — supporta null esplicito per azzerare id_capitolo
+// cb: callback(err) — err è null in caso di successo, stringa in caso di errore HTTP o rete
+//
+// Controlla res.ok: una risposta HTTP 4xx/5xx viene trattata come errore.
+// Il testo della risposta viene letto e passato alla callback tramite console.warn.
+function _sbPatch(table, filterPairs, body, cb) {
+  var qs  = filterPairs.map(function(pair) { return pair[0] + '=' + pair[1]; }).join('&');
+  var url = APP_CONFIG.SUPABASE_URL + '/rest/v1/' + table + '?' + qs;
+
+  fetch(url, {
+    method:  'PATCH',
+    headers: {
+      'apikey':        APP_CONFIG.SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + APP_CONFIG.SUPABASE_ANON_KEY,
+      'Content-Type':  'application/json',
+      'Prefer':        'return=minimal'
+    },
+    body: JSON.stringify(body)
+  })
+  .then(function(res) {
+    if (res.ok) {
+      cb && cb(null);
+    } else {
+      res.text().then(function(txt) {
+        var msg = '[capitoli] _sbPatch HTTP ' + res.status + ' su ' + table + ': ' + txt;
+        console.warn(msg);
+        cb && cb(msg);
+      }).catch(function() {
+        var msg = '[capitoli] _sbPatch HTTP ' + res.status + ' su ' + table + ' (corpo non leggibile)';
+        console.warn(msg);
+        cb && cb(msg);
+      });
+    }
+  })
+  .catch(function(e) {
+    var msg = '[capitoli] _sbPatch errore di rete su ' + table + ': ' + (e && e.message ? e.message : String(e));
+    console.warn(msg);
+    cb && cb(msg);
+  });
+}
+
+// ── _aggiornaPosMemoria ──
+// Aggiorna id_capitolo nell'array _posizioni in memoria locale.
+// Chiamata dopo il completamento di tutte le PATCH Supabase (o direttamente se offline).
+//
+// Logica:
+//   - ordine strettamente dentro (ordIni, ordFine) → assegna capId
+//   - per UPDATE: ordine fuori range che aveva capId → azzera a null
+// Con flanking ±0.5 su ordini interi:
+//   ordine > ordIni  (=posOrdIni-0.5)  equivale a ordine >= posOrdIni  ✓
+//   ordine < ordFine (=posOrdFine+0.5) equivale a ordine <= posOrdFine ✓
+function _aggiornaPosMemoria(capId, ordIni, ordFine, isUpdate) {
+  _posizioni.forEach(function(p) {
+    var o = _ord(p);
+    if (o > ordIni && o < ordFine) {
+      p.id_capitolo = capId;
+    } else if (isUpdate && p.id_capitolo === capId) {
+      p.id_capitolo = null;
+    }
+  });
+}
+
+// ── patchPosizioniCapitolo ──
+// Esegue le PATCH Supabase per assegnare/de-assegnare id_capitolo alle posizioni.
+// Chiamata solo quando API.isOnline() === true.
+//
+// Per INSERT (isUpdate = false):
+//   - 1 PATCH: assegna capId alle posizioni con ordine strettamente dentro (ordIni, ordFine)
+//
+// Per UPDATE (isUpdate = true):
+//   - 1 PATCH: assegna capId alle posizioni nel nuovo range
+//   - 2 PATCH aggiuntive: azzera capId per posizioni ora fuori range (bordo sx e bordo dx)
+//   Le tre call sono non-overlapping per costruzione (flanking ±0.5 su ordini interi).
+//
+// onDone conta il completamento di tutte le call (con o senza errore HTTP).
+// Gli errori sono loggati in console ma non bloccano la UI: il capitolo è già salvato.
+// Al completamento di tutte le call: aggiorna la memoria locale e lancia miniSync
+// per allineare DBLocal con i nuovi valori id_capitolo scritti su Supabase.
+function patchPosizioniCapitolo(capId, ordIni, ordFine, isUpdate) {
+  var store = _isPorte ? 'posizioni_porte' : 'posizioni_serr';
+  var total = isUpdate ? 3 : 1;
+  var done  = 0;
+
+  function onDone(err) {
+    // err è già loggato dentro _sbPatch — qui si conta solo il completamento
+    done++;
+    if (done >= total) {
+      _aggiornaPosMemoria(capId, ordIni, ordFine, isUpdate);
+      API.miniSync(store, function() {});
+    }
+  }
+
+  // PATCH 1 — Assegna capitolo alle posizioni nel range (confronto stretto = flanking)
+  _sbPatch(
+    store,
+    [
+      ['id_rilievo', 'eq.' + idRilievo],
+      ['ordine', 'gt.' + ordIni],
+      ['ordine', 'lt.' + ordFine]
+    ],
+    { id_capitolo: capId },
+    onDone
+  );
+
+  if (isUpdate) {
+    // PATCH 2 — De-assegna posizioni prima del nuovo inizio che avevano questo capitolo
+    _sbPatch(
+      store,
+      [
+        ['id_rilievo', 'eq.' + idRilievo],
+        ['id_capitolo', 'eq.' + capId],
+        ['ordine', 'lte.' + ordIni]
+      ],
+      { id_capitolo: null },
+      onDone
+    );
+
+    // PATCH 3 — De-assegna posizioni dopo il nuovo fine che avevano questo capitolo
+    _sbPatch(
+      store,
+      [
+        ['id_rilievo', 'eq.' + idRilievo],
+        ['id_capitolo', 'eq.' + capId],
+        ['ordine', 'gte.' + ordFine]
+      ],
+      { id_capitolo: null },
+      onDone
+    );
+  }
+}
+
+// ── clearCapitoloPositions ──
+// Azzera id_capitolo in tutte le posizioni che avevano il capitolo eliminato.
+// Chiamata solo quando API.isOnline() === true.
+// Esegue una singola PATCH filtrata per id_rilievo e id_capitolo.
+// Al completamento (con o senza errore HTTP): aggiorna la memoria locale
+// e lancia miniSync per allineare DBLocal con i valori nullificati su Supabase.
+function clearCapitoloPositions(capId) {
+  var store = _isPorte ? 'posizioni_porte' : 'posizioni_serr';
+
+  _sbPatch(
+    store,
+    [
+      ['id_rilievo', 'eq.' + idRilievo],
+      ['id_capitolo', 'eq.' + capId]
+    ],
+    { id_capitolo: null },
+    function(err) {
+      // err già loggato in _sbPatch
+      // Aggiorna memoria locale e DBLocal in ogni caso (successo o errore parziale)
+      _posizioni.forEach(function(p) {
+        if (p.id_capitolo === capId) { p.id_capitolo = null; }
+      });
+      API.miniSync(store, function() {});
+    }
+  );
 }
 
 load();
