@@ -568,8 +568,7 @@ function onVarianteChange(silent){
   document.getElementById('fCodice').value=rec?(rec.codice||rec.codice_serramento||''):'';
   ricalcola();
 }
-
-// 1B — C52: popola fNVetri da _lkVetro filtrato per sistema selezionato.
+  // 1B — C52: popola fNVetri da _lkVetro filtrato per sistema selezionato.
 // lk_vetro.sistema corrisponde a db_serramento.descrizione (es. "KF 310").
 // n_vetri: 'D' (Doppio) o 'T' (Triplo).
 // Se disponibile una sola opzione, viene pre-selezionata automaticamente.
@@ -899,9 +898,15 @@ function loadStratigrafie(){
 // ── LOAD principale ──
 // LK_VETRO caricato nella stessa catena di callback di LK_COLORI e LK_COPRIFILI,
 // così _lkVetro è garantito prima di buildLookupDropdowns / setupNew / loadExisting.
+//
+// Fase 5 File 2 — FIX _nextNumPos:
+// Il filtro include SOLO le posizioni con stato = 'attivo' (o stato null/undefined,
+// trattato come attivo per default). Le posizioni con stato = 'disattivo' o
+// 'eliminato' non contribuiscono al calcolo del massimo numero_pos,
+// eliminando i gap indesiderati nella numerazione delle nuove posizioni.
 function load(){
   DBLocal.getAll('posizioni_serr', function(allPos){
-    var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo; });
+    var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo && (p.stato || 'attivo') === 'attivo'; });
     var mx = 0;
     fr.forEach(function(p){ if ((parseInt(p.numero_pos)||0) > mx) mx = parseInt(p.numero_pos)||0; });
     _nextNumPos = mx + 1;
