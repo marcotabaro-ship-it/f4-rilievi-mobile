@@ -242,6 +242,8 @@ function v(x){return(!x&&x!==0)?'':String(x);}
 function n2(x){return Math.round(x*100)/100;}
 function cUp(x){return Math.ceil(x);}
 function fmtH(x){if(!x&&x!==0)return'—';var r=Math.round(x*1000)/1000;return r.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')||'0';}
+// C116 — accetta boolean true, stringa 'true', stringa 'SI'
+function isYes(val){return val===true||val==='SI'||val==='true';}
 
 var C={sfrido:50,pvcB:6000,legB:3500,aluB:6000,angLato:50,angB:6000,cassIngr:200,
   sch:{'A':{h:150,sx:30,dx:30,min:1.5},'AM':{h:150,sx:30,dx:30,min:1.5},'AE':{h:150,sx:30,dx:30,min:1.5},'AR':{h:150,sx:30,dx:30,min:1.5},
@@ -288,6 +290,8 @@ function supZan(ts,cod,Lt,Ht,na,al){var c=C.zan[cod];if(!c)return 0;var nH=(ts==
 function matM(ts,Lt,Ht){var s=C.sfrido;return((ts==='F'||ts==='FF')?2*(Lt+2*s)+2*(Ht+2*s):1*(Lt+2*s)+2*(Ht+2*s))/1000;}
 
 var DP={}, POS_SERR={}, POS_SERR_GRU={}, POS_CTL={};
+// C114 — USE_GRU: inizializzato a false, valorizzato in renderAll da ril.gru
+var USE_GRU=false;
 var POS_SERR_MIN=2.0, POS_CTL_MIN=1.0;
 var V2DP={'PROGETTAZIONE':'prog','GESTIONE ORDINI':'gord','INCONTRI IN CANTIERE':'incant','SCARICO E CARICO CTL':'scCtl','TRASPORTO CTL':'trCtl','SCARICO E CARICO SERR':'scSerr','TRASPORTO SERR':'trSerr','RIMOZIONE SERRAMENTI':'rimSerr','RIMOZIONE ACCESSORI':'rimAcc','SMALTIMENTO SERR':'smSerr','SMALTIMENTO ACC':'smAcc','ASSEMBLAGGIO CTL':'assCtl','ASSEMBLAGGIO TERMOCASSE':'assTerm','ASSEMBLAGGIO DINOX DA':'assDinDA','ASSEMBLAGGIO DINOX IM':'assDinIM','INSTALL ANGOLARI PVC':'angPvc','INSTALLAZIONE CTL':'instCtl','INSTALLAZIONE TERMOCASSE':'instTerm','INSTALL DINOX DA':'instDinDA','INSTALL DINOX IM':'instDinIM','TAGLIO PIANI MARMO':'marmo','REGISTRAZIONE COLLAUDO':'regColl','PULIZIA CANTIERE':'pulizia'};
 var INST_V2DP={'INST INGRESSI':'instI','INST FINESTRE':'instF','INST PORTE FINESTRE':'instPF','INST FINESTRE FISSE':'instFF','INST VETRATE FISSE':'instVF','INST SCORREVOLI':'instS'};
@@ -313,23 +317,33 @@ function buildTablesFromPosa(rows){
 
 function cOre(n,dp){if(!dp||n<=0)return 0;var b=n*dp[0];return dp[1]?Math.max(b,dp[1]):b;}
 function pianoKey(p){var n=parseInt(p,10);if(isNaN(n))return'0';return String(Math.min(Math.max(n,-1),10));}
-function posSerrH(piano,nc){var key=pianoKey(piano);var lookup=POS_SERR[key];if(!lookup)return 0.5;return lookup[Math.min(Math.max((parseInt(nc)||1)-1,0),4)]||0.5;}
+// C114 — posSerrH ora accetta useGru: usa POS_SERR_GRU per piani >= 1 se il rilievo ha gru attiva
+function posSerrH(piano,nc,useGru){
+  var key=pianoKey(piano);
+  var pn=parseInt(piano,10);
+  var tbl=(useGru&&pn>=1)?POS_SERR_GRU:POS_SERR;
+  var lookup=tbl[key]||POS_SERR[key];
+  if(!lookup)return 0.5;
+  return lookup[Math.min(Math.max((parseInt(nc)||1)-1,0),4)]||0.5;
+}
 function posCtlH(piano){return POS_CTL[pianoKey(piano)]||0.5;}
 
-function calcolaVoci(pos){
+// C114 — calcolaVoci ora accetta useGru e lo propaga a posSerrH
+function calcolaVoci(pos,useGru){
   var nT=pos.length,nCL=0,nCT=0,nRim=0,nRA=0,nMar=0,nAng=0,nI=0,nF=0,nPF=0,nFF=0,nVF=0,nS=0;
   var nAv=0,nSc=0,nTe=0,nFr=0,nCas=0,nZan=0,nCI=0,nCE=0,nSS=0,nSA=0,nDA=0,nIM=0;
   var oPCtl=0,oPSerr=0;
   pos.forEach(function(p){
     var ctl=(p.controtelaio||'').toUpperCase();if(ctl==='L')nCL++;else if(ctl==='T')nCT++;
-    if(p.rimozione==='SI'||p.rimozione===true){nRim++;nSS++;}if(p.rimozione_accessori===true){nRA++;nSA++;}
+    if(p.rimozione==='SI'||p.rimozione===true)nRim++;if(p.rimozione_accessori===true)nRA++;
     if(p.taglio_marmo===true)nMar++;if(p.angolari_pvc===true)nAng++;
     var ts=(p.tipo_serramento||'').toUpperCase();
     if(!p.solo_accessori){if(ts==='I')nI++;else if(ts==='F')nF++;else if(ts==='PF')nPF++;else if(ts==='FF')nFF++;else if(ts==='VF')nVF++;else if(ts==='S')nS++;}
     var sc=(p.schermatura||'').toUpperCase();if(sc==='A'||sc==='AM'||sc==='AE'||sc==='AR')nAv++;else if(sc==='S')nSc++;else if(sc==='TZ'||sc==='TM')nTe++;else if(sc==='CA'||sc==='CT')nFr++;
     if(p.cassonetto)nCas++;if(p.zanzariera)nZan++;if(p.coprifilo_int_mat)nCI++;if(p.coprifilo_est_mat)nCE++;
     var din=(p.dinoxill||'').toUpperCase();if(din==='DA')nDA++;else if(din==='I3'||din==='I4')nIM++;
-    if(ctl==='L'||ctl==='T')oPCtl+=posCtlH(p.piano);if(!p.solo_accessori)oPSerr+=posSerrH(p.piano,p.n_campi||1);
+    // C114 — posSerrH riceve useGru per calcolare ore con o senza gru
+    if(ctl==='L'||ctl==='T')oPCtl+=posCtlH(p.piano);if(!p.solo_accessori)oPSerr+=posSerrH(p.piano,p.n_campi||1,useGru);
   });
   var nCtl=nCL+nCT;oPCtl=nCtl>0?Math.max(oPCtl,POS_CTL_MIN):0;oPSerr=nT>0?Math.max(oPSerr,POS_SERR_MIN):0;
   var voci=[
@@ -429,6 +443,9 @@ function loadAndRender(wR,wA,wP){
 }
 
 function renderAll(ril,pos,strat,db,caps,wR,wA,wP){
+  // C114 — imposta USE_GRU dal campo gru del rilievo (boolean true o stringa 'SI')
+  USE_GRU=(ril.gru===true||ril.gru==='SI');
+
   var cp=ril.cantieri||{},cli=cp.clienti||{};
   var codice=ril.codice_completo||idRilievo;
   var locStr=((cp.tipo_via||'')+' '+(cp.indirizzo||'')).trim();
@@ -437,7 +454,8 @@ function renderAll(ril,pos,strat,db,caps,wR,wA,wP){
   function mkHdr(sezione){
     var nc=ril.note_commerciali||{};
     var ncParts=[];
-    [['colore_avvol','Avvol'],['colore_scuretto','Scuretto'],['colore_tenda','Tenda'],['colore_frang','Frang'],['colore_zanzariera','Zanz'],['colore_dinox','Dinox'],['maniglia_marca','Man.marca'],['maniglia_modello','Man.mod']].forEach(function(f){if(nc[f[0]])ncParts.push(f[1]+': '+nc[f[0]]);});
+    // C115 — aggiunto colore_copri_int e colore_copri_est alla lista note commerciali
+    [['colore_avvol','Avvol'],['colore_scuretto','Scuretto'],['colore_tenda','Tenda'],['colore_frang','Frang'],['colore_zanzariera','Zanz'],['colore_dinox','Dinox'],['colore_copri_int','Coprifilo int'],['colore_copri_est','Coprifilo est'],['maniglia_marca','Man.marca'],['maniglia_modello','Man.mod']].forEach(function(f){if(nc[f[0]])ncParts.push(f[1]+': '+nc[f[0]]);});
     var h='<div class="scheda-hdr"><div class="sh-top">';
     h+='<div class="sh-logo"><div class="lb2">[F4]</div>GRUPPO F4<div style="font-size:8px;opacity:.7;margin-top:2px">'+esc(sezione)+'</div></div>';
     h+='<div class="sh-c">';
@@ -513,8 +531,13 @@ function renderAll(ril,pos,strat,db,caps,wR,wA,wP){
       strat.forEach(function(s){
         var img=STRAT_IMG[s.immagine_ref]||STRAT_IMG['SERR_'+(s.immagine_ref||'')]||'';
         var qs=parseQ(s.quote_json).map(function(q){return q.lettera+': '+q.mm+' mm';}).join(' | ');
-        h+='<div class="strat-card-c">';if(img)h+='<img src="'+esc(img)+'" alt="" onerror="this.style.display=\'none\'">';
-        h+='<h4>'+esc(s.nome)+'</h4>';if(qs)h+='<div class="sq">'+esc(qs)+'</div>';h+='</div>';
+        h+='<div class="strat-card-c">';
+        if(img)h+='<img src="'+esc(img)+'" alt="" onerror="this.style.display=\'none\'">';
+        h+='<h4>'+esc(s.nome)+'</h4>';
+        // C116 — badge "★ Default" se is_default è true/SI/stringa 'true'
+        if(isYes(s.is_default))h+='<div style="display:inline-block;margin-bottom:2px;padding:1px 5px;background:#d1fae5;color:#065f46;border-radius:6px;font-size:8px;font-weight:700;">&#9733; Default</div>';
+        if(qs)h+='<div class="sq">'+esc(qs)+'</div>';
+        h+='</div>';
       });
       h+='</div>';
     }
@@ -554,7 +577,15 @@ function renderAll(ril,pos,strat,db,caps,wR,wA,wP){
       h+='<td class="c">'+(p.rimozione==='SI'||p.rimozione===true?'<span class="chk on"></span>':'<span class="chk"></span>')+'</td>';
       h+='<td class="c">'+(p.rimozione_accessori?'<span class="chk on"></span>':'<span class="chk"></span>')+'</td>';
       h+='<td class="c gsep">'+(p.taglio_marmo?'<span class="chk on"></span>':'<span class="chk"></span>')+'</td>';
-      h+='<td style="font-size:9px;white-space:normal;min-width:50px">'+esc(v(p.senso_apertura))+'</td>';
+      // C117 — mostra nome stratigrafia override nella colonna SENSI/STRAT. se presente
+      (function(){
+        var stratOvNm='';
+        if(p.id_stratigrafia_override){
+          var sOv=strat.find(function(s){return s.id===p.id_stratigrafia_override;});
+          if(sOv)stratOvNm=sOv.nome;
+        }
+        h+='<td style="font-size:9px;white-space:normal;min-width:50px">'+esc(v(p.senso_apertura))+(stratOvNm?'<br><span style="font-size:8px;background:#ede9fe;color:#4f46e5;padding:0 3px;border-radius:3px;font-weight:700;">'+esc(stratOvNm)+'</span>':'')+'</td>';
+      })();
       h+='</tr>';
     });
     h+='</tbody></table></div>';
@@ -651,10 +682,12 @@ function renderAll(ril,pos,strat,db,caps,wR,wA,wP){
     if(caps&&caps.length){
       var gruppiPosa=groupByCap(posCalc,caps);
       var totalVoceCalc={};
-      gruppiPosa.forEach(function(g){var vG=calcolaVoci(g.pos);vG.forEach(function(vo){totalVoceCalc[vo.id]=(totalVoceCalc[vo.id]||0)+vo.oreCalc;});});
+      // C114 — calcolaVoci riceve USE_GRU per calcolo totalVoceCalc
+      gruppiPosa.forEach(function(g){var vG=calcolaVoci(g.pos,USE_GRU);vG.forEach(function(vo){totalVoceCalc[vo.id]=(totalVoceCalc[vo.id]||0)+vo.oreCalc;});});
       gruppiPosa.forEach(function(g){
         if(!g.pos.length)return;
-        var vG=calcolaVoci(g.pos),capId=g.cap.id||'__fuori__',adjCap=loadAdjCap(capId);
+        // C114 — calcolaVoci riceve USE_GRU per il render per capitolo
+        var vG=calcolaVoci(g.pos,USE_GRU),capId=g.cap.id||'__fuori__',adjCap=loadAdjCap(capId);
         var tG=0,oDG=0,oIG=0;
         vG.forEach(function(vo){
           var fin;
@@ -680,7 +713,8 @@ function renderAll(ril,pos,strat,db,caps,wR,wA,wP){
       h+='<div style="background:#064e3b;color:#a7f3d0;font-weight:700;font-size:.82rem;padding:6px 12px;margin:14px 0 6px;border-radius:5px;">\u2211 Totali complessivi</div>';
     }
 
-    var voci=calcolaVoci(pos);
+    // C114 — calcolaVoci totale complessivo riceve USE_GRU
+    var voci=calcolaVoci(pos,USE_GRU);
     var totCalc=0,totFin=0,areaMap={};
     var tbH='',lastArea='';
     var globaleFin={};
@@ -688,7 +722,8 @@ function renderAll(ril,pos,strat,db,caps,wR,wA,wP){
       var gruppiPosaG=groupByCap(posCalc,caps);
       gruppiPosaG.forEach(function(g){
         if(!g.pos.length)return;
-        var capId=g.cap.id||'__fuori__',adjCap=loadAdjCap(capId),vG=calcolaVoci(g.pos);
+        // C114 — calcolaVoci per globaleFin riceve USE_GRU
+        var capId=g.cap.id||'__fuori__',adjCap=loadAdjCap(capId),vG=calcolaVoci(g.pos,USE_GRU);
         vG.forEach(function(vo){var m=parseFloat((adjCap[vo.id]||{}).minus)||0,pl=parseFloat((adjCap[vo.id]||{}).plus)||0;var fin=Math.max(0,Math.round((vo.oreCalc-m+pl)*1000)/1000);globaleFin[vo.id]=(globaleFin[vo.id]||0)+fin;});
       });
     }
