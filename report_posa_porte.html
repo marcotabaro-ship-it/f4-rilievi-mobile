@@ -166,8 +166,9 @@
 <script>
 var SUPA_URL=APP_CONFIG.SUPABASE_URL, SUPA_KEY=APP_CONFIG.SUPABASE_ANON_KEY;
 var u=Auth.requireLogin(); if(!u)throw new Error('not logged');
-var ID_RILIEVO=(new URLSearchParams(window.location.search)).get('idRilievo');
-if(!ID_RILIEVO)window.location.href='clienti.html';
+var ID_RILIEVO=(new URLSearchParams(window.location.search)).get('idRilievo')||
+               (new URLSearchParams(window.location.search)).get('id');
+if(!ID_RILIEVO)history.back();
 
 var VOCI_GLOBALI=[], ADJ_LS_KEY='';
 var POSA_MODE='tot';
