@@ -141,7 +141,7 @@
       </div>
       <div class="form-group-m">
         <label class="form-label-m">Sistema <span class="req">*</span></label>
-        <select class="form-ctrl" id="fSistema" onchange="markDirty()" disabled><option value="">— seleziona fornitore —</option></select>
+        <select class="form-ctrl" id="fSistema" onchange="markDirty()" disabled><option value="">— seleziona sistema —</option></select>
       </div>
       <div class="form-row-2m">
         <div class="form-group-m">
@@ -314,20 +314,31 @@ function onFornitoreChange(silent) {
   if (!silent) markDirty();
   var forn = document.getElementById('fFornitore').value;
   var selS = document.getElementById('fSistema');
-  selS.innerHTML = '<option value="">— seleziona fornitore —</option>';
+  selS.innerHTML = '<option value="">— seleziona sistema —</option>';
   selS.disabled  = !forn;
   if (!forn) return;
-  // M1 FIX (Fase 6 C2): label = db_porte.sistema (leggibile), value = db_porte.sistema_sigla (codice).
-  // Il codice corrisponde alle chiavi usate da dati_comuni_posa per il calcolo delle ore posa.
+  // P3 FIX: label = sigla + ' — ' + descrizione leggibile — allineato alla web app (LK_SISTEMA_PORTE).
+  // Mappa locale stabile: equivalente a LK_SISTEMA_PORTE su Supabase, non richiede fetch aggiuntivo.
+  var LK_SIS = {
+    'ST':'Standard',           'DO':'Doppia',            'TP':'Telaio passaggio',
+    'FC':'Filo muro SI Ctl',   'F_':'Filo muro NO Ctl',
+    'SI':'Scorrevole interna', 'SE':'Scorrevole esterna',
+    'LI':'Libro',              'PI':'Pivot'
+  };
+  // Ordine canonico identico a web app — WEB_api.js riga 410 LK_SISTEMA_PORTE
+  var ORDER = ['ST','DO','TP','FC','F_','SI','SE','LI','PI'];
   var opts = [];
   _dbPorte.forEach(function(d){
     if (d.fornitore === forn && d.sistema_sigla) {
       if (!opts.some(function(o){ return o.code === d.sistema_sigla; })) {
-        opts.push({ label: d.sistema || d.sistema_sigla, code: d.sistema_sigla });
+        opts.push({ label: d.sistema_sigla + ' — ' + (LK_SIS[d.sistema_sigla] || d.sistema), code: d.sistema_sigla });
       }
     }
   });
-  opts.sort(function(a, b){ return a.label.localeCompare(b.label); });
+  opts.sort(function(a, b){
+    var ia = ORDER.indexOf(a.code), ib = ORDER.indexOf(b.code);
+    return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+  });
   opts.forEach(function(o){ selS.appendChild(new Option(o.label, o.code)); });
   selS.disabled = false;
   ricalcola();
