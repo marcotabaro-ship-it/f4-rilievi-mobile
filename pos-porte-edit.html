@@ -293,7 +293,8 @@ function ricalcola() {
   if (tf === 'P') {
     var forn = document.getElementById('fFornitore').value;
     var sis  = document.getElementById('fSistema').value;
-    var rec  = _dbPorte.find(function(d){ return d.fornitore === forn && (d.descrizione === sis || d.sistema === sis); });
+    // M3 FIX (Fase 6 C2): cerca sia per descrizione storica (d.sistema) sia per codice (d.sistema_sigla)
+    var rec  = _dbPorte.find(function(d){ return d.fornitore === forn && (d.sistema === sis || d.sistema_sigla === sis); });
     var offL = rec ? (parseFloat(rec.offset_larghezza_mm) || 0) : 0;
     var offH = rec ? (parseFloat(rec.offset_altezza_mm)   || 0) : 0;
     document.getElementById('cLord').textContent = Math.round(L + offL) + ' x ' + Math.round(H + offH);
@@ -316,10 +317,18 @@ function onFornitoreChange(silent) {
   selS.innerHTML = '<option value="">— seleziona fornitore —</option>';
   selS.disabled  = !forn;
   if (!forn) return;
-  var sis = [];
-  _dbPorte.forEach(function(d){ if (d.fornitore === forn){ var v = d.descrizione || d.sistema; if (v && sis.indexOf(v) < 0) sis.push(v); } });
-  sis.sort();
-  sis.forEach(function(s){ selS.appendChild(new Option(s, s)); });
+  // M1 FIX (Fase 6 C2): label = db_porte.sistema (leggibile), value = db_porte.sistema_sigla (codice).
+  // Il codice corrisponde alle chiavi usate da dati_comuni_posa per il calcolo delle ore posa.
+  var opts = [];
+  _dbPorte.forEach(function(d){
+    if (d.fornitore === forn && d.sistema_sigla) {
+      if (!opts.some(function(o){ return o.code === d.sistema_sigla; })) {
+        opts.push({ label: d.sistema || d.sistema_sigla, code: d.sistema_sigla });
+      }
+    }
+  });
+  opts.sort(function(a, b){ return a.label.localeCompare(b.label); });
+  opts.forEach(function(o){ selS.appendChild(new Option(o.label, o.code)); });
   selS.disabled = false;
   ricalcola();
 }
@@ -372,13 +381,8 @@ function onTipoPortaChange() {
 // ── CARICAMENTO INIZIALE ──
 function load() {
   // Prossimo numero posizione
-  // Fase 5 File 3 — FIX _nextNumPos:
-  // Il filtro include SOLO le posizioni con stato = 'attivo' (o stato null/undefined,
-  // trattato come attivo per default). Le posizioni con stato = 'disattivo' o
-  // 'eliminato' non contribuiscono al calcolo del massimo numero_pos,
-  // eliminando i gap indesiderati nella numerazione delle nuove posizioni porte.
   DBLocal.getAll('posizioni_porte', function(allPos){
-    var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo && (p.stato || 'attivo') === 'attivo'; });
+    var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo; });
     var mx = 0;
     fr.forEach(function(p){ if ((parseInt(p.numero_pos) || 0) > mx) mx = parseInt(p.numero_pos) || 0; });
     _nextNumPos = mx + 1;
@@ -447,7 +451,18 @@ function populateForm(p) {
   if (p.fornitore) {
     setOpt('fFornitore', p.fornitore);
     onFornitoreChange(true);
-    setOpt('fSistema', p.sistema);
+    // M2 FIX (Fase 6 C2): compatibilità record storici con sistema descrittivo (es. 'STANDARD', 'DOPPIA').
+    // Cerca in _dbPorte il record dove d.sistema === valore_storico e usa d.sistema_sigla come codice.
+    // Se il valore salvato è già un codice (es. 'ST', dopo la fix), d.sistema !== 'ST' → fallback al valore stesso.
+    var sisCode = (function() {
+      var saved = p.sistema;
+      if (!saved) return '';
+      var rec = _dbPorte.find(function(d) {
+        return d.fornitore === p.fornitore && d.sistema === saved;
+      });
+      return rec ? (rec.sistema_sigla || saved) : saved;
+    })();
+    setOpt('fSistema', sisCode);
   }
 
   setOpt('fCollezione',       p.collezione);
