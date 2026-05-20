@@ -20,6 +20,12 @@
     .pos-dim-calc { font-size:11px; color:var(--c-accent); font-style:italic; }
     .pos-sis  { font-size:11px; color:var(--c-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
     .pos-acc  { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
+    .pos-azioni { display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
+    .pos-btn-copia, .pos-btn-elim { display:flex; align-items:center; justify-content:center; width:44px; height:44px; border:none; border-radius:8px; cursor:pointer; font-size:17px; line-height:1; padding:0; -webkit-tap-highlight-color:transparent; }
+    .pos-btn-copia { background:#e0f2fe; color:#0369a1; }
+    .pos-btn-copia:active { background:#bae6fd; }
+    .pos-btn-elim  { background:#fee2e2; color:#dc2626; }
+    .pos-btn-elim:active  { background:#fecaca; }
     .cap-hdr  { background:var(--c-primary); color:#a5b4fc; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:7px 14px; display:flex; align-items:center; justify-content:space-between; }
     .cap-sub  { background:#eef2ff; border-bottom:2px solid #c7d2fe; padding:5px 14px; font-size:11px; color:#3730a3; font-weight:600; }
     .det-sec  { margin-bottom:16px; }
@@ -331,7 +337,10 @@ function renderPosizioneRow(p) {
       '<div class="pos-sis">'+esc(sisStr)+'</div>'+
       (chips?'<div class="pos-acc">'+chips+'</div>':'')+
     '</div>'+
-    '<div style="color:var(--c-text-ter);font-size:18px;">&#8250;</div>'+
+    '<div class="pos-azioni">'+
+      '<button class="pos-btn-copia" title="Copia posizione" onclick="copiaPosizione(\''+p.id+'\',event)">&#128203;</button>'+
+      '<button class="pos-btn-elim"  title="Elimina posizione" onclick="eliminaPosizioneRow(\''+p.id+'\',event)">&#128465;</button>'+
+    '</div>'+
   '</div>';
 }
 
@@ -455,6 +464,77 @@ function apriCapitoli() {
 
 function apriStratigrafie() {
   window.location.href = 'stratigrafie.html?id_rilievo=' + idRilievo;
+}
+
+// ── FASE 5C — COPIA POSIZIONE DA RIGA ──────────────────────────────────────
+// Chiede quante copie creare (1-10), poi chiama _eseguiCopia.
+// event.stopPropagation() impedisce l'apertura del bottom sheet.
+function copiaPosizione(id, event) {
+  event.stopPropagation();
+  var input = prompt('Quante copie creare? (1\u201310)', '1');
+  if (input === null) return;
+  // C1 FIX (Fase 5C): validazione stretta — solo interi puri, no decimali, no testo aggiuntivo
+  if (!/^\d+$/.test(input.trim())) { alert('Inserire un numero intero da 1 a 10.'); return; }
+  var n = parseInt(input.trim(), 10);
+  if (n < 1 || n > 10) { alert('Inserire un numero intero da 1 a 10.'); return; }
+  _eseguiCopia(id, n);
+}
+
+// Esegue N copie sequenziali della posizione sorgente identificata da id.
+// Ogni copia: nuovi numero_pos e ordine, id_capitolo=null, numero_pos_alfa=null, stato attivo.
+// Gli INSERT vengono eseguiti in serie: ogni call attende il callback prima di procedere.
+// _posizioni viene aggiornato in memoria dopo ogni INSERT per mantenere il contatore corretto.
+function _eseguiCopia(id, n) {
+  var sorgente = _posizioni.find(function(x) { return x.id === id; });
+  if (!sorgente) { alert('Posizione non trovata.'); return; }
+
+  var rimasti = n;
+  function prossimaInsert() {
+    if (rimasti <= 0) {
+      // C2 FIX (Fase 5C): aggiorna contatore posizioni alto (rilNPosN) come eliminaPosizione/Row
+      document.getElementById('rilNPosN').textContent = _posizioni.length;
+      renderPosizioni();
+      API.miniSync('posizioni_serr', function() {});
+      return;
+    }
+    // Calcola max numero_pos dalle posizioni attive in memoria (include le copie già inserite)
+    var maxNP = 0;
+    _posizioni.forEach(function(p) { if ((parseInt(p.numero_pos) || 0) > maxNP) maxNP = parseInt(p.numero_pos) || 0; });
+    var nuovoNP = maxNP + 1;
+    // Compone il payload: copia tutti i campi della sorgente, poi sovrascrive i campi di sistema
+    var payload = Object.assign({}, sorgente);
+    delete payload.id;            // Supabase assegna nuovo UUID
+    payload.numero_pos     = nuovoNP;
+    payload.ordine         = nuovoNP * 10;
+    payload.id_capitolo    = null; // la copia nasce fuori da qualsiasi capitolo
+    payload.numero_pos_alfa = null;
+    payload.stato          = 'attivo';
+    delete payload.created_at;
+    delete payload.updated_at;
+
+    API.savePosizione('posizioni_serr', 'insert', payload, null, function(err, saved) {
+      if (err) { alert('Errore durante la copia: ' + err); return; }
+      if (saved) _posizioni.push(saved); // aggiorna memoria per il giro successivo
+      rimasti--;
+      prossimaInsert();
+    });
+  }
+  prossimaInsert();
+}
+
+// ── FASE 5C — ELIMINA POSIZIONE DA RIGA ─────────────────────────────────────
+// Stessa logica di eliminaPosizione() da bottom sheet, ma innescata dalla riga.
+// event.stopPropagation() impedisce l'apertura del bottom sheet.
+function eliminaPosizioneRow(id, event) {
+  event.stopPropagation();
+  if (!confirm("Eliminare questa posizione? L\u2019operazione non \u00e8 reversibile da mobile.")) return;
+  API.writeRecord('update', 'posizioni_serr', {id: id, stato: 'disattivo'}, function(err) {
+    if (err) { alert('Errore eliminazione: ' + err); return; }
+    _posizioni = _posizioni.filter(function(p) { return p.id !== id; });
+    document.getElementById('rilNPosN').textContent = _posizioni.length;
+    renderPosizioni();
+    API.miniSync('posizioni_serr', function() {});
+  });
 }
 
 load();
