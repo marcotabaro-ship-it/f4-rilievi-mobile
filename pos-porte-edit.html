@@ -392,8 +392,12 @@ function onTipoPortaChange() {
 // ── CARICAMENTO INIZIALE ──
 function load() {
   // Prossimo numero posizione
+  // FIX: filtra solo le posizioni attive, allineato a pos-serr-edit.html.
+  // Le posizioni disattivate non concorrono al calcolo del massimo numero_pos.
   DBLocal.getAll('posizioni_porte', function(allPos){
-    var fr = allPos.filter(function(p){ return p.id_rilievo === idRilievo; });
+    var fr = allPos.filter(function(p){
+      return p.id_rilievo === idRilievo && (p.stato || 'attivo') === 'attivo';
+    });
     var mx = 0;
     fr.forEach(function(p){ if ((parseInt(p.numero_pos) || 0) > mx) mx = parseInt(p.numero_pos) || 0; });
     _nextNumPos = mx + 1;
