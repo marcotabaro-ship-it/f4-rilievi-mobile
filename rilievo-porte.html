@@ -497,6 +497,31 @@ function eliminaPosizioneRow(id, event) {
   });
 }
 
+// ── FASE 5D — REFRESH AL RIENTRO DA CAPITOLI ─────────────────────────────────
+// Rilegge posizioni_porte e capitoli_rilievo da DBLocal e aggiorna la lista.
+// Chiamata dal listener pageshow quando la pagina viene ripristinata da bfcache
+// (es. history.back() da capitoli.html). Non ricarica rilievo/cantieri/db_porte.
+// Non modifica isYes(), CTL, sistema porte, logiche validate in Fase 6.
+function refreshListaPosizioni() {
+  DBLocal.getAll('posizioni_porte', function(pos) {
+    _posizioni = pos.filter(function(p) {
+      return p.id_rilievo === idRilievo && p.stato === 'attivo';
+    });
+    document.getElementById('rilNPosN').textContent = _posizioni.length;
+    DBLocal.getAll('capitoli_rilievo', function(cap) {
+      _capitoli = cap.filter(function(c) {
+        return c.id_rilievo === idRilievo && c.stato === 'attivo';
+      });
+      renderPosizioni();
+    });
+  });
+}
+
+// e.persisted === true solo al ripristino da bfcache — non scatta al caricamento normale
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) refreshListaPosizioni();
+});
+
 load();
 </script>
 </body>
