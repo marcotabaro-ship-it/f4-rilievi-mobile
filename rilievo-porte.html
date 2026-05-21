@@ -18,8 +18,12 @@
     .pos-dim  { font-size:13px; font-weight:600; color:var(--c-text); }
     .pos-sis  { font-size:11px; color:var(--c-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
     .pos-acc  { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
-    .pos-azioni { display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
-    .pos-btn-copia, .pos-btn-elim { display:flex; align-items:center; justify-content:center; width:44px; height:44px; border:none; border-radius:8px; cursor:pointer; font-size:17px; line-height:1; padding:0; -webkit-tap-highlight-color:transparent; }
+    .pos-azioni { display:grid; grid-template-columns:1fr 1fr; gap:3px; flex-shrink:0; }
+    .pos-btn-su, .pos-btn-giu, .pos-btn-copia, .pos-btn-elim { display:flex; align-items:center; justify-content:center; width:40px; height:40px; border:none; border-radius:7px; cursor:pointer; font-size:15px; line-height:1; padding:0; -webkit-tap-highlight-color:transparent; }
+    .pos-btn-su   { background:#f1f5f9; color:#374151; }
+    .pos-btn-su:active   { background:#e2e8f0; }
+    .pos-btn-giu  { background:#f1f5f9; color:#374151; }
+    .pos-btn-giu:active  { background:#e2e8f0; }
     .pos-btn-copia { background:#e0f2fe; color:#0369a1; }
     .pos-btn-copia:active { background:#bae6fd; }
     .pos-btn-elim  { background:#fee2e2; color:#dc2626; }
@@ -298,6 +302,8 @@ function renderPosizioneRow(p) {
       (chips?'<div class="pos-acc">'+chips+'</div>':'')+
     '</div>'+
     '<div class="pos-azioni">'+
+      '<button class="pos-btn-su"   title="Sposta su"   onclick="spostaPosizione(\''+p.id+'\',\'su\',event)">&#8679;</button>'+
+      '<button class="pos-btn-giu"  title="Sposta giù"  onclick="spostaPosizione(\''+p.id+'\',\'giu\',event)">&#8681;</button>'+
       '<button class="pos-btn-copia" title="Copia posizione" onclick="copiaPosizione(\''+p.id+'\',event)">&#128203;</button>'+
       '<button class="pos-btn-elim"  title="Elimina posizione" onclick="eliminaPosizioneRow(\''+p.id+'\',event)">&#128465;</button>'+
     '</div>'+
@@ -496,6 +502,91 @@ function eliminaPosizioneRow(id, event) {
     API.miniSync('posizioni_porte', function() {});
   });
 }
+
+// ── FASE 5B — RIORDINO POSIZIONI ─────────────────────────────────────────────
+// Logica identica a rilievo-serr.html, adattata per posizioni_porte.
+// Non modifica CTL, isYes(), sistema porte, sistema_sigla o campi Fase 6.
+
+// Restituisce il valore di ordinamento di una posizione:
+// usa p.ordine se presente, altrimenti p.numero_pos come fallback.
+function _ordinePosizione(p) {
+  return (p.ordine != null) ? p.ordine : p.numero_pos;
+}
+
+// Dato un valore ordine, cerca il capitolo attivo (in _capitoli) il cui range
+// lo contiene (confronto stretto, flanking ±0.5 già nei bounds). Restituisce
+// l'id del capitolo trovato, oppure null se la posizione è fuori da tutti i range.
+function _trovaIdCapitoloPerOrdine(ordine) {
+  for (var i = 0; i < _capitoli.length; i++) {
+    var c = _capitoli[i];
+    if (ordine > c.ordine_inizio && ordine < c.ordine_fine) return c.id;
+  }
+  return null;
+}
+
+// Esegue le due PATCH sequenziali su Supabase per lo swap di ordine.
+// Prima aggiorna posA, poi posB. Se posB fallisce, tenta di ripristinare posA.
+// Aggiorna _posizioni in memoria solo se entrambe le PATCH vanno a buon fine.
+// Usa posizioni_porte — non tocca CTL, sistema o altri campi porta.
+function _salvaSwapOrdine(posA, posB, nuovoOrdA, nuovoOrdB, nuovoCapA, nuovoCapB) {
+  var oldOrdA = _ordinePosizione(posA), oldCapA = posA.id_capitolo;
+  API.writeRecord('update', 'posizioni_porte',
+    { id: posA.id, ordine: nuovoOrdA, id_capitolo: nuovoCapA },
+    function(errA) {
+      if (errA) { alert('Errore spostamento: ' + errA); return; }
+      API.writeRecord('update', 'posizioni_porte',
+        { id: posB.id, ordine: nuovoOrdB, id_capitolo: nuovoCapB },
+        function(errB) {
+          if (errB) {
+            // Ripristino best-effort di posA per evitare stati parziali
+            API.writeRecord('update', 'posizioni_porte',
+              { id: posA.id, ordine: oldOrdA, id_capitolo: oldCapA },
+              function() { alert('Errore spostamento. L\u2019operazione \u00e8 stata annullata.'); }
+            );
+            return;
+          }
+          // Aggiorna la memoria solo dopo che entrambe le PATCH sono riuscite
+          posA.ordine = nuovoOrdA; posA.id_capitolo = nuovoCapA;
+          posB.ordine = nuovoOrdB; posB.id_capitolo = nuovoCapB;
+          renderPosizioni();
+          API.miniSync('posizioni_porte', function() {});
+        }
+      );
+    }
+  );
+}
+
+// Sposta la posizione identificata da id di un posto in su o in giù nella lista
+// globale del rilievo (ordinata per _ordinePosizione). Il filtro deve essere 'tutti'.
+// Scambia solo il campo ordine tra le due posizioni adiacenti, poi ricalcola
+// id_capitolo per entrambe confrontando il nuovo ordine con i range di _capitoli.
+// Non modifica numero_pos, numero_pos_alfa, CTL, sistema, né ordine_inizio/fine capitoli.
+function spostaPosizione(id, direzione, event) {
+  event.stopPropagation();
+  if (_filtro !== 'tutti') {
+    alert('Il riordino \u00e8 disponibile solo con filtro Tutti.');
+    return;
+  }
+  // Lista globale attiva ordinata per ordinamento corrente
+  var lista = _posizioni.slice().sort(function(a, b) {
+    return _ordinePosizione(a) - _ordinePosizione(b);
+  });
+  var idx = lista.findIndex(function(p) { return p.id === id; });
+  if (idx < 0) return;
+  var idxAdiac = (direzione === 'su') ? idx - 1 : idx + 1;
+  if (idxAdiac < 0) { alert('La posizione \u00e8 gi\u00e0 la prima.'); return; }
+  if (idxAdiac >= lista.length) { alert('La posizione \u00e8 gi\u00e0 l\u2019ultima.'); return; }
+  var posA = lista[idx], posB = lista[idxAdiac];
+  // I due nuovi valori ordine sono lo scambio reciproco
+  var nuovoOrdA = _ordinePosizione(posB);
+  var nuovoOrdB = _ordinePosizione(posA);
+  // Ricalcola id_capitolo per entrambe in base al nuovo ordine vs range fissi
+  var nuovoCapA = _trovaIdCapitoloPerOrdine(nuovoOrdA);
+  var nuovoCapB = _trovaIdCapitoloPerOrdine(nuovoOrdB);
+  _salvaSwapOrdine(posA, posB, nuovoOrdA, nuovoOrdB, nuovoCapA, nuovoCapB);
+}
+
+// ── FINE FASE 5B ─────────────────────────────────────────────────────────────
 
 // ── FASE 5D — REFRESH AL RIENTRO DA CAPITOLI ─────────────────────────────────
 // Rilegge posizioni_porte e capitoli_rilievo da DBLocal e aggiorna la lista.
