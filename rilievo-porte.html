@@ -18,16 +18,22 @@
     .pos-dim  { font-size:13px; font-weight:600; color:var(--c-text); }
     .pos-sis  { font-size:11px; color:var(--c-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
     .pos-acc  { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
-    .pos-azioni { display:grid; grid-template-columns:1fr 1fr; gap:3px; flex-shrink:0; }
-    .pos-btn-su, .pos-btn-giu, .pos-btn-copia, .pos-btn-elim { display:flex; align-items:center; justify-content:center; width:40px; height:40px; border:none; border-radius:7px; cursor:pointer; font-size:15px; line-height:1; padding:0; -webkit-tap-highlight-color:transparent; }
-    .pos-btn-su   { background:#f1f5f9; color:#374151; }
-    .pos-btn-su:active   { background:#e2e8f0; }
-    .pos-btn-giu  { background:#f1f5f9; color:#374151; }
-    .pos-btn-giu:active  { background:#e2e8f0; }
+    .pos-azioni { display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
+    .pos-btn-copia, .pos-btn-elim { display:flex; align-items:center; justify-content:center; width:40px; height:40px; border:none; border-radius:8px; cursor:pointer; font-size:17px; line-height:1; padding:0; -webkit-tap-highlight-color:transparent; }
     .pos-btn-copia { background:#e0f2fe; color:#0369a1; }
     .pos-btn-copia:active { background:#bae6fd; }
     .pos-btn-elim  { background:#fee2e2; color:#dc2626; }
     .pos-btn-elim:active  { background:#fecaca; }
+    /* ── Fase 5B-R2 — Drag handle e SortableJS ── */
+    .pos-drag-handle { display:flex; align-items:center; justify-content:center; width:28px; height:40px; flex-shrink:0; color:var(--c-text-ter,#9ca3af); font-size:18px; cursor:grab; -webkit-tap-highlight-color:transparent; touch-action:none; user-select:none; }
+    .pos-drag-handle:active { cursor:grabbing; }
+    .sortable-zone { min-height:52px; border-radius:var(--radius,10px); margin-bottom:0; }
+    .sortable-zone.drop-target { outline:2px dashed var(--c-primary,#1a1a2e); outline-offset:-2px; }
+    .zona-hdr { background:var(--c-primary); color:#fcd34d; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:7px 14px; display:flex; align-items:center; justify-content:space-between; border-radius:var(--radius,10px) var(--radius,10px) 0 0; }
+    .zona-placeholder { padding:12px 14px; font-size:11px; color:var(--c-text-ter,#9ca3af); font-style:italic; text-align:center; }
+    .pos-row-ghost   { opacity:.4; background:var(--c-bg,#f5f6fa); }
+    .pos-row-chosen  { box-shadow:0 4px 16px rgba(0,0,0,.15); }
+    .pos-row-dragging{ opacity:.9; }
     .cap-hdr  { background:var(--c-primary); color:#fcd34d; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:7px 14px; display:flex; align-items:center; justify-content:space-between; }
     .cap-sub  { background:#fff7ed; border-bottom:2px solid #fed7aa; padding:5px 14px; font-size:11px; color:#c2410c; font-weight:600; }
     .det-sec  { margin-bottom:16px; }
@@ -125,6 +131,7 @@
 <script src="js/auth.js"></script>
 <script src="js/db-local.js"></script>
 <script src="js/api-mobile.js"></script>
+<script src="js/sortable.min.js"></script>
 <script>
 var currentUser = Auth.requireLogin();
 if (!currentUser) throw new Error('not logged');
@@ -135,6 +142,9 @@ var idRilievo = new URLSearchParams(window.location.search).get('id');
 if (!idRilievo) { history.back(); }
 
 var _rilievo=null, _posizioni=[], _capitoli=[], _dbPorte=[], _filtro='tutti';
+// Fase 5B-R2 — SortableJS state
+var _sortableInstances=[], _dragInCorso=false, _salvataggioRiordino=false;
+function _ord(p){ return (p.ordine!=null)?p.ordine:p.numero_pos; }
 
 function calcDimPorta(p, dbPorte) {
   var H=parseFloat(p.H_mm||p.h_mm)||0, L=parseFloat(p.L_mm||p.l_mm)||0;
@@ -210,6 +220,10 @@ function setFiltro(f, btn) {
 }
 
 function renderPosizioni() {
+  // Distrugge le istanze Sortable esistenti prima di ricostruire il DOM
+  _sortableInstances.forEach(function(s){ try{ s.destroy(); }catch(e){} });
+  _sortableInstances=[];
+
   var container = document.getElementById('listaPosizioni');
   var pos = _posizioni.filter(function(p){
     if (_filtro==='tutti') return true;
@@ -217,56 +231,55 @@ function renderPosizioni() {
   });
 
   document.getElementById('fabNuova').style.display = '';
-  if (!pos.length) {
-    container.innerHTML='<div class="empty-state"><div class="empty-ico">&#128682;</div><div class="empty-title">Nessuna posizione</div></div>';
-    return;
-  }
 
-  var righe = [];
-  pos.forEach(function(p){ righe.push({tipo:'pos',ordine:p.ordine!=null?p.ordine:p.numero_pos,data:p}); });
-  _capitoli.forEach(function(cap){
-    righe.push({tipo:'cap_ini',ordine:cap.ordine_inizio,data:cap});
-    righe.push({tipo:'cap_fin',ordine:cap.ordine_fine,data:cap});
-  });
-  righe.sort(function(a,b){ return a.ordine-b.ordine; });
+  // Ordina posizioni per _ord
+  pos.sort(function(a,b){ return _ord(a)-_ord(b); });
 
-  var html = '';
-  var capCorr=null, posCapCorr=[], posiFuori=[];
+  // Ordina capitoli per ordine_inizio
+  var caps = _capitoli.slice().sort(function(a,b){ return a.ordine_inizio-b.ordine_inizio; });
 
-  function flushCap() {
-    if (!capCorr||!posCapCorr.length) return;
-    html += '<div class="cap-sub">Subtotale '+esc(capCorr.titolo)+' &mdash; <b>'+posCapCorr.length+'</b> pos.</div>';
-  }
-
-  righe.forEach(function(r){
-    if (r.tipo==='cap_ini') {
-      if (posiFuori.length) {
-        posiFuori.forEach(function(p){ html += renderPosizioneRow(p); });
-        posiFuori=[];
-      }
-      capCorr=r.data; posCapCorr=[];
-      html += '<div class="cap-hdr"><span>'+esc(r.data.titolo)+'</span></div>';
-      html += '<div class="card" style="margin:0;border-radius:0;">';
-      return;
+  // Determina la zona di appartenenza di ogni posizione tramite range
+  function capIdDiPos(p){
+    var o=_ord(p);
+    for(var i=0;i<caps.length;i++){
+      if(o>caps[i].ordine_inizio&&o<caps[i].ordine_fine) return caps[i].id;
     }
-    if (r.tipo==='cap_fin') {
-      if (capCorr) { flushCap(); html += '</div>'; }
-      capCorr=null; posCapCorr=[];
-      return;
-    }
-    var p=r.data;
-    if (capCorr) { posCapCorr.push(p); html += renderPosizioneRow(p); }
-    else posiFuori.push(p);
-  });
-
-  if (posiFuori.length) {
-    html += '<div class="card" style="border-radius:var(--radius);margin:0;">';
-    posiFuori.forEach(function(p){ html += renderPosizioneRow(p); });
-    html += '</div>';
+    return '__fuori__';
   }
 
-  container.innerHTML = html;
-  document.getElementById('fabNuova').style.display = '';
+  // Mappa zona → [posizioni]
+  var zoneMap={};
+  zoneMap['__fuori__']=[];
+  caps.forEach(function(c){ zoneMap[c.id]=[]; });
+  pos.forEach(function(p){ zoneMap[capIdDiPos(p)].push(p); });
+
+  // Costruisce HTML per una singola zona
+  function buildZone(capId, titolo, posizioniZona, isCapitolo){
+    var z = '<div class="sortable-zone card" data-cap-id="'+capId+'" style="margin-bottom:10px;overflow:hidden;">';
+    z += '<div class="zona-hdr'+(isCapitolo?'':' zona-hdr-fuori')+'">';
+    z += '<span>'+esc(titolo)+'</span>';
+    z += '<span style="font-size:10px;font-weight:400;opacity:.75;">'+posizioniZona.length+' pos.</span>';
+    z += '</div>';
+    if(posizioniZona.length){
+      posizioniZona.forEach(function(p){ z += renderPosizioneRow(p); });
+    } else {
+      z += '<div class="zona-placeholder">Nessuna posizione — trascina qui per aggiungere</div>';
+    }
+    if(isCapitolo&&posizioniZona.length){
+      z += '<div class="cap-sub">Subtotale '+esc(titolo)+' &mdash; <b>'+posizioniZona.length+'</b> pos.</div>';
+    }
+    z += '</div>';
+    return z;
+  }
+
+  var html='';
+  caps.forEach(function(c){ html+=buildZone(c.id, c.titolo, zoneMap[c.id], true); });
+  html+=buildZone('__fuori__', 'Senza capitolo', zoneMap['__fuori__'], false);
+
+  container.innerHTML=html;
+  document.getElementById('fabNuova').style.display='';
+
+  initSortable();
 }
 
 function renderPosizioneRow(p) {
@@ -286,7 +299,12 @@ function renderPosizioneRow(p) {
   if (isYes(p.rimozione)) chips += '<span class="badge badge-disattivo" style="font-size:10px;">Rim</span>';
   if (p.sopraluce===true||p.sopraluce==='SI') chips += '<span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:10px;">Sopr.</span>';
   var numDisp = p.numero_pos_alfa || p.numero_pos;
+  // Handle drag visibile solo con filtro Tutti — non disturba click su riga
+  var handle = (_filtro==='tutti')
+    ? '<span class="pos-drag-handle" title="Trascina per riordinare" onclick="event.stopPropagation()">&#8942;</span>'
+    : '';
   return '<div class="pos-row" onclick="apriDettaglio(\''+p.id+'\')" data-id="'+p.id+'">'+
+    handle+
     '<div class="pos-num">'+esc(String(numDisp))+'</div>'+
     '<div class="pos-body">'+
       '<div style="display:flex;align-items:baseline;gap:8px;">'+
@@ -302,8 +320,6 @@ function renderPosizioneRow(p) {
       (chips?'<div class="pos-acc">'+chips+'</div>':'')+
     '</div>'+
     '<div class="pos-azioni">'+
-      '<button class="pos-btn-su"   title="Sposta su"   onclick="spostaPosizione(\''+p.id+'\',\'su\',event)">&#8679;</button>'+
-      '<button class="pos-btn-giu"  title="Sposta giù"  onclick="spostaPosizione(\''+p.id+'\',\'giu\',event)">&#8681;</button>'+
       '<button class="pos-btn-copia" title="Copia posizione" onclick="copiaPosizione(\''+p.id+'\',event)">&#128203;</button>'+
       '<button class="pos-btn-elim"  title="Elimina posizione" onclick="eliminaPosizioneRow(\''+p.id+'\',event)">&#128465;</button>'+
     '</div>'+
@@ -413,7 +429,7 @@ function eliminaPosizione() {
   if (!confirm("Eliminare questa posizione? L'operazione non e reversibile da mobile.")) return;
   var id = _currentPosId;
   closeSheet();
-  API.writeRecord('update', 'posizioni_porte', {id: id, stato: 'disattivo'}, function(err) {
+  API.writeRecord('update', 'posizioni_porte', {id: id, stato: 'eliminato'}, function(err) {
     if (err) { alert('Errore eliminazione: ' + err); return; }
     _posizioni = _posizioni.filter(function(p) { return p.id !== id; });
     document.getElementById('rilNPosN').textContent = _posizioni.length;
@@ -494,7 +510,7 @@ function _eseguiCopia(id, n) {
 function eliminaPosizioneRow(id, event) {
   event.stopPropagation();
   if (!confirm("Eliminare questa posizione? L\u2019operazione non \u00e8 reversibile da mobile.")) return;
-  API.writeRecord('update', 'posizioni_porte', {id: id, stato: 'disattivo'}, function(err) {
+  API.writeRecord('update', 'posizioni_porte', {id: id, stato: 'eliminato'}, function(err) {
     if (err) { alert('Errore eliminazione: ' + err); return; }
     _posizioni = _posizioni.filter(function(p) { return p.id !== id; });
     document.getElementById('rilNPosN').textContent = _posizioni.length;
@@ -503,90 +519,163 @@ function eliminaPosizioneRow(id, event) {
   });
 }
 
-// ── FASE 5B — RIORDINO POSIZIONI ─────────────────────────────────────────────
+// ── FASE 5B-R2 — RIORDINO TOUCH SORTABLEJS ──────────────────────────────────
 // Logica identica a rilievo-serr.html, adattata per posizioni_porte.
-// Non modifica CTL, isYes(), sistema porte, sistema_sigla o campi Fase 6.
+// Non modifica CTL, isYes(), sistema porte, sistema_sigla, fornitura_ctl_* o campi Fase 6.
 
-// Restituisce il valore di ordinamento di una posizione:
-// usa p.ordine se presente, altrimenti p.numero_pos come fallback.
-function _ordinePosizione(p) {
-  return (p.ordine != null) ? p.ordine : p.numero_pos;
-}
-
-// Dato un valore ordine, cerca il capitolo attivo (in _capitoli) il cui range
-// lo contiene (confronto stretto, flanking ±0.5 già nei bounds). Restituisce
-// l'id del capitolo trovato, oppure null se la posizione è fuori da tutti i range.
-function _trovaIdCapitoloPerOrdine(ordine) {
-  for (var i = 0; i < _capitoli.length; i++) {
-    var c = _capitoli[i];
-    if (ordine > c.ordine_inizio && ordine < c.ordine_fine) return c.id;
-  }
-  return null;
-}
-
-// Esegue le due PATCH sequenziali su Supabase per lo swap di ordine.
-// Prima aggiorna posA, poi posB. Se posB fallisce, tenta di ripristinare posA.
-// Aggiorna _posizioni in memoria solo se entrambe le PATCH vanno a buon fine.
-// Usa posizioni_porte — non tocca CTL, sistema o altri campi porta.
-function _salvaSwapOrdine(posA, posB, nuovoOrdA, nuovoOrdB, nuovoCapA, nuovoCapB) {
-  var oldOrdA = _ordinePosizione(posA), oldCapA = posA.id_capitolo;
-  API.writeRecord('update', 'posizioni_porte',
-    { id: posA.id, ordine: nuovoOrdA, id_capitolo: nuovoCapA },
-    function(errA) {
-      if (errA) { alert('Errore spostamento: ' + errA); return; }
-      API.writeRecord('update', 'posizioni_porte',
-        { id: posB.id, ordine: nuovoOrdB, id_capitolo: nuovoCapB },
-        function(errB) {
-          if (errB) {
-            // Ripristino best-effort di posA per evitare stati parziali
-            API.writeRecord('update', 'posizioni_porte',
-              { id: posA.id, ordine: oldOrdA, id_capitolo: oldCapA },
-              function() { alert('Errore spostamento. L\u2019operazione \u00e8 stata annullata.'); }
-            );
-            return;
-          }
-          // Aggiorna la memoria solo dopo che entrambe le PATCH sono riuscite
-          posA.ordine = nuovoOrdA; posA.id_capitolo = nuovoCapA;
-          posB.ordine = nuovoOrdB; posB.id_capitolo = nuovoCapB;
-          renderPosizioni();
-          API.miniSync('posizioni_porte', function() {});
-        }
-      );
-    }
-  );
-}
-
-// Sposta la posizione identificata da id di un posto in su o in giù nella lista
-// globale del rilievo (ordinata per _ordinePosizione). Il filtro deve essere 'tutti'.
-// Scambia solo il campo ordine tra le due posizioni adiacenti, poi ricalcola
-// id_capitolo per entrambe confrontando il nuovo ordine con i range di _capitoli.
-// Non modifica numero_pos, numero_pos_alfa, CTL, sistema, né ordine_inizio/fine capitoli.
-function spostaPosizione(id, direzione, event) {
-  event.stopPropagation();
-  if (_filtro !== 'tutti') {
-    alert('Il riordino \u00e8 disponibile solo con filtro Tutti.');
-    return;
-  }
-  // Lista globale attiva ordinata per ordinamento corrente
-  var lista = _posizioni.slice().sort(function(a, b) {
-    return _ordinePosizione(a) - _ordinePosizione(b);
+// Inizializza SortableJS su ogni .sortable-zone. Se il filtro non è 'tutti'
+// o SortableJS non è disponibile, non inizializza nulla.
+function initSortable() {
+  if (_filtro !== 'tutti') return;
+  if (typeof Sortable === 'undefined') return;
+  var zones = document.querySelectorAll('.sortable-zone');
+  zones.forEach(function(zone) {
+    var inst = Sortable.create(zone, {
+      group:             { name: 'pos-porte', pull: true, put: true },
+      handle:            '.pos-drag-handle',
+      draggable:         '.pos-row',
+      filter:            '.zona-hdr, .cap-sub, .zona-placeholder',
+      animation:         150,
+      delay:             250,
+      delayOnTouchOnly:  true,
+      ghostClass:        'pos-row-ghost',
+      chosenClass:       'pos-row-chosen',
+      dragClass:         'pos-row-dragging',
+      onStart: function()  { _dragInCorso = true; },
+      onEnd:   function()  { _dragInCorso = false; salvaRiordinoTouchPorte(); }
+    });
+    _sortableInstances.push(inst);
   });
-  var idx = lista.findIndex(function(p) { return p.id === id; });
-  if (idx < 0) return;
-  var idxAdiac = (direzione === 'su') ? idx - 1 : idx + 1;
-  if (idxAdiac < 0) { alert('La posizione \u00e8 gi\u00e0 la prima.'); return; }
-  if (idxAdiac >= lista.length) { alert('La posizione \u00e8 gi\u00e0 l\u2019ultima.'); return; }
-  var posA = lista[idx], posB = lista[idxAdiac];
-  // I due nuovi valori ordine sono lo scambio reciproco
-  var nuovoOrdA = _ordinePosizione(posB);
-  var nuovoOrdB = _ordinePosizione(posA);
-  // Ricalcola id_capitolo per entrambe in base al nuovo ordine vs range fissi
-  var nuovoCapA = _trovaIdCapitoloPerOrdine(nuovoOrdA);
-  var nuovoCapB = _trovaIdCapitoloPerOrdine(nuovoOrdB);
-  _salvaSwapOrdine(posA, posB, nuovoOrdA, nuovoOrdB, nuovoCapA, nuovoCapB);
 }
 
-// ── FINE FASE 5B ─────────────────────────────────────────────────────────────
+// Sequenza batch callback: esegue array di funzioni in serie.
+function _batchPatch(items, onDone) {
+  var i = 0;
+  function next(err) {
+    if (err) { onDone(err); return; }
+    if (i >= items.length) { onDone(null); return; }
+    items[i++](next);
+  }
+  next(null);
+}
+
+// Ricostruisce ordine e capitoli dal DOM dopo ogni drag & drop su porte.
+// Fonte di verità: zona DOM in cui ogni .pos-row si trova dopo il rilascio.
+// Non tocca numero_pos, numero_pos_alfa, CTL, sistema porte o dati tecnici.
+function salvaRiordinoTouchPorte() {
+  if (_salvataggioRiordino) return;
+  _salvataggioRiordino = true;
+
+  var zones     = document.querySelectorAll('.sortable-zone');
+  var posBatch  = [];
+  var capBatch  = [];
+  var capsVuoti = [];
+  var globalIdx = 0;
+  var emptyMarkerSeq = 0;
+
+  zones.forEach(function(zone) {
+    var capId = zone.getAttribute('data-cap-id');
+    var rows  = zone.querySelectorAll('.pos-row');
+    var ordiniZona = [];
+
+    rows.forEach(function(row) {
+      var posId    = row.getAttribute('data-id');
+      var nuovoOrd = (globalIdx + 1) * 10;
+      globalIdx++;
+      ordiniZona.push(nuovoOrd);
+      posBatch.push({
+        id:          posId,
+        nuovoOrdine: nuovoOrd,
+        nuovoCapId:  (capId === '__fuori__') ? null : capId
+      });
+    });
+
+    if (capId !== '__fuori__' && ordiniZona.length > 0) {
+      capBatch.push({
+        id:          capId,
+        nuovoInizio: Math.min.apply(null, ordiniZona) - 0.5,
+        nuovoFine:   Math.max.apply(null, ordiniZona) + 0.5
+      });
+    }
+
+    if (capId !== '__fuori__' && ordiniZona.length === 0) {
+      emptyMarkerSeq++;
+      var marker = (globalIdx * 10) + 5 + (emptyMarkerSeq * 0.001);
+      capBatch.push({
+        id:          capId,
+        nuovoInizio: marker,
+        nuovoFine:   marker
+      });
+      var cap = _capitoli.find(function(c){ return c.id === capId; });
+      if (cap) capsVuoti.push({ id: capId, titolo: cap.titolo });
+    }
+  });
+
+  var fuoriZone = document.querySelector('.sortable-zone[data-cap-id="__fuori__"]');
+  var nFuori = fuoriZone ? fuoriZone.querySelectorAll('.pos-row').length : 0;
+
+  var posPatchItems = posBatch.map(function(p) {
+    return function(cb) {
+      API.writeRecord('update', 'posizioni_porte',
+        { id: p.id, ordine: p.nuovoOrdine, id_capitolo: p.nuovoCapId }, cb);
+    };
+  });
+  var capPatchItems = capBatch.map(function(c) {
+    return function(cb) {
+      API.writeRecord('update', 'capitoli_rilievo',
+        { id: c.id, ordine_inizio: c.nuovoInizio, ordine_fine: c.nuovoFine }, cb);
+    };
+  });
+
+  _batchPatch(posPatchItems.concat(capPatchItems), function(err) {
+    _salvataggioRiordino = false;
+    if (err) { alert('Errore nel salvataggio del riordino: ' + err); return; }
+
+    posBatch.forEach(function(pb) {
+      var p = _posizioni.find(function(x){ return x.id === pb.id; });
+      if (p) { p.ordine = pb.nuovoOrdine; p.id_capitolo = pb.nuovoCapId; }
+    });
+    capBatch.forEach(function(cb) {
+      var c = _capitoli.find(function(x){ return x.id === cb.id; });
+      if (c) { c.ordine_inizio = cb.nuovoInizio; c.ordine_fine = cb.nuovoFine; }
+    });
+
+    API.miniSync('posizioni_porte', function() {
+      API.miniSync('capitoli_rilievo', function() {});
+    });
+
+    renderPosizioni();
+
+    if (nFuori > 0) {
+      setTimeout(function(){
+        alert(nFuori + ' posizione/i si trovano fuori da ogni capitolo.\nPuoi assegnarle a un capitolo tramite il pulsante Capitoli.');
+      }, 300);
+    }
+
+    if (capsVuoti.length > 0) {
+      setTimeout(function(){
+        var titoli = capsVuoti.map(function(c){ return '"' + c.titolo + '"'; }).join(', ');
+        if (confirm('I seguenti capitoli sono rimasti senza posizioni: ' + titoli + '.\nVuoi eliminarli?')) {
+          var elimItems = capsVuoti.map(function(c) {
+            return function(cb) {
+              API.writeRecord('update', 'capitoli_rilievo', { id: c.id, stato: 'eliminato' }, cb);
+            };
+          });
+          _batchPatch(elimItems, function(errElim) {
+            if (errElim) { alert('Errore eliminazione capitoli: ' + errElim); return; }
+            capsVuoti.forEach(function(cv){
+              _capitoli = _capitoli.filter(function(c){ return c.id !== cv.id; });
+            });
+            API.miniSync('capitoli_rilievo', function() {});
+            renderPosizioni();
+          });
+        }
+      }, 400);
+    }
+  });
+}
+
+// ── FINE FASE 5B-R2 ──────────────────────────────────────────────────────────
 
 // ── FASE 5D — REFRESH AL RIENTRO DA CAPITOLI ─────────────────────────────────
 // Rilegge posizioni_porte e capitoli_rilievo da DBLocal e aggiorna la lista.
