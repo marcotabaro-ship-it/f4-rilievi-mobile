@@ -1,4 +1,4 @@
-var CACHE_NAME = 'f4-mobile-v11';
+var CACHE_NAME = 'f4-mobile-v12';
 var APP_SHELL = [
   '/f4-rilievi-mobile/login.html',
   '/f4-rilievi-mobile/home.html',
@@ -19,7 +19,8 @@ var APP_SHELL = [
   '/f4-rilievi-mobile/js/config.js',
   '/f4-rilievi-mobile/js/auth.js',
   '/f4-rilievi-mobile/js/db-local.js',
-  '/f4-rilievi-mobile/js/api-mobile.js'
+  '/f4-rilievi-mobile/js/api-mobile.js',
+  '/f4-rilievi-mobile/js/sortable.min.js'
 ];
 
 self.addEventListener('install', function(e){
