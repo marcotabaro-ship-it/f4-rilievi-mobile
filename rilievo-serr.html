@@ -474,7 +474,7 @@ function eliminaPosizione() {
   if (!confirm("Eliminare questa posizione? L'operazione non e reversibile da mobile.")) return;
   var id = _currentPosId;
   closeSheet();
-  API.writeRecord('update', 'posizioni_serr', {id: id, stato: 'disattivo'}, function(err) {
+  API.writeRecord('update', 'posizioni_serr', {id: id, stato: 'eliminato'}, function(err) {
     if (err) { alert('Errore eliminazione: ' + err); return; }
     _posizioni = _posizioni.filter(function(p) { return p.id !== id; });
     document.getElementById('rilNPosN').textContent = _posizioni.length;
@@ -557,7 +557,7 @@ function _eseguiCopia(id, n) {
 function eliminaPosizioneRow(id, event) {
   event.stopPropagation();
   if (!confirm("Eliminare questa posizione? L\u2019operazione non \u00e8 reversibile da mobile.")) return;
-  API.writeRecord('update', 'posizioni_serr', {id: id, stato: 'disattivo'}, function(err) {
+  API.writeRecord('update', 'posizioni_serr', {id: id, stato: 'eliminato'}, function(err) {
     if (err) { alert('Errore eliminazione: ' + err); return; }
     _posizioni = _posizioni.filter(function(p) { return p.id !== id; });
     document.getElementById('rilNPosN').textContent = _posizioni.length;
